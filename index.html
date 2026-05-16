@@ -22,6 +22,8 @@
     --yellow: #FFF3CD;
     --blue: #D6E8F5;
     --green: #D6EAD6;
+    --danger: #d32f2f;
+    --danger-dark: #b71c1c;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -349,18 +351,21 @@
 
   /* Delete button */
   .btn-delete {
-    background: #d32f2f !important;
-    color: white !important;
-    border: none !important;
+    background: var(--danger);
+    color: white;
+    border: none;
   }
 
-  .btn-delete:hover {
-    background: #b71c1c !important;
+  .btn-delete:hover,
+  .btn-delete:focus {
+    background: var(--danger-dark);
+    outline: 2px solid var(--danger);
+    outline-offset: 2px;
   }
 
   /* Hidden visibility class */
   .hidden {
-    display: none !important;
+    display: none;
   }
 
   /* Calendar */
