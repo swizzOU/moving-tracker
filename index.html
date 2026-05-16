@@ -948,19 +948,22 @@ function openEditEvent(eventId) {
 
 function saveEvent() {
   const name = document.getElementById('e-name').value.trim();
-  if (!name) return;
+  const date = document.getElementById('e-date').value;
+  if (!name || !date) return;
+
+  const people = Array.from(document.querySelectorAll('#e-people-select input:checked'))
+    .map(cb => cb.value);
 
   const eventData = {
     id: editingEventId || Date.now(),
     name: name,
-    date: document.getElementById('e-date').value,
+    date: date,
+    endDate: document.getElementById('e-has-enddate').checked ? document.getElementById('e-enddate').value : null,
     time: document.getElementById('e-time').value,
-    people: document.getElementById('e-people').value
-      .split(',')
-      .map(p => p.trim())
-      .filter(p => p),
+    people: people,
     notes: document.getElementById('e-notes').value,
-    category: document.getElementById('e-category').value
+    category: document.getElementById('e-category').value,
+    color: document.getElementById('e-color').value
   };
 
   if (editingEventId) {
