@@ -289,6 +289,8 @@
     padding: 28px;
     width: 480px;
     max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
     box-shadow: 0 20px 60px rgba(0,0,0,0.2);
   }
   .modal h3 { font-family: 'Lora', serif; color: var(--sage-dark); margin-bottom: 18px; font-size: 1.1rem; }
@@ -333,34 +335,56 @@
   }
   .contact-edit-btn:hover { border-color: var(--sage); color: var(--sage-dark); }
 
-  /* People multi-select */
-  .people-multi-select {
-    border: 1px solid var(--cream-dark);
-    border-radius: 6px;
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    background: var(--cream);
+  .people-select {
+    min-height: 130px;
   }
 
-  .people-multi-select input[type="checkbox"] {
-    margin-right: 6px;
-    cursor: pointer;
+  .color-select {
+    --selected-color: #6B8F66;
+    padding-left: 36px;
+    background-image: linear-gradient(to right, var(--selected-color) 0 24px, var(--cream) 24px);
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
   }
+
+  .color-select option {
+    color: var(--text);
+  }
+
+  .color-select option[value="#6B8F66"] { background: linear-gradient(to right, #6B8F66 0 20px, var(--cream) 20px); }
+  .color-select option[value="#4A6B46"] { background: linear-gradient(to right, #4A6B46 0 20px, var(--cream) 20px); }
+  .color-select option[value="#8FB996"] { background: linear-gradient(to right, #8FB996 0 20px, var(--cream) 20px); }
+  .color-select option[value="#C4704F"] { background: linear-gradient(to right, #C4704F 0 20px, var(--cream) 20px); }
+  .color-select option[value="#E08B69"] { background: linear-gradient(to right, #E08B69 0 20px, var(--cream) 20px); }
+  .color-select option[value="#D6E8F5"] { background: linear-gradient(to right, #D6E8F5 0 20px, var(--cream) 20px); }
+  .color-select option[value="#7FA7C4"] { background: linear-gradient(to right, #7FA7C4 0 20px, var(--cream) 20px); }
+  .color-select option[value="#A7C4A0"] { background: linear-gradient(to right, #A7C4A0 0 20px, var(--cream) 20px); }
+  .color-select option[value="#E7D6A4"] { background: linear-gradient(to right, #E7D6A4 0 20px, var(--cream) 20px); }
+  .color-select option[value="#C8B6A6"] { background: linear-gradient(to right, #C8B6A6 0 20px, var(--cream) 20px); }
+  .color-select option[value="#CFA7CF"] { background: linear-gradient(to right, #CFA7CF 0 20px, var(--cream) 20px); }
+  .color-select option[value="#B3B3B3"] { background: linear-gradient(to right, #B3B3B3 0 20px, var(--cream) 20px); }
 
   /* Delete button */
   .btn-delete {
     background: var(--danger);
     color: white;
-    border: none;
+    border: 1.5px solid var(--danger-dark);
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: auto;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: 0 2px 8px rgba(211, 47, 47, 0.25);
   }
 
   .btn-delete:hover,
   .btn-delete:focus {
     background: var(--danger-dark);
-    outline: 2px solid var(--danger);
-    outline-offset: 2px;
+    box-shadow: 0 4px 12px rgba(183, 28, 28, 0.35);
+    outline: none;
   }
 
   /* Hidden visibility class */
@@ -379,6 +403,16 @@
   .fc-daygrid-day-number { color: var(--text); }
   .fc-daygrid-day-frame { min-height: 100px; }
   .fc-event { border: none; border-radius: 6px; }
+  .fc-daygrid-event {
+    white-space: normal;
+    align-items: flex-start;
+  }
+  .fc-daygrid-event .fc-event-main,
+  .fc-daygrid-event .fc-event-title {
+    white-space: normal;
+    overflow: visible;
+    word-break: break-word;
+  }
   .fc-event-title { font-weight: 500; padding: 2px 6px; }
 
   /* Event category colors */
@@ -553,23 +587,20 @@
     <h3 id="modal-event-title">Add Event</h3>
     <label for="e-name">Event Name</label>
     <input type="text" id="e-name" placeholder="e.g. Dad's visit, Cleaner appointment" />
-    <label for="e-date">Date</label>
+    <label for="e-date">Start date</label>
     <input type="date" id="e-date" />
-    <label style="display: flex; align-items: center; gap: 8px;">
-      <input type="checkbox" id="e-has-enddate" onchange="toggleEndDate()" />
-      Multi-day event
-    </label>
-    <input type="date" id="e-enddate" class="hidden" />
+    <label for="e-enddate">End date</label>
+    <input type="date" id="e-enddate" />
     <label for="e-time">Time (optional)</label>
     <input type="text" id="e-time" placeholder="e.g. 14:00, All day, Morning" />
-    <label for="e-people-select">People</label>
-    <div id="e-people-select" class="people-multi-select">
-      <label><input type="checkbox" id="e-people-ken" value="Ken" /> Ken</label>
-      <label><input type="checkbox" id="e-people-dani" value="Dani" /> Dani</label>
-      <label><input type="checkbox" id="e-people-dad" value="Dad" /> Dad</label>
-      <label><input type="checkbox" id="e-people-caroline" value="Caroline" /> Caroline</label>
-      <label><input type="checkbox" id="e-people-mum" value="Mum" /> Mum</label>
-    </div>
+    <label for="e-people">People</label>
+    <select id="e-people" class="people-select" multiple>
+      <option value="Ken">Ken</option>
+      <option value="Dani">Dani</option>
+      <option value="Dad">Dad</option>
+      <option value="Caroline">Caroline</option>
+      <option value="Mum">Mum</option>
+    </select>
     <label for="e-notes">Notes (optional)</label>
     <input type="text" id="e-notes" placeholder="Any additional details..." />
     <label for="e-category">Category</label>
@@ -580,11 +611,24 @@
       <option value="Other">Other</option>
     </select>
     <label for="e-color">Color</label>
-    <input type="color" id="e-color" value="#6B8F66" />
+    <select id="e-color" class="color-select" onchange="updateEventColorPreview()">
+      <option value="#6B8F66">Sage</option>
+      <option value="#4A6B46">Forest</option>
+      <option value="#8FB996">Moss</option>
+      <option value="#C4704F">Terracotta</option>
+      <option value="#E08B69">Clay</option>
+      <option value="#D6E8F5">Dusty Blue</option>
+      <option value="#7FA7C4">Slate Blue</option>
+      <option value="#A7C4A0">Soft Green</option>
+      <option value="#E7D6A4">Sand</option>
+      <option value="#C8B6A6">Taupe</option>
+      <option value="#CFA7CF">Mauve</option>
+      <option value="#B3B3B3">Grey</option>
+    </select>
     <div class="modal-btns">
-      <button class="btn-cancel" onclick="closeModal('modal-event')">Cancel</button>
-      <button class="btn-save" onclick="saveEvent()">Add Event</button>
       <button class="btn-delete hidden" id="btn-delete-event" onclick="deleteEvent(editingEventId)">Delete</button>
+      <button class="btn-cancel" onclick="closeModal('modal-event')">Cancel</button>
+      <button class="btn-save" id="btn-save-event" onclick="saveEvent()">Add Event</button>
     </div>
   </div>
 </div>
@@ -904,24 +948,46 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
 
 let editingEventId = null;
 
-function toggleEndDate() {
-  const endDateInput = document.getElementById('e-enddate');
-  endDateInput.classList.toggle('hidden', !document.getElementById('e-has-enddate').checked);
+const EVENT_COLORS = [
+  '#6B8F66',
+  '#4A6B46',
+  '#8FB996',
+  '#C4704F',
+  '#E08B69',
+  '#D6E8F5',
+  '#7FA7C4',
+  '#A7C4A0',
+  '#E7D6A4',
+  '#C8B6A6',
+  '#CFA7CF',
+  '#B3B3B3'
+];
+
+function resetEventForm(defaultDate = '') {
+  editingEventId = null;
+  document.getElementById('e-name').value = '';
+  document.getElementById('e-date').value = defaultDate;
+  document.getElementById('e-enddate').value = defaultDate;
+  document.getElementById('e-time').value = '';
+  document.getElementById('e-notes').value = '';
+  document.getElementById('e-category').value = 'Other';
+  document.getElementById('e-color').value = '#6B8F66';
+  Array.from(document.getElementById('e-people').options).forEach(option => {
+    option.selected = false;
+  });
+  document.getElementById('btn-delete-event').classList.add('hidden');
+  document.getElementById('modal-event-title').textContent = 'Add Event';
+  document.getElementById('btn-save-event').textContent = 'Add Event';
+  updateEventColorPreview();
+}
+
+function updateEventColorPreview() {
+  const colorInput = document.getElementById('e-color');
+  colorInput.style.setProperty('--selected-color', colorInput.value || '#6B8F66');
 }
 
 function openAddEvent() {
-  editingEventId = null;
-  ['e-name','e-date','e-enddate','e-time','e-notes','e-color'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el.type === 'color') el.value = '#6B8F66';
-    else el.value = '';
-  });
-  document.getElementById('e-has-enddate').checked = false;
-  document.getElementById('e-enddate').classList.add('hidden');
-  document.getElementById('e-category').value = 'Other';
-  document.querySelectorAll('#e-people-select input').forEach(cb => cb.checked = false);
-  document.getElementById('btn-delete-event').classList.add('hidden');
-  document.getElementById('modal-event-title').textContent = 'Add Event';
+  resetEventForm('');
   document.getElementById('modal-event').classList.add('open');
 }
 
@@ -931,34 +997,37 @@ function openEditEvent(eventId) {
   editingEventId = eventId;
   document.getElementById('e-name').value = event.name;
   document.getElementById('e-date').value = event.date;
-  document.getElementById('e-enddate').value = event.endDate || '';
-  document.getElementById('e-has-enddate').checked = !!event.endDate;
-  document.getElementById('e-enddate').classList.toggle('hidden', !event.endDate);
+  document.getElementById('e-enddate').value = event.endDate || event.date;
   document.getElementById('e-time').value = event.time || '';
-  document.getElementById('e-color').value = event.color || '#6B8F66';
+  document.getElementById('e-color').value = EVENT_COLORS.includes(event.color) ? event.color : '#6B8F66';
   document.getElementById('e-notes').value = event.notes || '';
   document.getElementById('e-category').value = event.category;
-  document.querySelectorAll('#e-people-select input').forEach(cb => {
-    cb.checked = event.people.includes(cb.value);
+  Array.from(document.getElementById('e-people').options).forEach(option => {
+    option.selected = event.people.includes(option.value);
   });
   document.getElementById('btn-delete-event').classList.remove('hidden');
   document.getElementById('modal-event-title').textContent = 'Edit Event';
+  document.getElementById('btn-save-event').textContent = 'Save Changes';
+  updateEventColorPreview();
   document.getElementById('modal-event').classList.add('open');
 }
 
 function saveEvent() {
   const name = document.getElementById('e-name').value.trim();
   const date = document.getElementById('e-date').value;
+  const endDateValue = document.getElementById('e-enddate').value || date;
   if (!name || !date) return;
 
-  const people = Array.from(document.querySelectorAll('#e-people-select input:checked'))
-    .map(cb => cb.value);
+  const people = Array.from(document.getElementById('e-people').selectedOptions)
+    .map(option => option.value);
+
+  const normalizedEndDate = endDateValue > date ? endDateValue : null;
 
   const eventData = {
     id: editingEventId || Date.now(),
     name: name,
     date: date,
-    endDate: document.getElementById('e-has-enddate').checked ? document.getElementById('e-enddate')?.value || null : null,
+    endDate: normalizedEndDate,
     time: document.getElementById('e-time').value,
     people: people,
     notes: document.getElementById('e-notes').value,
@@ -1031,19 +1100,7 @@ function renderCalendar() {
       openEditEvent(parseInt(info.event.id));
     },
     dateClick: function(info) {
-      editingEventId = null;
-      ['e-name','e-date','e-enddate','e-time','e-notes','e-color'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el.type === 'color') el.value = '#6B8F66';
-        else el.value = '';
-      });
-      document.getElementById('e-date').value = info.dateStr;
-      document.getElementById('e-has-enddate').checked = false;
-      document.getElementById('e-enddate').classList.add('hidden');
-      document.getElementById('e-category').value = 'Other';
-      document.querySelectorAll('#e-people-select input').forEach(cb => cb.checked = false);
-      document.getElementById('btn-delete-event').classList.add('hidden');
-      document.getElementById('modal-event-title').textContent = 'Add Event';
+      resetEventForm(info.dateStr);
       document.getElementById('modal-event').classList.add('open');
     },
     eventDrop: function(info) {
