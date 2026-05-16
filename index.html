@@ -364,6 +364,7 @@
   <button class="tab active" onclick="showTab('tasks')">✅ Task Tracker</button>
   <button class="tab" onclick="showTab('furniture')">🛋️ Furniture from Sellers</button>
   <button class="tab" onclick="showTab('contacts')">📞 Key Contacts</button>
+  <button class="tab" onclick="showTab('calendar')">📅 Calendar</button>
 </div>
 
 <div class="main">
@@ -392,6 +393,12 @@
   <div id="tab-contacts" class="hidden">
     <button class="add-btn" onclick="openAddContact()">+ Add contact</button>
     <div id="contacts-container" class="contacts-grid"></div>
+  </div>
+
+  <!-- CALENDAR TAB -->
+  <div id="tab-calendar" class="hidden">
+    <button class="add-btn" onclick="openAddEvent()">+ Add Event</button>
+    <div id="calendar-container" style="margin-top: 20px;"></div>
   </div>
 
 </div>
@@ -558,11 +565,11 @@ function save() {
 }
 
 function showTab(t) {
-  ['tasks','furniture','contacts'].forEach(x => {
+  ['tasks','furniture','contacts','calendar'].forEach(x => {
     document.getElementById('tab-'+x).classList.toggle('hidden', x !== t);
   });
   document.querySelectorAll('.tab').forEach((btn, i) => {
-    btn.classList.toggle('active', ['tasks','furniture','contacts'][i] === t);
+    btn.classList.toggle('active', ['tasks','furniture','contacts','calendar'][i] === t);
   });
 }
 
