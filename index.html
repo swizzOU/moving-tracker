@@ -606,11 +606,22 @@ const DEFAULT_CONTACTS = [
 
 const DEFAULT_EVENTS = [];
 
+// Migrate existing events to new schema
+function migrateEvents(oldEvents) {
+  return oldEvents.map(e => ({
+    ...e,
+    endDate: e.endDate || null,
+    color: e.color || '#6B8F66',
+    category: e.category || 'Other'
+  }));
+}
+
 // State
 let tasks = JSON.parse(localStorage.getItem('move_tasks') || 'null') || DEFAULT_TASKS.map((t,i) => ({...t, id: i}));
 let furniture = JSON.parse(localStorage.getItem('move_furniture') || 'null') || DEFAULT_FURNITURE;
 let contacts = JSON.parse(localStorage.getItem('move_contacts') || 'null') || DEFAULT_CONTACTS;
 let events = JSON.parse(localStorage.getItem('move_events') || 'null') || DEFAULT_EVENTS;
+events = migrateEvents(events);
 let currentFilter = 'all';
 
 function save() {
