@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spalding Move Tracker 🏠</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sage: #6B8F66;
+    --sage-dark: #4A6B46;
+    --sage-light: #D4E6D0;
+    --cream: #F7F2EA;
+    --cream-dark: #EDE6D8;
+    --warm: #C4704F;
+    --warm-light: #F5E8E0;
+    --text: #2C2C2C;
+    --muted: #8A8278;
+    --border: #DDD6CC;
+    --white: #FFFFFF;
+    --yellow: #FFF3CD;
+    --blue: #D6E8F5;
+    --green: #D6EAD6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--sage-dark);
+    padding: 28px 40px 22px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  }
+
+  header h1 {
+    font-family: 'Lora', serif;
+    font-size: 1.6rem;
+    color: var(--white);
+    letter-spacing: -0.3px;
+  }
+  header p {
+    color: var(--sage-light);
+    font-size: 0.82rem;
+    margin-top: 4px;
+    font-weight: 300;
+  }
+
+  .header-stats {
+    display: flex;
+    gap: 20px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+  .stat {
+    background: rgba(255,255,255,0.12);
+    border-radius: 8px;
+    padding: 6px 14px;
+    color: var(--white);
+    font-size: 0.8rem;
+  }
+  .stat span { font-weight: 600; font-size: 1rem; display: block; }
+
+  .tabs {
+    display: flex;
+    gap: 0;
+    padding: 20px 40px 0;
+    border-bottom: 2px solid var(--border);
+    background: var(--cream);
+  }
+  .tab {
+    padding: 10px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--muted);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .tab:hover { color: var(--sage-dark); }
+  .tab.active { color: var(--sage-dark); border-bottom-color: var(--sage-dark); font-weight: 600; }
+
+  .main { padding: 28px 40px; max-width: 1200px; }
+
+  .filter-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .filter-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--white);
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-btn:hover { border-color: var(--sage); color: var(--sage-dark); }
+  .filter-btn.active { background: var(--sage-dark); border-color: var(--sage-dark); color: white; }
+
+  .progress-bar-outer {
+    background: var(--cream-dark);
+    border-radius: 8px;
+    height: 8px;
+    width: 180px;
+    overflow: hidden;
+  }
+  .progress-bar-inner {
+    background: var(--sage);
+    height: 100%;
+    border-radius: 8px;
+    transition: width 0.4s ease;
+  }
+
+  .category-section { margin-bottom: 28px; }
+
+  .category-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .category-label {
+    font-family: 'Lora', serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--sage-dark);
+  }
+  .category-count {
+    font-size: 0.78rem;
+    color: var(--muted);
+    background: var(--cream-dark);
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  .task-card {
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 8px;
+    display: grid;
+    grid-template-columns: 32px 1fr auto auto auto;
+    gap: 12px;
+    align-items: center;
+    transition: box-shadow 0.15s, border-color 0.15s;
+  }
+  .task-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.07); border-color: var(--sage-light); }
+  .task-card.done-card { opacity: 0.55; }
+
+  .checkbox {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 2px solid var(--border);
+    background: var(--white);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    font-size: 13px;
+    color: white;
+  }
+  .checkbox:hover { border-color: var(--sage); }
+  .checkbox.checked { background: var(--sage); border-color: var(--sage); }
+
+  .task-title {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.3;
+  }
+  .task-card.done-card .task-title { text-decoration: line-through; color: var(--muted); }
+  .task-notes {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 3px;
+    font-style: italic;
+  }
+
+  .task-when {
+    font-size: 0.78rem;
+    color: var(--muted);
+    white-space: nowrap;
+    text-align: right;
+    min-width: 90px;
+  }
+  .task-who {
+    font-size: 0.75rem;
+    background: var(--cream-dark);
+    color: var(--sage-dark);
+    padding: 3px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+
+  .status-pill {
+    font-size: 0.72rem;
+    padding: 3px 10px;
+    border-radius: 10px;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+  .status-Not\ Started { background: #F2EDED; color: #8A5A5A; }
+  .status-In\ Progress { background: var(--yellow); color: #7A6020; }
+  .status-Done { background: var(--green); color: #3A6A3A; }
+  .status-Waiting { background: var(--blue); color: #2A5A7A; }
+
+  /* Furniture tab */
+  .furniture-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 14px;
+  }
+  .furn-card {
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    transition: box-shadow 0.15s;
+  }
+  .furn-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.07); }
+  .furn-card.confirmed { border-left: 4px solid var(--sage); }
+  .furn-card.unconfirmed { border-left: 4px solid var(--warm); }
+  .furn-room { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 5px; }
+  .furn-name { font-family: 'Lora', serif; font-size: 1rem; font-weight: 600; color: var(--sage-dark); margin-bottom: 6px; }
+  .furn-notes { font-size: 0.8rem; color: var(--muted); font-style: italic; margin-bottom: 10px; }
+  .furn-footer { display: flex; justify-content: space-between; align-items: center; }
+  .furn-price { font-size: 0.85rem; font-weight: 600; color: var(--warm); }
+  .furn-confirm { font-size: 0.72rem; padding: 3px 10px; border-radius: 10px; }
+  .confirmed-pill { background: var(--green); color: #3A6A3A; }
+  .unconfirmed-pill { background: var(--warm-light); color: #8A3A1A; }
+
+  .add-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    background: var(--sage-dark);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-bottom: 20px;
+  }
+  .add-btn:hover { background: var(--sage); }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--white);
+    border-radius: 14px;
+    padding: 28px;
+    width: 480px;
+    max-width: 95vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  }
+  .modal h3 { font-family: 'Lora', serif; color: var(--sage-dark); margin-bottom: 18px; font-size: 1.1rem; }
+  .modal label { display: block; font-size: 0.82rem; font-weight: 500; color: var(--muted); margin-bottom: 5px; margin-top: 12px; }
+  .modal input, .modal select, .modal textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    color: var(--text);
+    background: var(--cream);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .modal input:focus, .modal select:focus, .modal textarea:focus { border-color: var(--sage); }
+  .modal-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+  .btn-cancel { padding: 8px 18px; border: 1.5px solid var(--border); border-radius: 8px; background: none; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; color: var(--muted); cursor: pointer; }
+  .btn-save { padding: 8px 18px; background: var(--sage-dark); color: white; border: none; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500; cursor: pointer; }
+
+  /* Contacts tab */
+  .contacts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  .contact-card { background: var(--white); border: 1.5px solid var(--border); border-radius: 10px; padding: 16px; }
+  .contact-role { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 4px; }
+  .contact-name { font-family: 'Lora', serif; font-size: 0.95rem; font-weight: 600; color: var(--text); margin-bottom: 8px; min-height: 22px; }
+  .contact-detail { font-size: 0.8rem; color: var(--muted); margin-top: 3px; }
+  .contact-detail a { color: var(--sage-dark); text-decoration: none; }
+  .contact-notes { font-size: 0.78rem; color: var(--warm); font-style: italic; margin-top: 6px; }
+  .contact-empty { color: var(--cream-dark); font-style: italic; }
+  .contact-edit-btn {
+    margin-top: 10px;
+    padding: 5px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    background: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .contact-edit-btn:hover { border-color: var(--sage); color: var(--sage-dark); }
+
+  .hidden { display: none; }
+
+  @media (max-width: 700px) {
+    header { padding: 18px 20px; }
+    .tabs { padding: 16px 20px 0; }
+    .main { padding: 20px; }
+    .task-card { grid-template-columns: 28px 1fr; grid-template-rows: auto auto; }
+    .task-when, .task-who, .status-pill { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏠 Dani & Ken — Move to Spalding</h1>
+  <p>Est. completion: ~3–4 weeks out &nbsp;·&nbsp; Keep calm and pack one box at a time</p>
+  <div class="header-stats">
+    <div class="stat"><span id="stat-total">0</span>Total tasks</div>
+    <div class="stat"><span id="stat-done">0</span>Completed</div>
+    <div class="stat"><span id="stat-pct">0%</span>Progress</div>
+    <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
+      <div class="progress-bar-outer" style="width:200px;">
+        <div class="progress-bar-inner" id="main-progress" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('tasks')">✅ Task Tracker</button>
+  <button class="tab" onclick="showTab('furniture')">🛋️ Furniture from Sellers</button>
+  <button class="tab" onclick="showTab('contacts')">📞 Key Contacts</button>
+</div>
+
+<div class="main">
+
+  <!-- TASKS TAB -->
+  <div id="tab-tasks">
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="filterTasks('all', this)">All</button>
+      <button class="filter-btn" onclick="filterTasks('Not Started', this)">Not Started</button>
+      <button class="filter-btn" onclick="filterTasks('In Progress', this)">In Progress</button>
+      <button class="filter-btn" onclick="filterTasks('Waiting', this)">Waiting</button>
+      <button class="filter-btn" onclick="filterTasks('Done', this)">Done</button>
+      <button class="add-btn" onclick="openAddTask()" style="margin-bottom:0; margin-left:auto;">+ Add task</button>
+    </div>
+    <div id="tasks-container"></div>
+  </div>
+
+  <!-- FURNITURE TAB -->
+  <div id="tab-furniture" class="hidden">
+    <button class="add-btn" onclick="openAddFurniture()">+ Add item from sellers</button>
+    <div id="furniture-container" class="furniture-grid"></div>
+    <p style="color:var(--muted); font-size:0.82rem; font-style:italic; margin-top:12px;">💡 Tip: Get everything agreed in writing before completion day.</p>
+  </div>
+
+  <!-- CONTACTS TAB -->
+  <div id="tab-contacts" class="hidden">
+    <button class="add-btn" onclick="openAddContact()">+ Add contact</button>
+    <div id="contacts-container" class="contacts-grid"></div>
+  </div>
+
+</div>
+
+<!-- ADD TASK MODAL -->
+<div class="modal-overlay" id="modal-task">
+  <div class="modal">
+    <h3>Add a Task</h3>
+    <label>Category</label>
+    <select id="new-cat">
+      <option>Admin & Legal</option>
+      <option>Utilities</option>
+      <option>Removals</option>
+      <option>New Property</option>
+      <option>Packing</option>
+      <option>Other</option>
+    </select>
+    <label>Task</label>
+    <input type="text" id="new-task" placeholder="What needs doing?" />
+    <label>Notes</label>
+    <input type="text" id="new-notes" placeholder="Optional detail..." />
+    <label>Who</label>
+    <select id="new-who">
+      <option>Dani</option>
+      <option>Ken</option>
+      <option>Dani/Ken</option>
+      <option>Other</option>
+    </select>
+    <label>When</label>
+    <input type="text" id="new-when" placeholder="e.g. ASAP, Moving day, 1 week before..." />
+    <label>Status</label>
+    <select id="new-status">
+      <option>Not Started</option>
+      <option>In Progress</option>
+      <option>Waiting</option>
+      <option>Done</option>
+    </select>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-task')">Cancel</button>
+      <button class="btn-save" onclick="saveTask()">Add Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD FURNITURE MODAL -->
+<div class="modal-overlay" id="modal-furn">
+  <div class="modal">
+    <h3>Add Furniture / Item from Sellers</h3>
+    <label>Room</label>
+    <input type="text" id="f-room" placeholder="e.g. Living Room, Kitchen..." />
+    <label>Item Name</label>
+    <input type="text" id="f-name" placeholder="e.g. Corner sofa" />
+    <label>Notes</label>
+    <input type="text" id="f-notes" placeholder="Colour, size, condition..." />
+    <label>Agreed Price (£) — leave blank if included</label>
+    <input type="text" id="f-price" placeholder="e.g. 200 or Included" />
+    <label>Confirmed in writing?</label>
+    <select id="f-confirmed">
+      <option value="no">No — needs confirming</option>
+      <option value="yes">Yes — confirmed</option>
+    </select>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-furn')">Cancel</button>
+      <button class="btn-save" onclick="saveFurniture()">Add Item</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD CONTACT MODAL -->
+<div class="modal-overlay" id="modal-contact">
+  <div class="modal">
+    <h3 id="modal-contact-title">Add Contact</h3>
+    <label>Role</label>
+    <input type="text" id="c-role" placeholder="e.g. Removal Company" />
+    <label>Name / Company</label>
+    <input type="text" id="c-name" placeholder="" />
+    <label>Phone</label>
+    <input type="text" id="c-phone" placeholder="" />
+    <label>Email</label>
+    <input type="text" id="c-email" placeholder="" />
+    <label>Notes</label>
+    <input type="text" id="c-notes" placeholder="Any important info..." />
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-contact')">Cancel</button>
+      <button class="btn-save" onclick="saveContact()">Add Contact</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ICONS = {
+  "Admin & Legal": "📋",
+  "Utilities": "⚡",
+  "Removals": "🚚",
+  "New Property": "🏡",
+  "Packing": "📦",
+  "Other": "📌",
+};
+
+const DEFAULT_TASKS = [
+  {cat:"Admin & Legal",task:"Confirm completion date with solicitor",notes:"Chase if no update by end of week",who:"Dani",when:"ASAP",status:"Not Started",done:false},
+  {cat:"Admin & Legal",task:"Set up Royal Mail redirect",notes:"Do for both old and new addresses, min 12 months",who:"Dani",when:"Week before move",status:"Not Started",done:false},
+  {cat:"Admin & Legal",task:"Notify DVLA of new address",notes:"Can do online via Gov.uk",who:"Dani/Ken",when:"Moving week",status:"Not Started",done:false},
+  {cat:"Admin & Legal",task:"Update driving licence address",notes:"Gov.uk — free to do online",who:"Dani/Ken",when:"Moving week",status:"Not Started",done:false},
+  {cat:"Admin & Legal",task:"Notify GP of move / register at new surgery",notes:"Find nearest GP to Spalding first",who:"Dani/Ken",when:"After move",status:"Not Started",done:false},
+  {cat:"Admin & Legal",task:"Notify bank(s) of new address",notes:"Do each bank separately",who:"Dani/Ken",when:"Moving week",status:"Not Started",done:false},
+  {cat:"Admin & Legal",task:"Update HMRC address",notes:"Personal tax account on Gov.uk",who:"Dani",when:"After move",status:"Not Started",done:false},
+  {cat:"Admin & Legal",task:"Notify subscriptions / deliveries",notes:"Amazon, Patreon etc",who:"Dani",when:"Moving week",status:"Not Started",done:false},
+  {cat:"Utilities",task:"Set up energy supplier at new property",notes:"Check if sellers have a supplier or shop around",who:"Dani",when:"2 weeks before",status:"Not Started",done:false},
+  {cat:"Utilities",task:"Set up broadband at new address",notes:"Lead times can be 2+ weeks — do ASAP",who:"Dani",when:"ASAP",status:"Not Started",done:false},
+  {cat:"Utilities",task:"Notify current energy supplier of move-out date",notes:"Take meter readings on move day",who:"Dani",when:"Moving week",status:"Not Started",done:false},
+  {cat:"Utilities",task:"Set up council tax at Spalding address",notes:"South Holland District Council",who:"Dani",when:"Moving week",status:"Not Started",done:false},
+  {cat:"Utilities",task:"Cancel / transfer current council tax",notes:"",who:"Dani",when:"Moving week",status:"Not Started",done:false},
+  {cat:"Utilities",task:"Take meter readings at old property (move out)",notes:"Gas + electric + water",who:"Dani/Ken",when:"Moving day",status:"Not Started",done:false},
+  {cat:"Utilities",task:"Take meter readings at new property (move in)",notes:"Gas + electric + water",who:"Dani/Ken",when:"Moving day",status:"Not Started",done:false},
+  {cat:"Utilities",task:"Set up water account at new address",notes:"Anglian Water covers Spalding",who:"Dani",when:"After move",status:"Not Started",done:false},
+  {cat:"Removals",task:"Research and book removal company",notes:"Get 2–3 quotes, check reviews",who:"Dani/Ken",when:"ASAP",status:"Not Started",done:false},
+  {cat:"Removals",task:"Confirm what furniture sellers are leaving",notes:"See Furniture tab for tracker",who:"Dani",when:"ASAP",status:"Not Started",done:false},
+  {cat:"Removals",task:"Plan Rosie's moving day routine",notes:"Where will she be during loading/unloading?",who:"Dani/Ken",when:"1 week before",status:"Not Started",done:false},
+  {cat:"Removals",task:"Book time off / confirm moving day logistics with Ken",notes:"",who:"Dani/Ken",when:"ASAP",status:"Not Started",done:false},
+  {cat:"Removals",task:"Defrost freezer before move",notes:"Do the night before",who:"Dani/Ken",when:"Night before",status:"Not Started",done:false},
+  {cat:"Removals",task:"Pack an overnight essentials bag",notes:"Kettle, mugs, phone chargers, Rosie bits, toiletries",who:"Dani",when:"Day before",status:"Not Started",done:false},
+  {cat:"New Property",task:"Deep clean before unpacking (if needed)",notes:"Or book a cleaner",who:"Dani/Ken",when:"Moving day",status:"Not Started",done:false},
+  {cat:"New Property",task:"Check all windows, doors, locks work",notes:"Flag issues to solicitor before completion",who:"Ken",when:"Moving day",status:"Not Started",done:false},
+  {cat:"New Property",task:"Change locks / get spare keys cut",notes:"Recommended after any house purchase",who:"Ken",when:"After move",status:"Not Started",done:false},
+  {cat:"New Property",task:"Locate stopcock and fuse box",notes:"Familiarise yourself with both",who:"Ken",when:"Moving day",status:"Not Started",done:false},
+  {cat:"New Property",task:"Plan furniture layout",notes:"Get the floor plan and map it out",who:"Dani",when:"Before move",status:"Not Started",done:false},
+  {cat:"New Property",task:"Order any furniture not included from sellers",notes:"Check lead times — can be weeks",who:"Dani/Ken",when:"ASAP",status:"Not Started",done:false},
+  {cat:"New Property",task:"Set up internet router once broadband live",notes:"",who:"Ken",when:"After move",status:"Not Started",done:false},
+  {cat:"Packing",task:"Create room-by-room packing list",notes:"Label boxes with room + contents",who:"Dani",when:"2 weeks before",status:"Not Started",done:false},
+  {cat:"Packing",task:"Source boxes and packing materials",notes:"Supermarkets, Facebook Marketplace, removal co",who:"Ken",when:"2 weeks before",status:"Not Started",done:false},
+  {cat:"Packing",task:"Pack non-essentials first (books, decor, off-season clothes)",notes:"",who:"Dani/Ken",when:"2 weeks before",status:"Not Started",done:false},
+  {cat:"Packing",task:"Pack art/painting supplies carefully",notes:"Bubble wrap markers and watercolours",who:"Dani",when:"1 week before",status:"Not Started",done:false},
+  {cat:"Packing",task:"Pack tech and cables",notes:"Cable-tie and bag cables per device, label everything",who:"Dani/Ken",when:"Day before",status:"Not Started",done:false},
+  {cat:"Packing",task:"Donate / sell / skip anything not coming",notes:"Good time to declutter before the move",who:"Dani/Ken",when:"2 weeks before",status:"Not Started",done:false},
+];
+
+const DEFAULT_FURNITURE = [];
+
+const DEFAULT_CONTACTS = [
+  {role:"Solicitor (buyers)",name:"",phone:"",email:"",notes:""},
+  {role:"Solicitor (sellers)",name:"",phone:"",email:"",notes:""},
+  {role:"Estate Agent",name:"",phone:"",email:"",notes:""},
+  {role:"Removal Company",name:"",phone:"",email:"",notes:"Confirm date + time ASAP"},
+  {role:"Mortgage Lender",name:"",phone:"",email:"",notes:""},
+  {role:"Energy Supplier (new)",name:"",phone:"",email:"",notes:""},
+  {role:"Broadband Provider",name:"",phone:"",email:"",notes:"Check installation lead time"},
+  {role:"South Holland District Council",name:"",phone:"",email:"",notes:"Council tax setup"},
+  {role:"Anglian Water",name:"",phone:"0345 791 9155",email:"",notes:"Water supplier for Spalding"},
+  {role:"GP (new surgery)",name:"",phone:"",email:"",notes:"Register after move"},
+  {role:"GP (current surgery)",name:"",phone:"",email:"",notes:"Request record transfer"},
+];
+
+// State
+let tasks = JSON.parse(localStorage.getItem('move_tasks') || 'null') || DEFAULT_TASKS.map((t,i) => ({...t, id: i}));
+let furniture = JSON.parse(localStorage.getItem('move_furniture') || 'null') || DEFAULT_FURNITURE;
+let contacts = JSON.parse(localStorage.getItem('move_contacts') || 'null') || DEFAULT_CONTACTS;
+let currentFilter = 'all';
+
+function save() {
+  localStorage.setItem('move_tasks', JSON.stringify(tasks));
+  localStorage.setItem('move_furniture', JSON.stringify(furniture));
+  localStorage.setItem('move_contacts', JSON.stringify(contacts));
+}
+
+function showTab(t) {
+  ['tasks','furniture','contacts'].forEach(x => {
+    document.getElementById('tab-'+x).classList.toggle('hidden', x !== t);
+  });
+  document.querySelectorAll('.tab').forEach((btn, i) => {
+    btn.classList.toggle('active', ['tasks','furniture','contacts'][i] === t);
+  });
+}
+
+function filterTasks(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTasks();
+}
+
+function toggleDone(id) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  t.done = !t.done;
+  if (t.done) t.status = 'Done';
+  else t.status = 'Not Started';
+  save();
+  renderTasks();
+  updateStats();
+}
+
+function cycleStatus(id) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  const statuses = ['Not Started','In Progress','Waiting','Done'];
+  const i = statuses.indexOf(t.status);
+  t.status = statuses[(i + 1) % statuses.length];
+  t.done = t.status === 'Done';
+  save();
+  renderTasks();
+  updateStats();
+}
+
+function renderTasks() {
+  const container = document.getElementById('tasks-container');
+  const filtered = currentFilter === 'all' ? tasks : tasks.filter(t => t.status === currentFilter);
+
+  const categories = [...new Set(tasks.map(t => t.cat))];
+  container.innerHTML = '';
+
+  categories.forEach(cat => {
+    const catTasks = filtered.filter(t => t.cat === cat);
+    if (!catTasks.length) return;
+
+    const sec = document.createElement('div');
+    sec.className = 'category-section';
+
+    const doneCount = catTasks.filter(t => t.done).length;
+    sec.innerHTML = `
+      <div class="category-header">
+        <span style="font-size:1.2rem">${ICONS[cat]||'📌'}</span>
+        <span class="category-label">${cat}</span>
+        <span class="category-count">${doneCount}/${catTasks.length} done</span>
+      </div>
+    `;
+
+    catTasks.forEach(t => {
+      const card = document.createElement('div');
+      card.className = 'task-card' + (t.done ? ' done-card' : '');
+      card.innerHTML = `
+        <div class="checkbox ${t.done ? 'checked' : ''}" onclick="toggleDone(${t.id})">
+          ${t.done ? '✓' : ''}
+        </div>
+        <div>
+          <div class="task-title">${t.task}</div>
+          ${t.notes ? `<div class="task-notes">${t.notes}</div>` : ''}
+        </div>
+        <div class="task-when">${t.when}</div>
+        <div class="task-who">${t.who}</div>
+        <div class="status-pill status-${t.status.replace(' ','\ ')}" onclick="cycleStatus(${t.id})" style="cursor:pointer" title="Click to cycle status">${t.status}</div>
+      `;
+      sec.appendChild(card);
+    });
+
+    container.appendChild(sec);
+  });
+}
+
+function updateStats() {
+  const total = tasks.length;
+  const done = tasks.filter(t => t.done).length;
+  const pct = total ? Math.round(done/total*100) : 0;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-done').textContent = done;
+  document.getElementById('stat-pct').textContent = pct + '%';
+  document.getElementById('main-progress').style.width = pct + '%';
+}
+
+function renderFurniture() {
+  const container = document.getElementById('furniture-container');
+  if (!furniture.length) {
+    container.innerHTML = '<p style="color:var(--muted); font-style:italic;">No items added yet. Add things the sellers are leaving behind.</p>';
+    return;
+  }
+  container.innerHTML = furniture.map((f,i) => `
+    <div class="furn-card ${f.confirmed === 'yes' ? 'confirmed' : 'unconfirmed'}">
+      <div class="furn-room">${f.room}</div>
+      <div class="furn-name">${f.name}</div>
+      ${f.notes ? `<div class="furn-notes">${f.notes}</div>` : ''}
+      <div class="furn-footer">
+        <span class="furn-price">${f.price ? (f.price.startsWith('£') ? f.price : '£' + f.price) : 'Included'}</span>
+        <span class="furn-confirm ${f.confirmed === 'yes' ? 'confirmed-pill' : 'unconfirmed-pill'}">
+          ${f.confirmed === 'yes' ? '✓ Confirmed' : '⚠ Needs confirming'}
+        </span>
+      </div>
+    </div>
+  `).join('');
+}
+
+let editingContactIndex = null;
+
+function renderContacts() {
+  const container = document.getElementById('contacts-container');
+  container.innerHTML = contacts.map((c,i) => `
+    <div class="contact-card">
+      <div class="contact-role">${c.role}</div>
+      <div class="contact-name">${c.name || '<span class="contact-empty">— not yet added —</span>'}</div>
+      ${c.phone ? `<div class="contact-detail">📞 <a href="tel:${c.phone}">${c.phone}</a></div>` : ''}
+      ${c.email ? `<div class="contact-detail">✉️ <a href="mailto:${c.email}">${c.email}</a></div>` : ''}
+      ${c.notes ? `<div class="contact-notes">${c.notes}</div>` : ''}
+      <button class="contact-edit-btn" onclick="openEditContact(${i})">✏️ Edit</button>
+    </div>
+  `).join('');
+}
+
+function openEditContact(i) {
+  editingContactIndex = i;
+  const c = contacts[i];
+  document.getElementById('c-role').value = c.role || '';
+  document.getElementById('c-name').value = c.name || '';
+  document.getElementById('c-phone').value = c.phone || '';
+  document.getElementById('c-email').value = c.email || '';
+  document.getElementById('c-notes').value = c.notes || '';
+  document.getElementById('modal-contact-title').textContent = 'Edit Contact';
+  document.getElementById('modal-contact').classList.add('open');
+}
+
+function openAddTask() { document.getElementById('modal-task').classList.add('open'); }
+function openAddFurniture() { document.getElementById('modal-furn').classList.add('open'); }
+function openAddContact() {
+  editingContactIndex = null;
+  ['c-role','c-name','c-phone','c-email','c-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('modal-contact-title').textContent = 'Add Contact';
+  document.getElementById('modal-contact').classList.add('open');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function saveTask() {
+  const t = {
+    id: Date.now(),
+    cat: document.getElementById('new-cat').value,
+    task: document.getElementById('new-task').value,
+    notes: document.getElementById('new-notes').value,
+    who: document.getElementById('new-who').value,
+    when: document.getElementById('new-when').value,
+    status: document.getElementById('new-status').value,
+    done: document.getElementById('new-status').value === 'Done'
+  };
+  if (!t.task.trim()) return;
+  tasks.push(t);
+  save();
+  renderTasks();
+  updateStats();
+  closeModal('modal-task');
+  document.getElementById('new-task').value = '';
+  document.getElementById('new-notes').value = '';
+  document.getElementById('new-when').value = '';
+}
+
+function saveFurniture() {
+  const f = {
+    room: document.getElementById('f-room').value,
+    name: document.getElementById('f-name').value,
+    notes: document.getElementById('f-notes').value,
+    price: document.getElementById('f-price').value,
+    confirmed: document.getElementById('f-confirmed').value,
+  };
+  if (!f.name.trim()) return;
+  furniture.push(f);
+  save();
+  renderFurniture();
+  closeModal('modal-furn');
+  ['f-room','f-name','f-notes','f-price'].forEach(id => document.getElementById(id).value = '');
+}
+
+function saveContact() {
+  const c = {
+    role: document.getElementById('c-role').value,
+    name: document.getElementById('c-name').value,
+    phone: document.getElementById('c-phone').value,
+    email: document.getElementById('c-email').value,
+    notes: document.getElementById('c-notes').value,
+  };
+  if (!c.role.trim()) return;
+  if (editingContactIndex !== null) {
+    contacts[editingContactIndex] = c;
+    editingContactIndex = null;
+  } else {
+    contacts.push(c);
+  }
+  save();
+  renderContacts();
+  closeModal('modal-contact');
+  ['c-role','c-name','c-phone','c-email','c-notes'].forEach(id => document.getElementById(id).value = '');
+}
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+
+// Init
+renderTasks();
+renderFurniture();
+renderContacts();
+updateStats();
+</script>
+</body>
+</html>
