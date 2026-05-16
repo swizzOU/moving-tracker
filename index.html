@@ -488,6 +488,34 @@
   </div>
 </div>
 
+<!-- ADD EVENT MODAL -->
+<div class="modal-overlay" id="modal-event">
+  <div class="modal">
+    <h3 id="modal-event-title">Add Event</h3>
+    <label>Event Name</label>
+    <input type="text" id="e-name" placeholder="e.g. Dad's visit, Cleaner appointment" />
+    <label>Date</label>
+    <input type="date" id="e-date" />
+    <label>Time (optional)</label>
+    <input type="text" id="e-time" placeholder="e.g. 14:00, All day, Morning" />
+    <label>People Involved (optional)</label>
+    <input type="text" id="e-people" placeholder="e.g. Dad, Ken, Cleaner" />
+    <label>Notes (optional)</label>
+    <input type="text" id="e-notes" placeholder="Any additional details..." />
+    <label>Category</label>
+    <select id="e-category">
+      <option value="Family">Family</option>
+      <option value="Services">Services</option>
+      <option value="Logistics">Logistics</option>
+      <option value="Other">Other</option>
+    </select>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-event')">Cancel</button>
+      <button class="btn-save" onclick="saveEvent()">Add Event</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const ICONS = {
   "Admin & Legal": "📋",
