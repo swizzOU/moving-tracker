@@ -989,6 +989,12 @@ function deleteEvent(eventId) {
 
 let calendar = null;
 
+function formatEndDate(endDate, startDate) {
+  const end = new Date(endDate);
+  const start = new Date(startDate);
+  return end.getTime() > start.getTime() ? end.toISOString().split('T')[0] : null;
+}
+
 function renderCalendar() {
   const calendarEl = document.getElementById('calendar-container');
 
@@ -1000,7 +1006,7 @@ function renderCalendar() {
     id: String(e.id),
     title: e.name,
     start: e.date + (e.time ? 'T' + e.time : ''),
-    end: e.endDate ? (new Date(e.endDate).getTime() > new Date(e.date).getTime() ? new Date(e.endDate).toISOString().split('T')[0] : null) : null,
+    end: e.endDate ? formatEndDate(e.endDate, e.date) : null,
     extendedProps: {
       time: e.time,
       people: e.people,
@@ -1033,10 +1039,10 @@ function renderCalendar() {
       });
       document.getElementById('e-date').value = info.dateStr;
       document.getElementById('e-has-enddate').checked = false;
-      document.getElementById('e-enddate').style.display = 'none';
+      document.getElementById('e-enddate').classList.add('hidden');
       document.getElementById('e-category').value = 'Other';
       document.querySelectorAll('#e-people-select input').forEach(cb => cb.checked = false);
-      document.getElementById('btn-delete-event').style.display = 'none';
+      document.getElementById('btn-delete-event').classList.add('hidden');
       document.getElementById('modal-event-title').textContent = 'Add Event';
       document.getElementById('modal-event').classList.add('open');
     },
@@ -1044,16 +1050,14 @@ function renderCalendar() {
       const eventId = parseInt(info.event.id);
       const event = events.find(e => e.id === eventId);
       if (event) {
-        const daysDiff = Math.floor((info.event.end || info.event.start - (info.event.start - info.oldEvent.start)) / 86400000);
         event.date = info.event.start.toISOString().split('T')[0];
         if (event.endDate) {
-          const startDate = new Date(event.date);
-          const endDate = new Date(startDate);
-          if (info.oldEvent.end) {
-            const oldDays = Math.floor((info.oldEvent.end - info.oldEvent.start) / 86400000);
-            endDate.setDate(endDate.getDate() + oldDays);
-          }
-          event.endDate = endDate.toISOString().split('T')[0];
+          const oldStart = info.oldEvent.start.getTime();
+          const oldEnd = info.oldEvent.end ? info.oldEvent.end.getTime() : oldStart;
+          const originalDuration = oldEnd - oldStart;
+          const newStart = info.event.start.getTime();
+          const newEnd = new Date(newStart + originalDuration);
+          event.endDate = newEnd.toISOString().split('T')[0];
         }
         save();
       }
