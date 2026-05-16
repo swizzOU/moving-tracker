@@ -62,8 +62,23 @@
     margin-top: 14px;
     flex-wrap: wrap;
   }
+  .task-stats {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .task-stats .stat {
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    color: var(--text);
+    padding: 12px 14px;
+  }
+  .task-stats .stat span {
+    color: var(--sage-dark);
+  }
   .stat {
-    background: rgba(255,255,255,0.12);
+    margin-bottom: 0;
     border-radius: 8px;
     padding: 6px 14px;
     color: var(--white);
@@ -97,12 +112,48 @@
 
   .main { padding: 28px 40px; max-width: 1200px; }
 
+  #tab-tasks {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .task-panel {
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+  }
+
   .filter-bar {
     display: flex;
     gap: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 0;
     flex-wrap: wrap;
-    align-items: center;
+    align-items: flex-end;
+  }
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 150px;
+  }
+  .filter-label {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-weight: 600;
+    min-width: 0;
+    line-height: 1;
+  }
+  .filter-select {
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: var(--white);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    min-width: 150px;
   }
   .filter-btn {
     padding: 6px 14px;
@@ -140,6 +191,27 @@
     gap: 12px;
     margin-bottom: 10px;
   }
+  .category-section.draggable-section {
+    cursor: grab;
+  }
+  .category-section.dragging {
+    opacity: 0.45;
+  }
+  .category-section.drag-over .category-header {
+    outline: 2px dashed var(--sage);
+    border-radius: 8px;
+    outline-offset: 4px;
+  }
+  .category-toggle {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.95rem;
+    line-height: 1;
+    padding: 2px 4px;
+  }
+  .category-toggle:hover { color: var(--sage-dark); }
   .category-label {
     font-family: 'Lora', serif;
     font-size: 1rem;
@@ -153,6 +225,42 @@
     padding: 2px 8px;
     border-radius: 10px;
   }
+  .category-empty {
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-style: italic;
+    padding: 4px 2px 2px 30px;
+  }
+  .category-actions {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+  }
+  .category-action-btn {
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    background: var(--white);
+    color: var(--muted);
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    line-height: 1;
+  }
+  .category-action-btn:hover {
+    border-color: var(--sage);
+    color: var(--sage-dark);
+  }
+  .category-action-btn.delete {
+    border-color: #E6B8B8;
+    color: var(--danger);
+  }
+  .category-action-btn.delete-emoji {
+    width: auto;
+    min-width: 30px;
+    font-size: 0.95rem;
+    padding: 0 6px;
+  }
 
   .task-card {
     background: var(--white);
@@ -161,13 +269,16 @@
     padding: 14px 18px;
     margin-bottom: 8px;
     display: grid;
-    grid-template-columns: 32px 1fr auto auto auto;
+    grid-template-columns: 32px 28px 1fr auto auto auto;
     gap: 12px;
     align-items: center;
     transition: box-shadow 0.15s, border-color 0.15s;
   }
   .task-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.07); border-color: var(--sage-light); }
   .task-card.done-card { opacity: 0.55; }
+  .task-card.priority-card {
+    border-left: 4px solid #F6BF26;
+  }
 
   .checkbox {
     width: 22px;
@@ -192,7 +303,9 @@
     font-weight: 500;
     color: var(--text);
     line-height: 1.3;
+    cursor: pointer;
   }
+  .task-title:hover { color: var(--sage-dark); text-decoration: underline; }
   .task-card.done-card .task-title { text-decoration: line-through; color: var(--muted); }
   .task-notes {
     font-size: 0.78rem;
@@ -229,6 +342,50 @@
   .status-In\ Progress { background: var(--yellow); color: #7A6020; }
   .status-Done { background: var(--green); color: #3A6A3A; }
   .status-Waiting { background: var(--blue); color: #2A5A7A; }
+
+  .task-priority-btn {
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: #C6BFAF;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    transition: transform 0.12s ease, color 0.12s ease;
+  }
+  .task-priority-btn:hover { transform: scale(1.08); }
+  .task-priority-btn.active { color: #F6BF26; }
+
+  .task-actions,
+  .furn-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .task-action-btn,
+  .furn-action-btn {
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 8px;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.73rem;
+    cursor: pointer;
+  }
+
+  .task-action-btn:hover,
+  .furn-action-btn:hover {
+    border-color: var(--sage);
+    color: var(--sage-dark);
+  }
+
+  .task-action-btn.delete,
+  .furn-action-btn.delete {
+    border-color: #E6B8B8;
+    color: var(--danger);
+  }
 
   /* Furniture tab */
   .furniture-grid {
@@ -272,6 +429,18 @@
     margin-bottom: 20px;
   }
   .add-btn:hover { background: var(--sage); }
+
+  .add-btn.secondary {
+    background: var(--white);
+    color: var(--sage-dark);
+    border: 1.5px solid var(--border);
+  }
+
+  .add-btn.secondary:hover {
+    border-color: var(--sage);
+    color: var(--sage);
+    background: var(--cream);
+  }
 
   /* Modal */
   .modal-overlay {
@@ -574,6 +743,11 @@
     box-shadow: 0 2px 8px rgba(211, 47, 47, 0.25);
   }
 
+  .btn-delete.secondary {
+    margin-right: 0;
+    margin-left: auto;
+  }
+
   .btn-delete:hover,
   .btn-delete:focus {
     background: var(--danger-dark);
@@ -720,7 +894,8 @@
     header { padding: 18px 20px; }
     .tabs { padding: 16px 20px 0; }
     .main { padding: 20px; }
-    .task-card { grid-template-columns: 28px 1fr; grid-template-rows: auto auto; }
+    .task-panel { padding: 12px; }
+    .task-card { grid-template-columns: 28px 24px 1fr auto; grid-template-rows: auto auto; }
     .task-when, .task-who, .status-pill { display: none; }
   }
 </style>
@@ -729,18 +904,8 @@
 <body>
 
 <header>
-  <h1>🏠 Dani & Ken — Move to Spalding</h1>
-  <p>Est. completion: ~3–4 weeks out &nbsp;·&nbsp; Keep calm and pack one box at a time</p>
-  <div class="header-stats">
-    <div class="stat"><span id="stat-total">0</span>Total tasks</div>
-    <div class="stat"><span id="stat-done">0</span>Completed</div>
-    <div class="stat"><span id="stat-pct">0%</span>Progress</div>
-    <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
-      <div class="progress-bar-outer" style="width:200px;">
-        <div class="progress-bar-inner" id="main-progress" style="width:0%"></div>
-      </div>
-    </div>
-  </div>
+  <h1>🏠 Dani & Ken Move to Spalding</h1>
+  <p>Keep calm and pack one box at a time</p>
 </header>
 
 <div class="tabs">
@@ -754,15 +919,71 @@
 
   <!-- TASKS TAB -->
   <div id="tab-tasks">
-    <div class="filter-bar">
-      <button class="filter-btn active" onclick="filterTasks('all', this)">All</button>
-      <button class="filter-btn" onclick="filterTasks('Not Started', this)">Not Started</button>
-      <button class="filter-btn" onclick="filterTasks('In Progress', this)">In Progress</button>
-      <button class="filter-btn" onclick="filterTasks('Waiting', this)">Waiting</button>
-      <button class="filter-btn" onclick="filterTasks('Done', this)">Done</button>
-      <button class="add-btn" onclick="openAddTask()" style="margin-bottom:0; margin-left:auto;">+ Add task</button>
+    <div class="task-panel">
+      <div class="task-stats">
+        <div class="stat"><span id="stat-total">0</span>Total tasks</div>
+        <div class="stat"><span id="stat-done">0</span>Completed</div>
+        <div class="stat"><span id="stat-pct">0%</span>Progress</div>
+        <div style="margin-left:auto; display:flex; align-items:center; gap:10px; min-width:220px;">
+          <div class="progress-bar-outer" style="width:220px;">
+            <div class="progress-bar-inner" id="main-progress" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div id="tasks-container"></div>
+    <div class="task-panel">
+      <div class="filter-bar">
+        <div class="filter-group">
+          <label for="task-filter-status" class="filter-label">Status</label>
+          <select id="task-filter-status" class="filter-select" onchange="updateTaskFilters()">
+            <option value="all">All</option>
+            <option value="Not Started">Not Started</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Waiting">Waiting</option>
+            <option value="Done">Done</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="task-filter-who" class="filter-label">Person</label>
+          <select id="task-filter-who" class="filter-select" onchange="updateTaskFilters()">
+            <option value="all">All</option>
+            <option value="Dani">Dani</option>
+            <option value="Ken">Ken</option>
+            <option value="Mum">Mum</option>
+            <option value="Dad">Dad</option>
+            <option value="Caroline">Caroline</option>
+            <option value="Dani/Ken">Dani/Ken</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="task-filter-when" class="filter-label">When</label>
+          <select id="task-filter-when" class="filter-select" onchange="updateTaskFilters()">
+            <option value="all">All</option>
+            <option value="ASAP">ASAP</option>
+            <option value="2 weeks before">2 weeks before</option>
+            <option value="1 week before">1 week before</option>
+            <option value="Moving week">Moving week</option>
+            <option value="Day before">Day before</option>
+            <option value="Night before">Night before</option>
+            <option value="Moving day">Moving day</option>
+            <option value="After move">After move</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="task-filter-priority" class="filter-label">Priority</label>
+          <select id="task-filter-priority" class="filter-select" onchange="updateTaskFilters()">
+            <option value="all">All</option>
+            <option value="starred">Starred only</option>
+          </select>
+        </div>
+        <button class="add-btn secondary" id="btn-edit-sections" onclick="toggleSectionEditMode(this)" style="margin-bottom:0; margin-left:auto;">Edit sections</button>
+        <button class="add-btn secondary" onclick="openAddCategory()" style="margin-bottom:0;">+ Add section</button>
+        <button class="add-btn" onclick="openAddTask()" style="margin-bottom:0;">+ Add task</button>
+      </div>
+    </div>
+    <div class="task-panel">
+      <div id="tasks-container"></div>
+    </div>
   </div>
 
   <!-- FURNITURE TAB -->
@@ -802,7 +1023,7 @@
 <!-- ADD TASK MODAL -->
 <div class="modal-overlay" id="modal-task">
   <div class="modal">
-    <h3>Add a Task</h3>
+    <h3 id="modal-task-title">Add a Task</h3>
     <label>Category</label>
     <select id="new-cat">
       <option>Admin & Legal</option>
@@ -820,11 +1041,22 @@
     <select id="new-who">
       <option>Dani</option>
       <option>Ken</option>
+      <option>Mum</option>
+      <option>Dad</option>
+      <option>Caroline</option>
       <option>Dani/Ken</option>
-      <option>Other</option>
     </select>
     <label>When</label>
-    <input type="text" id="new-when" placeholder="e.g. ASAP, Moving day, 1 week before..." />
+    <select id="new-when">
+      <option>ASAP</option>
+      <option>2 weeks before</option>
+      <option>1 week before</option>
+      <option>Moving week</option>
+      <option>Day before</option>
+      <option>Night before</option>
+      <option>Moving day</option>
+      <option>After move</option>
+    </select>
     <label>Status</label>
     <select id="new-status">
       <option>Not Started</option>
@@ -833,8 +1065,39 @@
       <option>Done</option>
     </select>
     <div class="modal-btns">
+      <button class="btn-delete secondary hidden" id="btn-delete-task" onclick="deleteTask(editingTaskId)">Delete</button>
       <button class="btn-cancel" onclick="closeModal('modal-task')">Cancel</button>
-      <button class="btn-save" onclick="saveTask()">Add Task</button>
+      <button class="btn-save" id="btn-save-task" onclick="saveTask()">Add Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD CATEGORY MODAL -->
+<div class="modal-overlay" id="modal-category">
+  <div class="modal">
+    <h3 id="modal-category-title">Add Section</h3>
+    <label for="new-category-name">Section name</label>
+    <input type="text" id="new-category-name" placeholder="e.g. Utilities Setup, Final Checks" />
+    <label for="new-category-emoji">Emoji</label>
+    <select id="new-category-emoji">
+      <option value="📌">📌 Pin</option>
+      <option value="✅">✅ Check</option>
+      <option value="⚡">⚡ Utility</option>
+      <option value="📦">📦 Box</option>
+      <option value="🚚">🚚 Van</option>
+      <option value="🏡">🏡 Home</option>
+      <option value="🧹">🧹 Clean</option>
+      <option value="🔧">🔧 Fix</option>
+      <option value="🛒">🛒 Buy</option>
+      <option value="📞">📞 Call</option>
+      <option value="🧾">🧾 Paperwork</option>
+      <option value="💷">💷 Money</option>
+      <option value="🗂️">🗂️ Organise</option>
+      <option value="🎯">🎯 Priority</option>
+    </select>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-category')">Cancel</button>
+      <button class="btn-save" id="btn-save-category" onclick="saveCategory()">Add Section</button>
     </div>
   </div>
 </div>
@@ -842,7 +1105,7 @@
 <!-- ADD FURNITURE MODAL -->
 <div class="modal-overlay" id="modal-furn">
   <div class="modal">
-    <h3>Add Furniture / Item from Sellers</h3>
+    <h3 id="modal-furn-title">Add Furniture / Item from Sellers</h3>
     <label>Room</label>
     <input type="text" id="f-room" placeholder="e.g. Living Room, Kitchen..." />
     <label>Item Name</label>
@@ -857,8 +1120,9 @@
       <option value="yes">Yes — confirmed</option>
     </select>
     <div class="modal-btns">
+      <button class="btn-delete secondary hidden" id="btn-delete-furn" onclick="deleteFurniture(editingFurnitureIndex)">Delete</button>
       <button class="btn-cancel" onclick="closeModal('modal-furn')">Cancel</button>
-      <button class="btn-save" onclick="saveFurniture()">Add Item</button>
+      <button class="btn-save" id="btn-save-furn" onclick="saveFurniture()">Add Item</button>
     </div>
   </div>
 </div>
@@ -948,6 +1212,7 @@ const ICONS = {
   "Packing": "📦",
   "Other": "📌",
 };
+const DEFAULT_TASK_CATEGORIES = Object.keys(ICONS);
 
 const DEFAULT_TASKS = [
   {cat:"Admin & Legal",task:"Confirm completion date with solicitor",notes:"Chase if no update by end of week",who:"Dani",when:"ASAP",status:"Not Started",done:false},
@@ -1004,6 +1269,32 @@ const DEFAULT_CONTACTS = [
 ];
 
 const DEFAULT_EVENTS = [];
+const WHEN_OPTIONS = ['ASAP','2 weeks before','1 week before','Moving week','Day before','Night before','Moving day','After move'];
+
+function normalizeWhen(value) {
+  const v = String(value || '').trim().toLowerCase();
+  if (v.includes('asap')) return 'ASAP';
+  if (v.includes('2 week')) return '2 weeks before';
+  if (v.includes('1 week')) return '1 week before';
+  if (v.includes('moving day')) return 'Moving day';
+  if (v.includes('night before')) return 'Night before';
+  if (v.includes('day before')) return 'Day before';
+  if (v.includes('moving week')) return 'Moving week';
+  if (v.includes('after move') || v.includes('after moving')) return 'After move';
+  if (v.includes('before move')) return '1 week before';
+  return 'ASAP';
+}
+
+function migrateTasks(inputTasks) {
+  if (!Array.isArray(inputTasks)) return [];
+  return inputTasks.map((task, index) => ({
+    ...task,
+    id: typeof task.id === 'number' ? task.id : Date.now() + index,
+    when: normalizeWhen(task.when),
+    who: ['Dani','Ken','Mum','Dad','Caroline','Dani/Ken'].includes(task.who) ? task.who : 'Dani/Ken',
+    priority: !!task.priority
+  }));
+}
 
 // Migrate existing events to new schema
 function migrateEvents(oldEvents) {
@@ -1017,22 +1308,72 @@ function migrateEvents(oldEvents) {
 
 // State
 let tasks = JSON.parse(localStorage.getItem('move_tasks') || 'null') || DEFAULT_TASKS.map((t,i) => ({...t, id: i}));
+tasks = migrateTasks(tasks);
+let customTaskCategories = JSON.parse(localStorage.getItem('move_task_categories') || 'null') || [];
+let customTaskCategoryIcons = JSON.parse(localStorage.getItem('move_task_category_icons') || 'null') || {};
+Object.entries(customTaskCategoryIcons).forEach(([category, emoji]) => {
+  ICONS[category] = emoji;
+});
+let deletedDefaultTaskCategories = JSON.parse(localStorage.getItem('move_task_deleted_defaults') || 'null') || [];
+let collapsedTaskCategories = JSON.parse(localStorage.getItem('move_task_collapsed') || 'null') || {};
+let taskSectionOrder = JSON.parse(localStorage.getItem('move_task_section_order') || 'null') || [];
 let furniture = JSON.parse(localStorage.getItem('move_furniture') || 'null') || DEFAULT_FURNITURE;
 let contacts = JSON.parse(localStorage.getItem('move_contacts') || 'null') || DEFAULT_CONTACTS;
 let events = JSON.parse(localStorage.getItem('move_events') || 'null') || DEFAULT_EVENTS;
 events = migrateEvents(events);
-let currentFilter = 'all';
+let currentStatusFilter = 'all';
+let currentWhoFilter = 'all';
+let currentWhenFilter = 'all';
+let showStarredOnly = false;
+let isSectionEditMode = false;
+let draggingTaskSection = null;
+let editingCategoryName = null;
+let editingTaskId = null;
+let editingFurnitureIndex = null;
 
 function save() {
   localStorage.setItem('move_tasks', JSON.stringify(tasks));
+  localStorage.setItem('move_task_categories', JSON.stringify(customTaskCategories));
+  localStorage.setItem('move_task_category_icons', JSON.stringify(customTaskCategoryIcons));
+  localStorage.setItem('move_task_deleted_defaults', JSON.stringify(deletedDefaultTaskCategories));
+  localStorage.setItem('move_task_collapsed', JSON.stringify(collapsedTaskCategories));
+  localStorage.setItem('move_task_section_order', JSON.stringify(taskSectionOrder));
   localStorage.setItem('move_furniture', JSON.stringify(furniture));
   localStorage.setItem('move_contacts', JSON.stringify(contacts));
   localStorage.setItem('move_events', JSON.stringify(events));
 }
 
+function getTaskCategories() {
+  const taskCats = [...new Set(tasks.map(t => t.cat).filter(Boolean))];
+  const visibleDefaultCats = DEFAULT_TASK_CATEGORIES.filter(cat => !deletedDefaultTaskCategories.includes(cat));
+  const allKnown = [...new Set([...visibleDefaultCats, ...customTaskCategories, ...taskCats])];
+  taskSectionOrder = taskSectionOrder.filter(cat => allKnown.includes(cat));
+  allKnown.forEach(cat => {
+    if (!taskSectionOrder.includes(cat)) {
+      taskSectionOrder.push(cat);
+    }
+  });
+  return [...taskSectionOrder];
+}
+
+function renderTaskCategoryOptions(selectedCategory = '') {
+  const select = document.getElementById('new-cat');
+  const categories = getTaskCategories();
+  if (selectedCategory && !categories.includes(selectedCategory)) {
+    categories.push(selectedCategory);
+  }
+  select.innerHTML = categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+  select.value = selectedCategory && categories.includes(selectedCategory)
+    ? selectedCategory
+    : categories[0];
+}
+
 function showTab(t) {
   ['tasks','furniture','contacts','calendar'].forEach(x => {
-    document.getElementById('tab-'+x).classList.toggle('hidden', x !== t);
+    const panel = document.getElementById('tab-'+x);
+    const isActive = x === t;
+    panel.classList.toggle('hidden', !isActive);
+    panel.style.display = isActive ? '' : 'none';
   });
   document.querySelectorAll('.tab').forEach((btn, i) => {
     btn.classList.toggle('active', ['tasks','furniture','contacts','calendar'][i] === t);
@@ -1044,10 +1385,18 @@ function showTab(t) {
   }
 }
 
-function filterTasks(f, btn) {
-  currentFilter = f;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+function updateTaskFilters() {
+  currentStatusFilter = document.getElementById('task-filter-status').value;
+  currentWhoFilter = document.getElementById('task-filter-who').value;
+  currentWhenFilter = document.getElementById('task-filter-when').value;
+  showStarredOnly = document.getElementById('task-filter-priority').value === 'starred';
+  renderTasks();
+}
+
+function toggleSectionEditMode(button) {
+  isSectionEditMode = !isSectionEditMode;
+  button.classList.toggle('active', isSectionEditMode);
+  button.textContent = isSectionEditMode ? 'Done editing' : 'Edit sections';
   renderTasks();
 }
 
@@ -1074,38 +1423,94 @@ function cycleStatus(id) {
   updateStats();
 }
 
+function togglePriority(id) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  t.priority = !t.priority;
+  save();
+  renderTasks();
+}
+
 function renderTasks() {
   const container = document.getElementById('tasks-container');
-  const filtered = currentFilter === 'all' ? tasks : tasks.filter(t => t.status === currentFilter);
+  const filtered = tasks.filter(t => {
+    const statusMatch = currentStatusFilter === 'all' || t.status === currentStatusFilter;
+    const whoMatch = currentWhoFilter === 'all' || t.who === currentWhoFilter;
+    const whenMatch = currentWhenFilter === 'all' || t.when === currentWhenFilter;
+    const starMatch = !showStarredOnly || t.priority;
+    return statusMatch && whoMatch && whenMatch && starMatch;
+  });
 
-  const categories = [...new Set(tasks.map(t => t.cat))];
+  const categories = getTaskCategories();
   container.innerHTML = '';
 
   categories.forEach(cat => {
     const catTasks = filtered.filter(t => t.cat === cat);
-    if (!catTasks.length) return;
+    const whenRank = new Map(WHEN_OPTIONS.map((label, index) => [label, index]));
+    const orderedCatTasks = [...catTasks].sort((a, b) => {
+      if (a.done !== b.done) {
+        return Number(a.done) - Number(b.done);
+      }
+      if (!a.done && !b.done) {
+        const rankA = whenRank.get(normalizeWhen(a.when));
+        const rankB = whenRank.get(normalizeWhen(b.when));
+        return (rankA ?? Number.MAX_SAFE_INTEGER) - (rankB ?? Number.MAX_SAFE_INTEGER);
+      }
+      return 0;
+    });
+    const hasAnyTasksInCategory = tasks.some(t => t.cat === cat);
+    const isCustomEmptySection = customTaskCategories.includes(cat) && !hasAnyTasksInCategory;
+    if (!catTasks.length && !isCustomEmptySection) return;
 
     const sec = document.createElement('div');
     sec.className = 'category-section';
+    sec.dataset.category = cat;
+    if (isSectionEditMode) {
+      sec.classList.add('draggable-section');
+      sec.draggable = true;
+      sec.addEventListener('dragstart', onTaskSectionDragStart);
+      sec.addEventListener('dragover', onTaskSectionDragOver);
+      sec.addEventListener('dragleave', onTaskSectionDragLeave);
+      sec.addEventListener('drop', onTaskSectionDrop);
+      sec.addEventListener('dragend', onTaskSectionDragEnd);
+    }
 
     const doneCount = catTasks.filter(t => t.done).length;
+    const isCollapsed = !!collapsedTaskCategories[cat];
     sec.innerHTML = `
       <div class="category-header">
+        <button class="category-toggle" onclick='toggleTaskCategoryCollapse(${JSON.stringify(cat)})' title="Toggle section">${isCollapsed ? '▸' : '▾'}</button>
         <span style="font-size:1.2rem">${ICONS[cat]||'📌'}</span>
         <span class="category-label">${cat}</span>
         <span class="category-count">${doneCount}/${catTasks.length} done</span>
+        ${isSectionEditMode ? `<div class="category-actions"><button class="category-action-btn" onclick='openEditCategory(${JSON.stringify(cat)})' title="Edit section">✏️</button><button class="category-action-btn delete delete-emoji" onclick='deleteTaskSection(${JSON.stringify(cat)})' title="Delete section">🗑️</button></div>` : ''}
       </div>
     `;
 
-    catTasks.forEach(t => {
+    if (isCollapsed) {
+      container.appendChild(sec);
+      return;
+    }
+
+    if (!catTasks.length && isCustomEmptySection) {
+      const empty = document.createElement('div');
+      empty.className = 'category-empty';
+      empty.textContent = 'No tasks yet. Use + Add task to create one in this section.';
+      sec.appendChild(empty);
+      container.appendChild(sec);
+      return;
+    }
+
+    orderedCatTasks.forEach(t => {
       const card = document.createElement('div');
-      card.className = 'task-card' + (t.done ? ' done-card' : '');
+      card.className = 'task-card' + (t.done ? ' done-card' : '') + (t.priority ? ' priority-card' : '');
       card.innerHTML = `
         <div class="checkbox ${t.done ? 'checked' : ''}" onclick="toggleDone(${t.id})">
           ${t.done ? '✓' : ''}
         </div>
+        <button class="task-priority-btn ${t.priority ? 'active' : ''}" onclick="togglePriority(${t.id})" title="Toggle priority">★</button>
         <div>
-          <div class="task-title">${t.task}</div>
+          <div class="task-title" onclick="openEditTask(${t.id})" title="Edit task">${t.task}</div>
           ${t.notes ? `<div class="task-notes">${t.notes}</div>` : ''}
         </div>
         <div class="task-when">${t.when}</div>
@@ -1117,6 +1522,90 @@ function renderTasks() {
 
     container.appendChild(sec);
   });
+}
+
+function toggleTaskCategoryCollapse(category) {
+  collapsedTaskCategories[category] = !collapsedTaskCategories[category];
+  save();
+  renderTasks();
+}
+
+function onTaskSectionDragStart(event) {
+  if (!isSectionEditMode) return;
+  draggingTaskSection = event.currentTarget.dataset.category;
+  event.dataTransfer.effectAllowed = 'move';
+  event.currentTarget.classList.add('dragging');
+}
+
+function onTaskSectionDragOver(event) {
+  if (!isSectionEditMode) return;
+  event.preventDefault();
+  event.currentTarget.classList.add('drag-over');
+}
+
+function onTaskSectionDragLeave(event) {
+  event.currentTarget.classList.remove('drag-over');
+}
+
+function onTaskSectionDrop(event) {
+  if (!isSectionEditMode) return;
+  event.preventDefault();
+  const targetCategory = event.currentTarget.dataset.category;
+  event.currentTarget.classList.remove('drag-over');
+  if (!draggingTaskSection || !targetCategory || draggingTaskSection === targetCategory) return;
+
+  const sourceIndex = taskSectionOrder.indexOf(draggingTaskSection);
+  const targetIndex = taskSectionOrder.indexOf(targetCategory);
+  if (sourceIndex < 0 || targetIndex < 0) return;
+
+  const [moved] = taskSectionOrder.splice(sourceIndex, 1);
+  const adjustedTargetIndex = sourceIndex < targetIndex ? targetIndex - 1 : targetIndex;
+  const dropAfter = event.offsetY > event.currentTarget.offsetHeight / 2;
+  taskSectionOrder.splice(dropAfter ? adjustedTargetIndex + 1 : adjustedTargetIndex, 0, moved);
+
+  save();
+  renderTasks();
+}
+
+function onTaskSectionDragEnd(event) {
+  draggingTaskSection = null;
+  document.querySelectorAll('.category-section').forEach(section => {
+    section.classList.remove('dragging', 'drag-over');
+  });
+  event.currentTarget.classList.remove('dragging');
+}
+
+function deleteTaskSection(category) {
+  const categories = getTaskCategories();
+  if (categories.length <= 1) {
+    alert('You need at least one section.');
+    return;
+  }
+
+  const hasTasks = tasks.some(task => task.cat === category);
+  const fallback = categories.find(cat => cat !== category) || 'Other';
+  const msg = hasTasks
+    ? `Delete section "${category}"? Tasks in it will be moved to "${fallback}".`
+    : `Delete section "${category}"?`;
+  if (!confirm(msg)) return;
+
+  tasks = tasks.map(task => task.cat === category ? { ...task, cat: fallback } : task);
+  customTaskCategories = customTaskCategories.filter(cat => cat !== category);
+  if (DEFAULT_TASK_CATEGORIES.includes(category)) {
+    if (!deletedDefaultTaskCategories.includes(category)) {
+      deletedDefaultTaskCategories.push(category);
+    }
+  } else {
+    deletedDefaultTaskCategories = deletedDefaultTaskCategories.filter(cat => cat !== category);
+  }
+  delete customTaskCategoryIcons[category];
+  delete ICONS[category];
+  delete collapsedTaskCategories[category];
+  taskSectionOrder = taskSectionOrder.filter(cat => cat !== category);
+
+  save();
+  renderTaskCategoryOptions();
+  renderTasks();
 }
 
 function updateStats() {
@@ -1145,6 +1634,10 @@ function renderFurniture() {
         <span class="furn-confirm ${f.confirmed === 'yes' ? 'confirmed-pill' : 'unconfirmed-pill'}">
           ${f.confirmed === 'yes' ? '✓ Confirmed' : '⚠ Needs confirming'}
         </span>
+      </div>
+      <div class="furn-actions" style="margin-top:10px;">
+        <button class="furn-action-btn" onclick="openEditFurniture(${i})">Edit</button>
+        <button class="furn-action-btn delete" onclick="deleteFurniture(${i})">Delete</button>
       </div>
     </div>
   `).join('');
@@ -1178,8 +1671,155 @@ function openEditContact(i) {
   document.getElementById('modal-contact').classList.add('open');
 }
 
-function openAddTask() { document.getElementById('modal-task').classList.add('open'); }
-function openAddFurniture() { document.getElementById('modal-furn').classList.add('open'); }
+function openAddTask() {
+  editingTaskId = null;
+  document.getElementById('modal-task-title').textContent = 'Add a Task';
+  document.getElementById('btn-save-task').textContent = 'Add Task';
+  document.getElementById('btn-delete-task').classList.add('hidden');
+  renderTaskCategoryOptions('Admin & Legal');
+  document.getElementById('new-task').value = '';
+  document.getElementById('new-notes').value = '';
+  document.getElementById('new-who').value = 'Dani';
+  document.getElementById('new-when').value = 'ASAP';
+  document.getElementById('new-status').value = 'Not Started';
+  document.getElementById('modal-task').classList.add('open');
+}
+
+function openAddCategory() {
+  editingCategoryName = null;
+  document.getElementById('modal-category-title').textContent = 'Add Section';
+  document.getElementById('btn-save-category').textContent = 'Add Section';
+  document.getElementById('new-category-name').value = '';
+  document.getElementById('new-category-emoji').value = '📌';
+  document.getElementById('modal-category').classList.add('open');
+}
+
+function openEditCategory(category) {
+  editingCategoryName = category;
+  document.getElementById('modal-category-title').textContent = 'Edit Section';
+  document.getElementById('btn-save-category').textContent = 'Save Section';
+  document.getElementById('new-category-name').value = category;
+  document.getElementById('new-category-emoji').value = ICONS[category] || '📌';
+  document.getElementById('modal-category').classList.add('open');
+}
+
+function saveCategory() {
+  const categoryInput = document.getElementById('new-category-name');
+  const emojiInput = document.getElementById('new-category-emoji');
+  const name = categoryInput.value.trim();
+  const emoji = emojiInput.value || '📌';
+  if (!name) return;
+  const currentNormalized = (editingCategoryName || '').toLowerCase();
+  const exists = getTaskCategories().some(cat => cat.toLowerCase() === name.toLowerCase() && cat.toLowerCase() !== currentNormalized);
+  if (exists) {
+    closeModal('modal-category');
+    return;
+  }
+
+  if (editingCategoryName) {
+    const oldName = editingCategoryName;
+    tasks = tasks.map(task => task.cat === oldName ? { ...task, cat: name } : task);
+    if (customTaskCategories.includes(oldName)) {
+      customTaskCategories = customTaskCategories.map(cat => cat === oldName ? name : cat);
+    }
+    if (collapsedTaskCategories[oldName] !== undefined) {
+      collapsedTaskCategories[name] = collapsedTaskCategories[oldName];
+      delete collapsedTaskCategories[oldName];
+    }
+    taskSectionOrder = taskSectionOrder.map(cat => cat === oldName ? name : cat);
+
+    if (DEFAULT_TASK_CATEGORIES.includes(oldName) && !DEFAULT_TASK_CATEGORIES.includes(name)) {
+      if (!customTaskCategories.includes(name)) customTaskCategories.push(name);
+      if (!deletedDefaultTaskCategories.includes(oldName)) deletedDefaultTaskCategories.push(oldName);
+    }
+    if (!DEFAULT_TASK_CATEGORIES.includes(oldName) && DEFAULT_TASK_CATEGORIES.includes(name)) {
+      customTaskCategories = customTaskCategories.filter(cat => cat !== name);
+      deletedDefaultTaskCategories = deletedDefaultTaskCategories.filter(cat => cat !== name);
+    }
+    if (deletedDefaultTaskCategories.includes(oldName) && oldName !== name) {
+      deletedDefaultTaskCategories = deletedDefaultTaskCategories.filter(cat => cat !== oldName);
+    }
+
+    delete customTaskCategoryIcons[oldName];
+    delete ICONS[oldName];
+    customTaskCategoryIcons[name] = emoji;
+    ICONS[name] = emoji;
+  } else {
+    customTaskCategories.push(name);
+    customTaskCategoryIcons[name] = emoji;
+    ICONS[name] = emoji;
+  }
+
+  editingCategoryName = null;
+  save();
+  renderTaskCategoryOptions(name);
+  renderTasks();
+  closeModal('modal-category');
+}
+
+function openEditTask(id) {
+  const t = tasks.find(task => task.id === id);
+  if (!t) return;
+  editingTaskId = id;
+  document.getElementById('modal-task-title').textContent = 'Edit Task';
+  document.getElementById('btn-save-task').textContent = 'Save Changes';
+  document.getElementById('btn-delete-task').classList.remove('hidden');
+  renderTaskCategoryOptions(t.cat);
+  document.getElementById('new-task').value = t.task;
+  document.getElementById('new-notes').value = t.notes || '';
+  document.getElementById('new-who').value = t.who;
+  document.getElementById('new-when').value = normalizeWhen(t.when);
+  document.getElementById('new-status').value = t.status;
+  document.getElementById('modal-task').classList.add('open');
+}
+
+function deleteTask(id) {
+  if (!confirm('Delete this task?')) return;
+  tasks = tasks.filter(task => task.id !== id);
+  if (editingTaskId === id) {
+    editingTaskId = null;
+    closeModal('modal-task');
+  }
+  save();
+  renderTasks();
+  updateStats();
+}
+
+function openAddFurniture() {
+  editingFurnitureIndex = null;
+  document.getElementById('modal-furn-title').textContent = 'Add Furniture / Item from Sellers';
+  document.getElementById('btn-save-furn').textContent = 'Add Item';
+  document.getElementById('btn-delete-furn').classList.add('hidden');
+  ['f-room','f-name','f-notes','f-price'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-confirmed').value = 'no';
+  document.getElementById('modal-furn').classList.add('open');
+}
+
+function openEditFurniture(index) {
+  const item = furniture[index];
+  if (!item) return;
+  editingFurnitureIndex = index;
+  document.getElementById('modal-furn-title').textContent = 'Edit Furniture / Item';
+  document.getElementById('btn-save-furn').textContent = 'Save Changes';
+  document.getElementById('btn-delete-furn').classList.remove('hidden');
+  document.getElementById('f-room').value = item.room || '';
+  document.getElementById('f-name').value = item.name || '';
+  document.getElementById('f-notes').value = item.notes || '';
+  document.getElementById('f-price').value = item.price || '';
+  document.getElementById('f-confirmed').value = item.confirmed || 'no';
+  document.getElementById('modal-furn').classList.add('open');
+}
+
+function deleteFurniture(index) {
+  if (!confirm('Delete this furniture item?')) return;
+  furniture.splice(index, 1);
+  if (editingFurnitureIndex === index) {
+    editingFurnitureIndex = null;
+    closeModal('modal-furn');
+  }
+  save();
+  renderFurniture();
+}
 function openAddContact() {
   editingContactIndex = null;
   ['c-role','c-name','c-phone','c-email','c-notes'].forEach(id => document.getElementById(id).value = '');
@@ -1190,24 +1830,29 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 
 function saveTask() {
   const t = {
-    id: Date.now(),
+    id: editingTaskId || Date.now(),
     cat: document.getElementById('new-cat').value,
     task: document.getElementById('new-task').value,
     notes: document.getElementById('new-notes').value,
     who: document.getElementById('new-who').value,
-    when: document.getElementById('new-when').value,
+    when: normalizeWhen(document.getElementById('new-when').value),
     status: document.getElementById('new-status').value,
-    done: document.getElementById('new-status').value === 'Done'
+    done: document.getElementById('new-status').value === 'Done',
+    priority: editingTaskId ? !!tasks.find(task => task.id === editingTaskId)?.priority : false
   };
   if (!t.task.trim()) return;
-  tasks.push(t);
+  if (editingTaskId) {
+    const index = tasks.findIndex(task => task.id === editingTaskId);
+    if (index === -1) return;
+    tasks[index] = t;
+    editingTaskId = null;
+  } else {
+    tasks.push(t);
+  }
   save();
   renderTasks();
   updateStats();
   closeModal('modal-task');
-  document.getElementById('new-task').value = '';
-  document.getElementById('new-notes').value = '';
-  document.getElementById('new-when').value = '';
 }
 
 function saveFurniture() {
@@ -1219,11 +1864,15 @@ function saveFurniture() {
     confirmed: document.getElementById('f-confirmed').value,
   };
   if (!f.name.trim()) return;
-  furniture.push(f);
+  if (editingFurnitureIndex !== null) {
+    furniture[editingFurnitureIndex] = f;
+    editingFurnitureIndex = null;
+  } else {
+    furniture.push(f);
+  }
   save();
   renderFurniture();
   closeModal('modal-furn');
-  ['f-room','f-name','f-notes','f-price'].forEach(id => document.getElementById(id).value = '');
 }
 
 function saveContact() {
@@ -1656,6 +2305,8 @@ renderTasks();
 renderFurniture();
 renderContacts();
 updateStats();
+showTab('tasks');
+save();
 </script>
 </body>
 </html>
