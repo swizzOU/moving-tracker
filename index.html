@@ -904,10 +904,23 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
 
 let editingEventId = null;
 
+function toggleEndDate() {
+  const endDateInput = document.getElementById('e-enddate');
+  endDateInput.classList.toggle('hidden', !document.getElementById('e-has-enddate').checked);
+}
+
 function openAddEvent() {
   editingEventId = null;
-  ['e-name','e-date','e-time','e-people','e-notes'].forEach(id => document.getElementById(id).value = '');
+  ['e-name','e-date','e-enddate','e-time','e-notes','e-color'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el.type === 'color') el.value = '#6B8F66';
+    else el.value = '';
+  });
+  document.getElementById('e-has-enddate').checked = false;
+  document.getElementById('e-enddate').classList.add('hidden');
   document.getElementById('e-category').value = 'Other';
+  document.querySelectorAll('#e-people-select input').forEach(cb => cb.checked = false);
+  document.getElementById('btn-delete-event').classList.add('hidden');
   document.getElementById('modal-event-title').textContent = 'Add Event';
   document.getElementById('modal-event').classList.add('open');
 }
@@ -918,10 +931,17 @@ function openEditEvent(eventId) {
   editingEventId = eventId;
   document.getElementById('e-name').value = event.name;
   document.getElementById('e-date').value = event.date;
+  document.getElementById('e-enddate').value = event.endDate || '';
+  document.getElementById('e-has-enddate').checked = !!event.endDate;
+  document.getElementById('e-enddate').classList.toggle('hidden', !event.endDate);
   document.getElementById('e-time').value = event.time || '';
-  document.getElementById('e-people').value = event.people.join(', ');
+  document.getElementById('e-color').value = event.color || '#6B8F66';
   document.getElementById('e-notes').value = event.notes || '';
   document.getElementById('e-category').value = event.category;
+  document.querySelectorAll('#e-people-select input').forEach(cb => {
+    cb.checked = event.people.includes(cb.value);
+  });
+  document.getElementById('btn-delete-event').classList.remove('hidden');
   document.getElementById('modal-event-title').textContent = 'Edit Event';
   document.getElementById('modal-event').classList.add('open');
 }
