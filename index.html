@@ -726,6 +726,19 @@
     line-height: 1.35;
   }
 
+  body.edit-locked .add-btn,
+  body.edit-locked .btn-save,
+  body.edit-locked .btn-delete,
+  body.edit-locked .furn-action-btn,
+  body.edit-locked .contact-edit-btn,
+  body.edit-locked .task-priority-btn,
+  body.edit-locked .category-action-btn,
+  body.edit-locked .checkbox,
+  body.edit-locked .status-pill,
+  body.edit-locked .task-title {
+    opacity: 0.55;
+  }
+
   .day-summary-date {
     font-size: 0.9rem;
     color: var(--muted);
@@ -1381,11 +1394,9 @@
       <p>Keep calm and pack one box at a time</p>
     </div>
     <div class="sync-controls">
-      <span id="sync-status-pill" class="sync-pill">Cloud: connecting...</span>
       <span id="sync-user-pill" class="sync-pill hidden"></span>
       <button id="sync-signin-btn" class="sync-btn hidden" onclick="signInWithGoogle()">Sign in</button>
       <button id="sync-signout-btn" class="sync-btn hidden" onclick="signOutGoogle()">Sign out</button>
-      <button class="sync-btn" onclick="openSyncSettings()">Sync settings</button>
     </div>
   </div>
 </header>
@@ -1797,21 +1808,6 @@
   </div>
 </div>
 
-<!-- SYNC SETTINGS MODAL -->
-<div class="modal-overlay" id="modal-sync">
-  <div class="modal">
-    <h3>Cloud Sync Settings</h3>
-    <div class="sync-help">
-      <b>Setup:</b> Cloud sync is always on and shared through one fixed family document. Access is enforced server-side by your Firebase Firestore Rules.
-    </div>
-    <div class="sync-note" id="sync-settings-note"></div>
-    <div class="modal-btns">
-      <button class="btn-cancel" onclick="closeModal('modal-sync')">Cancel</button>
-      <button class="btn-save" onclick="saveSyncSettings()">Refresh sync</button>
-    </div>
-  </div>
-</div>
-
 <script>
 const ICONS = {
   "Admin & Legal": "📋",
@@ -2050,20 +2046,6 @@ function persistLocalState() {
   localStorage.setItem(STORAGE_KEYS.budgetCategories, JSON.stringify(budgetCategories));
 }
 
-function updateSyncStatusPill(message, warning = false) {
-  const pill = document.getElementById('sync-status-pill');
-  if (!pill) return;
-  pill.textContent = message;
-  pill.classList.toggle('warning', warning);
-}
-
-function syncStatusText() {
-  if (syncRuntime.connecting) return 'Cloud: connecting...';
-  if (!syncRuntime.connected) return 'Cloud: unavailable';
-  if (!syncRuntime.currentUser) return 'Cloud: sign in needed';
-  return syncRuntime.canEdit ? 'Cloud: live edit' : 'Cloud: read-only';
-}
-
 function refreshAuthControls() {
   const userPill = document.getElementById('sync-user-pill');
   const signInBtn = document.getElementById('sync-signin-btn');
@@ -2083,10 +2065,26 @@ function refreshAuthControls() {
   }
 }
 
+function canMutate() {
+  return !!(syncRuntime.connected && syncRuntime.currentUser && syncRuntime.canEdit);
+}
+
+function applyActionLockToInteractiveElements() {
+  const locked = !canMutate();
+  document.body.classList.toggle('edit-locked', locked);
+
+  const controls = document.querySelectorAll(
+    'button.add-btn, button.btn-save, button.btn-delete, button.furn-action-btn, button.contact-edit-btn, button.task-priority-btn, button.category-action-btn'
+  );
+
+  controls.forEach((el) => {
+    el.setAttribute('aria-disabled', locked ? 'true' : 'false');
+  });
+}
+
 function refreshSyncStatus() {
-  const warning = !syncRuntime.connected || !syncRuntime.currentUser || !syncRuntime.canEdit;
-  updateSyncStatusPill(syncStatusText(), warning);
   refreshAuthControls();
+  applyActionLockToInteractiveElements();
 }
 
 function applyPayload(payload) {
@@ -2193,22 +2191,7 @@ async function pushCloudState() {
     syncRuntime.lastCloudPayloadHash = payloadHash;
   } catch (error) {
     console.error('Cloud push failed', error);
-    updateSyncStatusPill('Cloud: save failed', true);
   }
-}
-
-function openSyncSettings() {
-  const note = document.getElementById('sync-settings-note');
-  const missingConfig = !FIREBASE_PUBLIC_CONFIG.apiKey || !FIREBASE_PUBLIC_CONFIG.authDomain || !FIREBASE_PUBLIC_CONFIG.projectId || !FIREBASE_PUBLIC_CONFIG.appId;
-  if (missingConfig) {
-    note.textContent = 'Firebase config is missing in code. Fill FIREBASE_PUBLIC_CONFIG in index.html.';
-  } else if (!syncRuntime.currentUser) {
-    note.textContent = 'You are not signed in. Use the Sign in button in the header.';
-  } else {
-    note.textContent = `Signed in as ${syncRuntime.currentUser.email || syncRuntime.currentUser.displayName || 'Google user'}.`;
-  }
-
-  document.getElementById('modal-sync').classList.add('open');
 }
 
 async function configureCloudSync() {
@@ -2218,7 +2201,6 @@ async function configureCloudSync() {
   const isValid = cfg.apiKey && cfg.authDomain && cfg.projectId && cfg.appId;
   if (!isValid) {
     syncRuntime.canEdit = false;
-    updateSyncStatusPill('Cloud: setup needed', true);
     refreshAuthControls();
     return;
   }
@@ -2230,6 +2212,7 @@ async function configureCloudSync() {
     const appName = `move-tracker-${Date.now()}`;
     syncRuntime.app = firebase.initializeApp(cfg, appName);
     syncRuntime.auth = firebase.auth(syncRuntime.app);
+    await syncRuntime.auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
     syncRuntime.db = firebase.firestore(syncRuntime.app);
     syncRuntime.docRef = syncRuntime.db.collection('move_tracker_households').doc(SHARED_FAMILY_DOC_ID);
     syncRuntime.connected = true;
@@ -2272,11 +2255,6 @@ async function configureCloudSync() {
       }, (error) => {
         console.error('Cloud snapshot error', error);
         syncRuntime.canEdit = false;
-        if (error && error.code === 'permission-denied') {
-          updateSyncStatusPill('Cloud: permission denied', true);
-        } else {
-          updateSyncStatusPill('Cloud: unavailable', true);
-        }
         refreshAuthControls();
       });
 
@@ -2289,7 +2267,6 @@ async function configureCloudSync() {
     syncRuntime.connecting = false;
     syncRuntime.currentUser = null;
     syncRuntime.canEdit = false;
-    updateSyncStatusPill('Cloud: setup failed', true);
     refreshAuthControls();
   }
 }
@@ -2318,14 +2295,6 @@ async function signOutGoogle() {
     await syncRuntime.auth.signOut();
   } catch (error) {
     console.error('Sign out failed', error);
-  }
-}
-
-async function saveSyncSettings() {
-  closeModal('modal-sync');
-  await configureCloudSync();
-  if (syncRuntime.currentUser) {
-    await pushCloudState();
   }
 }
 
@@ -2448,9 +2417,12 @@ function renderBudget() {
       </div>
     `;
   }).join('');
+
+  applyActionLockToInteractiveElements();
 }
 
 function openAddBudget() {
+  if (!ensureCanEdit()) return;
   editingBudgetId = null;
   document.getElementById('modal-budget-title').textContent = 'Add Expense';
   document.getElementById('btn-save-budget').textContent = 'Add Expense';
@@ -2465,6 +2437,7 @@ function openAddBudget() {
 }
 
 function openEditBudget(entryId) {
+  if (!ensureCanEdit()) return;
   const entry = budgetEntries.find((budgetEntry) => budgetEntry.id === entryId);
   if (!entry) return;
   editingBudgetId = entryId;
@@ -2643,6 +2616,7 @@ function updateTaskFilters() {
 }
 
 function toggleSectionEditMode(button) {
+  if (!ensureCanEdit()) return;
   isSectionEditMode = !isSectionEditMode;
   button.classList.toggle('active', isSectionEditMode);
   button.textContent = isSectionEditMode ? 'Done editing' : 'Edit sections';
@@ -2774,10 +2748,11 @@ function renderTasks() {
 
     container.appendChild(sec);
   });
+
+  applyActionLockToInteractiveElements();
 }
 
 function toggleTaskCategoryCollapse(category) {
-  if (!ensureCanEdit()) return;
   collapsedTaskCategories[category] = !collapsedTaskCategories[category];
   save();
   renderTasks();
@@ -2896,6 +2871,8 @@ function renderFurniture() {
       </div>
     </div>
   `).join('');
+
+  applyActionLockToInteractiveElements();
 }
 
 let editingContactIndex = null;
@@ -2912,9 +2889,12 @@ function renderContacts() {
       <button class="contact-edit-btn" onclick="openEditContact(${i})">✏️ Edit</button>
     </div>
   `).join('');
+
+  applyActionLockToInteractiveElements();
 }
 
 function openEditContact(i) {
+  if (!ensureCanEdit()) return;
   editingContactIndex = i;
   const c = contacts[i];
   document.getElementById('c-role').value = c.role || '';
@@ -2927,6 +2907,7 @@ function openEditContact(i) {
 }
 
 function openAddTask() {
+  if (!ensureCanEdit()) return;
   editingTaskId = null;
   document.getElementById('modal-task-title').textContent = 'Add a Task';
   document.getElementById('btn-save-task').textContent = 'Add Task';
@@ -2941,6 +2922,7 @@ function openAddTask() {
 }
 
 function openAddCategory() {
+  if (!ensureCanEdit()) return;
   editingCategoryName = null;
   document.getElementById('modal-category-title').textContent = 'Add Section';
   document.getElementById('btn-save-category').textContent = 'Add Section';
@@ -2950,6 +2932,7 @@ function openAddCategory() {
 }
 
 function openEditCategory(category) {
+  if (!ensureCanEdit()) return;
   editingCategoryName = category;
   document.getElementById('modal-category-title').textContent = 'Edit Section';
   document.getElementById('btn-save-category').textContent = 'Save Section';
@@ -3014,6 +2997,7 @@ function saveCategory() {
 }
 
 function openEditTask(id) {
+  if (!ensureCanEdit()) return;
   const t = tasks.find(task => task.id === id);
   if (!t) return;
   editingTaskId = id;
@@ -3043,6 +3027,7 @@ function deleteTask(id) {
 }
 
 function openAddFurniture() {
+  if (!ensureCanEdit()) return;
   editingFurnitureIndex = null;
   document.getElementById('modal-furn-title').textContent = 'Add Furniture / Item from Sellers';
   document.getElementById('btn-save-furn').textContent = 'Add Item';
@@ -3053,6 +3038,7 @@ function openAddFurniture() {
 }
 
 function openEditFurniture(index) {
+  if (!ensureCanEdit()) return;
   const item = furniture[index];
   if (!item) return;
   editingFurnitureIndex = index;
@@ -3079,6 +3065,7 @@ function deleteFurniture(index) {
   renderFurniture();
 }
 function openAddContact() {
+  if (!ensureCanEdit()) return;
   editingContactIndex = null;
   ['c-role','c-name','c-phone','c-email','c-notes'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('modal-contact-title').textContent = 'Add Contact';
@@ -3268,6 +3255,7 @@ function resetEventForm(defaultDate = '') {
 }
 
 function openAddEvent() {
+  if (!ensureCanEdit()) return;
   resetEventForm('');
   document.getElementById('modal-event').classList.add('open');
 }
@@ -3328,6 +3316,7 @@ function openDaySummary(dateStr) {
 }
 
 function openAddEventFromSummary() {
+  if (!ensureCanEdit()) return;
   closeModal('modal-day-summary');
   resetEventForm(selectedSummaryDate || '');
   document.getElementById('modal-event').classList.add('open');
@@ -3397,6 +3386,7 @@ function deleteEventFromView() {
 }
 
 function openEditEvent(eventId) {
+  if (!ensureCanEdit()) return;
   const event = events.find(e => e.id === eventId);
   if (!event) return;
   closeModal('modal-event-view');
