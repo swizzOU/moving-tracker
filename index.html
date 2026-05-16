@@ -520,6 +520,13 @@
     font-style: italic;
   }
 
+  .task-mobile-meta {
+    display: none;
+    font-size: 0.74rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
   .task-when {
     font-size: 0.78rem;
     color: var(--muted);
@@ -734,8 +741,7 @@
   body.edit-locked .task-priority-btn,
   body.edit-locked .category-action-btn,
   body.edit-locked .checkbox,
-  body.edit-locked .status-pill,
-  body.edit-locked .task-title {
+  body.edit-locked .status-pill {
     opacity: 0.55;
   }
 
@@ -1222,6 +1228,7 @@
     .task-when,
     .task-who,
     .status-pill { display: none; }
+    .task-mobile-meta { display: block; }
     .inline-row { flex-direction: column; align-items: stretch; }
     .modal {
       width: min(460px, calc(100vw - 20px));
@@ -1584,6 +1591,41 @@
       <button class="btn-delete secondary" onclick="deleteEventFromView()">Delete</button>
       <button class="btn-cancel" onclick="closeModal('modal-event-view')">Close</button>
       <button class="btn-save" onclick="openEditEventFromView()">Edit</button>
+    </div>
+  </div>
+</div>
+
+<!-- TASK VIEW MODAL -->
+<div class="modal-overlay" id="modal-task-view">
+  <div class="modal">
+    <h3>Task Details</h3>
+    <div class="event-view-title" id="task-view-title"></div>
+    <div class="event-view-list">
+      <div class="event-view-item">
+        <div class="event-view-label">Category</div>
+        <div class="event-view-value" id="task-view-category"></div>
+      </div>
+      <div class="event-view-item">
+        <div class="event-view-label">Status</div>
+        <div class="event-view-value" id="task-view-status"></div>
+      </div>
+      <div class="event-view-item">
+        <div class="event-view-label">Person</div>
+        <div class="event-view-value" id="task-view-who"></div>
+      </div>
+      <div class="event-view-item">
+        <div class="event-view-label">When</div>
+        <div class="event-view-value" id="task-view-when"></div>
+      </div>
+      <div class="event-view-item" id="task-view-notes-row">
+        <div class="event-view-label">Notes</div>
+        <div class="event-view-value" id="task-view-notes"></div>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-delete secondary" onclick="deleteTaskFromView()">Delete</button>
+      <button class="btn-cancel" onclick="closeModal('modal-task-view')">Close</button>
+      <button class="btn-save" onclick="openEditTaskFromView()">Edit</button>
     </div>
   </div>
 </div>
@@ -2011,6 +2053,7 @@ let isSectionEditMode = false;
 let draggingTaskSection = null;
 let editingCategoryName = null;
 let editingTaskId = null;
+let viewingTaskId = null;
 let editingFurnitureIndex = null;
 let editingBudgetId = null;
 let currentBudgetCategoryFilter = 'all';
@@ -2736,8 +2779,9 @@ function renderTasks() {
         </div>
         <button class="task-priority-btn ${t.priority ? 'active' : ''}" onclick="togglePriority(${t.id})" title="Toggle priority">★</button>
         <div>
-          <div class="task-title" onclick="openEditTask(${t.id})" title="Edit task">${t.task}</div>
+          <div class="task-title" onclick="openViewTask(${t.id})" title="View task">${t.task}</div>
           ${t.notes ? `<div class="task-notes">${t.notes}</div>` : ''}
+          <div class="task-mobile-meta">${t.who} | ${t.when}</div>
         </div>
         <div class="task-when">${t.when}</div>
         <div class="task-who">${t.who}</div>
@@ -3013,6 +3057,39 @@ function openEditTask(id) {
   document.getElementById('modal-task').classList.add('open');
 }
 
+function openViewTask(id) {
+  const t = tasks.find(task => task.id === id);
+  if (!t) return;
+
+  viewingTaskId = id;
+  document.getElementById('task-view-title').textContent = t.task;
+  document.getElementById('task-view-category').textContent = t.cat || '-';
+  document.getElementById('task-view-status').textContent = t.status || '-';
+  document.getElementById('task-view-who').textContent = t.who || '-';
+  document.getElementById('task-view-when').textContent = normalizeWhen(t.when);
+
+  const notesRow = document.getElementById('task-view-notes-row');
+  const notesText = (t.notes || '').trim();
+  notesRow.style.display = notesText ? '' : 'none';
+  document.getElementById('task-view-notes').textContent = notesText;
+
+  document.getElementById('modal-task-view').classList.add('open');
+}
+
+function openEditTaskFromView() {
+  if (viewingTaskId === null) return;
+  const targetId = viewingTaskId;
+  closeModal('modal-task-view');
+  openEditTask(targetId);
+}
+
+function deleteTaskFromView() {
+  if (viewingTaskId === null) return;
+  const targetId = viewingTaskId;
+  closeModal('modal-task-view');
+  deleteTask(targetId);
+}
+
 function deleteTask(id) {
   if (!ensureCanEdit()) return;
   if (!confirm('Delete this task?')) return;
@@ -3020,6 +3097,10 @@ function deleteTask(id) {
   if (editingTaskId === id) {
     editingTaskId = null;
     closeModal('modal-task');
+  }
+  if (viewingTaskId === id) {
+    viewingTaskId = null;
+    closeModal('modal-task-view');
   }
   save();
   renderTasks();
@@ -3075,6 +3156,9 @@ function closeModal(id) {
   document.getElementById(id).classList.remove('open');
   if (id === 'modal-event-view') {
     viewingEventId = null;
+  }
+  if (id === 'modal-task-view') {
+    viewingTaskId = null;
   }
 }
 
