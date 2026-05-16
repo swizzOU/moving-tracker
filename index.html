@@ -627,6 +627,11 @@ function showTab(t) {
   document.querySelectorAll('.tab').forEach((btn, i) => {
     btn.classList.toggle('active', ['tasks','furniture','contacts','calendar'][i] === t);
   });
+
+  // Initialize calendar when switching to calendar tab
+  if (t === 'calendar' && calendar === null) {
+    renderCalendar();
+  }
 }
 
 function filterTasks(f, btn) {
