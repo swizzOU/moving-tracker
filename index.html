@@ -608,10 +608,10 @@ const DEFAULT_EVENTS = [];
 
 // Migrate existing events to new schema
 function migrateEvents(oldEvents) {
+  if (!Array.isArray(oldEvents)) return [];
   return oldEvents.map(e => ({
     ...e,
     endDate: e.endDate || null,
-    color: e.color || '#6B8F66',
     category: e.category || 'Other'
   }));
 }
