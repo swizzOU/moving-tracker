@@ -516,40 +516,40 @@
 <div class="modal-overlay" id="modal-event">
   <div class="modal">
     <h3 id="modal-event-title">Add Event</h3>
-    <label>Event Name</label>
+    <label for="e-name">Event Name</label>
     <input type="text" id="e-name" placeholder="e.g. Dad's visit, Cleaner appointment" />
-    <label>Date</label>
+    <label for="e-date">Date</label>
     <input type="date" id="e-date" />
     <label style="display: flex; align-items: center; gap: 8px;">
       <input type="checkbox" id="e-has-enddate" onchange="toggleEndDate()" />
       Multi-day event
     </label>
-    <input type="date" id="e-enddate" style="display: none;" />
-    <label>Time (optional)</label>
+    <input type="date" id="e-enddate" class="hidden" />
+    <label for="e-time">Time (optional)</label>
     <input type="text" id="e-time" placeholder="e.g. 14:00, All day, Morning" />
-    <label>People</label>
+    <label for="e-people-select">People</label>
     <div id="e-people-select" class="people-multi-select">
-      <input type="checkbox" id="e-people-ken" value="Ken" /> Ken
-      <input type="checkbox" id="e-people-dani" value="Dani" /> Dani
-      <input type="checkbox" id="e-people-dad" value="Dad" /> Dad
-      <input type="checkbox" id="e-people-caroline" value="Caroline" /> Caroline
-      <input type="checkbox" id="e-people-mum" value="Mum" /> Mum
+      <label><input type="checkbox" id="e-people-ken" value="Ken" /> Ken</label>
+      <label><input type="checkbox" id="e-people-dani" value="Dani" /> Dani</label>
+      <label><input type="checkbox" id="e-people-dad" value="Dad" /> Dad</label>
+      <label><input type="checkbox" id="e-people-caroline" value="Caroline" /> Caroline</label>
+      <label><input type="checkbox" id="e-people-mum" value="Mum" /> Mum</label>
     </div>
-    <label>Notes (optional)</label>
+    <label for="e-notes">Notes (optional)</label>
     <input type="text" id="e-notes" placeholder="Any additional details..." />
-    <label>Category</label>
+    <label for="e-category">Category</label>
     <select id="e-category">
       <option value="Family">Family</option>
       <option value="Services">Services</option>
       <option value="Logistics">Logistics</option>
       <option value="Other">Other</option>
     </select>
-    <label>Color</label>
+    <label for="e-color">Color</label>
     <input type="color" id="e-color" value="#6B8F66" />
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal('modal-event')">Cancel</button>
       <button class="btn-save" onclick="saveEvent()">Add Event</button>
-      <button class="btn-delete" id="btn-delete-event" style="display: none;" onclick="deleteEvent(editingEventId)">Delete</button>
+      <button class="btn-delete hidden" id="btn-delete-event" onclick="deleteEvent(editingEventId)">Delete</button>
     </div>
   </div>
 </div>
