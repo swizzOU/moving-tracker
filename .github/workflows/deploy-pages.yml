@@ -1,0 +1,67 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Build deploy artifact with injected Firebase key
+        env:
+          FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
+        run: |
+          if [ -z "$FIREBASE_WEB_API_KEY" ]; then
+            echo "::error::Missing repository secret FIREBASE_WEB_API_KEY"
+            exit 1
+          fi
+
+          rm -rf _site
+          mkdir -p _site
+          cp index.html _site/index.html
+
+          if [ -d docs ]; then
+            cp -R docs _site/docs
+          fi
+
+          python - <<'PY'
+          from pathlib import Path
+          import os
+
+          path = Path('_site/index.html')
+          token = '__FIREBASE_WEB_API_KEY__'
+          api_key = os.environ.get('FIREBASE_WEB_API_KEY', '')
+          html = path.read_text(encoding='utf-8')
+
+          if token not in html:
+            raise SystemExit('Missing placeholder token in index.html')
+
+          path.write_text(html.replace(token, api_key), encoding='utf-8')
+          PY
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
