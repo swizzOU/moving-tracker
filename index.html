@@ -2252,8 +2252,9 @@ async function configureCloudSync() {
   refreshSyncStatus();
 
   try {
-    const appName = `move-tracker-${Date.now()}`;
-    syncRuntime.app = firebase.initializeApp(cfg, appName);
+    const appName = 'move-tracker';
+    const existingApp = firebase.apps.find((app) => app.name === appName);
+    syncRuntime.app = existingApp || firebase.initializeApp(cfg, appName);
     syncRuntime.auth = firebase.auth(syncRuntime.app);
     await syncRuntime.auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
     syncRuntime.db = firebase.firestore(syncRuntime.app);
