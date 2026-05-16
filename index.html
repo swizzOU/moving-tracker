@@ -580,16 +580,20 @@ const DEFAULT_CONTACTS = [
   {role:"GP (current surgery)",name:"",phone:"",email:"",notes:"Request record transfer"},
 ];
 
+const DEFAULT_EVENTS = [];
+
 // State
 let tasks = JSON.parse(localStorage.getItem('move_tasks') || 'null') || DEFAULT_TASKS.map((t,i) => ({...t, id: i}));
 let furniture = JSON.parse(localStorage.getItem('move_furniture') || 'null') || DEFAULT_FURNITURE;
 let contacts = JSON.parse(localStorage.getItem('move_contacts') || 'null') || DEFAULT_CONTACTS;
+let events = JSON.parse(localStorage.getItem('move_events') || 'null') || DEFAULT_EVENTS;
 let currentFilter = 'all';
 
 function save() {
   localStorage.setItem('move_tasks', JSON.stringify(tasks));
   localStorage.setItem('move_furniture', JSON.stringify(furniture));
   localStorage.setItem('move_contacts', JSON.stringify(contacts));
+  localStorage.setItem('move_events', JSON.stringify(events));
 }
 
 function showTab(t) {
