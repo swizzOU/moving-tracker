@@ -118,6 +118,12 @@
     gap: 14px;
   }
 
+  #tab-budget {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
   .task-panel {
     background: var(--white);
     border: 1.5px solid var(--border);
@@ -125,9 +131,143 @@
     padding: 14px;
   }
 
+  .budget-topbar {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  .budget-stats {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .budget-stats .stat {
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    color: var(--text);
+    padding: 14px 16px;
+    min-width: 130px;
+  }
+
+  .budget-stats .stat span {
+    color: var(--sage-dark);
+  }
+
+  .budget-layout {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 16px;
+  }
+
+  .budget-heading {
+    font-family: 'Lora', serif;
+    font-size: 1rem;
+    color: var(--sage-dark);
+    margin-bottom: 10px;
+  }
+
+  .budget-list,
+  .budget-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .budget-item,
+  .budget-breakdown-item {
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: var(--white);
+    padding: 12px;
+  }
+
+  .budget-item-head,
+  .budget-breakdown-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .budget-item-desc {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .budget-item-amount {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--warm);
+    white-space: nowrap;
+  }
+
+  .budget-status-pill {
+    font-size: 0.72rem;
+    padding: 3px 10px;
+    border-radius: 10px;
+    white-space: nowrap;
+    font-weight: 600;
+  }
+
+  .budget-status-paid {
+    background: var(--green);
+    color: #3A6A3A;
+  }
+
+  .budget-status-unpaid {
+    background: var(--warm-light);
+    color: #8A3A1A;
+  }
+
+  .budget-item-meta {
+    margin-top: 5px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+
+  .budget-item-notes {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-style: italic;
+    line-height: 1.25;
+  }
+
+  .budget-empty {
+    color: var(--muted);
+    font-style: italic;
+    font-size: 0.84rem;
+    padding: 6px 2px;
+  }
+
+  .budget-breakdown-amount {
+    color: var(--warm);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .inline-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .inline-row .add-btn {
+    margin-bottom: 0;
+    padding: 9px 12px;
+    white-space: nowrap;
+  }
+
   .filter-bar {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     margin-bottom: 0;
     flex-wrap: wrap;
     align-items: flex-end;
@@ -895,8 +1035,10 @@
     .tabs { padding: 16px 20px 0; }
     .main { padding: 20px; }
     .task-panel { padding: 12px; }
+    .budget-layout { grid-template-columns: 1fr; }
     .task-card { grid-template-columns: 28px 24px 1fr auto; grid-template-rows: auto auto; }
     .task-when, .task-who, .status-pill { display: none; }
+    .inline-row { flex-direction: column; align-items: stretch; }
   }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
@@ -912,6 +1054,7 @@
   <button class="tab active" onclick="showTab('tasks')">✅ Task Tracker</button>
   <button class="tab" onclick="showTab('furniture')">🛋️ Furniture from Sellers</button>
   <button class="tab" onclick="showTab('contacts')">📞 Key Contacts</button>
+  <button class="tab" onclick="showTab('budget')">💷 Budget</button>
   <button class="tab" onclick="showTab('calendar')">📅 Calendar</button>
 </div>
 
@@ -997,6 +1140,49 @@
   <div id="tab-contacts" class="hidden">
     <button class="add-btn" onclick="openAddContact()">+ Add contact</button>
     <div id="contacts-container" class="contacts-grid"></div>
+  </div>
+
+  <!-- BUDGET TAB -->
+  <div id="tab-budget" class="hidden">
+    <div class="task-panel">
+      <div class="budget-topbar">
+        <div class="budget-stats">
+          <div class="stat"><span id="budget-total">£0.00</span>Running total</div>
+          <div class="stat"><span id="budget-count">0</span>Entries</div>
+          <div class="stat"><span id="budget-unpaid">£0.00</span>Unpaid</div>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="add-btn secondary" onclick="exportBudgetCsv()">Export CSV</button>
+          <button class="add-btn" onclick="openAddBudget()">+ Add expense</button>
+        </div>
+      </div>
+      <div class="filter-bar" style="margin-top:14px; padding-top:12px; border-top:1px solid var(--border);">
+        <div class="filter-group">
+          <label for="budget-filter-category" class="filter-label">Category</label>
+          <select id="budget-filter-category" class="filter-select" onchange="updateBudgetFilters()"></select>
+        </div>
+        <div class="filter-group">
+          <label for="budget-filter-paid" class="filter-label">Payment</label>
+          <select id="budget-filter-paid" class="filter-select" onchange="updateBudgetFilters()">
+            <option value="all">All</option>
+            <option value="paid">Paid</option>
+            <option value="unpaid">Unpaid</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="task-panel">
+      <div class="budget-layout">
+        <div>
+          <h3 class="budget-heading">Expenses</h3>
+          <div id="budget-list" class="budget-list"></div>
+        </div>
+        <div>
+          <h3 class="budget-heading">Category breakdown</h3>
+          <div id="budget-breakdown" class="budget-breakdown"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- CALENDAR TAB -->
@@ -1148,6 +1334,43 @@
   </div>
 </div>
 
+<!-- ADD BUDGET ENTRY MODAL -->
+<div class="modal-overlay" id="modal-budget">
+  <div class="modal">
+    <h3 id="modal-budget-title">Add Expense</h3>
+    <label for="b-description">Description</label>
+    <input type="text" id="b-description" placeholder="e.g. Solicitor invoice" />
+    <label for="b-amount">Amount (£)</label>
+    <input type="number" id="b-amount" min="0" step="0.01" placeholder="0.00" />
+    <label for="b-notes">Notes (optional)</label>
+    <input type="text" id="b-notes" placeholder="Optional detail..." />
+    <label for="b-category">Category</label>
+    <div class="inline-row">
+      <select id="b-category"></select>
+      <button type="button" class="add-btn secondary" onclick="addBudgetCategory()">+ Add category</button>
+    </div>
+    <label for="b-paid-by">Paid by</label>
+    <select id="b-paid-by">
+      <option>Dani</option>
+      <option>Ken</option>
+      <option>Mum</option>
+      <option>Dad</option>
+      <option>Caroline</option>
+      <option>Dani/Ken</option>
+    </select>
+    <label for="b-payment-status">Payment status</label>
+    <select id="b-payment-status">
+      <option value="paid">Paid</option>
+      <option value="unpaid">Unpaid</option>
+    </select>
+    <div class="modal-btns">
+      <button class="btn-delete secondary hidden" id="btn-delete-budget" onclick="deleteBudget(editingBudgetId)">Delete</button>
+      <button class="btn-cancel" onclick="closeModal('modal-budget')">Cancel</button>
+      <button class="btn-save" id="btn-save-budget" onclick="saveBudget()">Add Expense</button>
+    </div>
+  </div>
+</div>
+
 <!-- ADD EVENT MODAL -->
 <div class="modal-overlay" id="modal-event">
   <div class="modal">
@@ -1269,6 +1492,9 @@ const DEFAULT_CONTACTS = [
 ];
 
 const DEFAULT_EVENTS = [];
+const DEFAULT_BUDGET_CATEGORIES = ['Legal','Removals','Furniture','Deposits & Fees','Utilities','Other'];
+const DEFAULT_BUDGET_ENTRIES = [];
+const PEOPLE_OPTIONS = ['Dani','Ken','Mum','Dad','Caroline','Dani/Ken'];
 const WHEN_OPTIONS = ['ASAP','2 weeks before','1 week before','Moving week','Day before','Night before','Moving day','After move'];
 
 function normalizeWhen(value) {
@@ -1291,9 +1517,26 @@ function migrateTasks(inputTasks) {
     ...task,
     id: typeof task.id === 'number' ? task.id : Date.now() + index,
     when: normalizeWhen(task.when),
-    who: ['Dani','Ken','Mum','Dad','Caroline','Dani/Ken'].includes(task.who) ? task.who : 'Dani/Ken',
+    who: PEOPLE_OPTIONS.includes(task.who) ? task.who : 'Dani/Ken',
     priority: !!task.priority
   }));
+}
+
+function migrateBudgetEntries(inputEntries) {
+  if (!Array.isArray(inputEntries)) return [];
+  return inputEntries
+    .map((entry, index) => ({
+      id: typeof entry.id === 'number' ? entry.id : Date.now() + index,
+      description: String(entry.description || '').trim(),
+      notes: String(entry.notes || '').trim(),
+      amount: Number(entry.amount) || 0,
+      category: String(entry.category || 'Other').trim() || 'Other',
+      paidBy: PEOPLE_OPTIONS.includes(entry.paidBy) ? entry.paidBy : 'Dani/Ken',
+      isPaid: typeof entry.isPaid === 'boolean'
+        ? entry.isPaid
+        : !['unpaid','not paid','not paid yet','pending'].includes(String(entry.paymentStatus || entry.status || 'paid').trim().toLowerCase())
+    }))
+    .filter((entry) => entry.description && entry.amount >= 0);
 }
 
 // Migrate existing events to new schema
@@ -1321,6 +1564,14 @@ let furniture = JSON.parse(localStorage.getItem('move_furniture') || 'null') || 
 let contacts = JSON.parse(localStorage.getItem('move_contacts') || 'null') || DEFAULT_CONTACTS;
 let events = JSON.parse(localStorage.getItem('move_events') || 'null') || DEFAULT_EVENTS;
 events = migrateEvents(events);
+let budgetEntries = JSON.parse(localStorage.getItem('move_budget_entries') || 'null') || DEFAULT_BUDGET_ENTRIES;
+budgetEntries = migrateBudgetEntries(budgetEntries);
+let budgetCategories = JSON.parse(localStorage.getItem('move_budget_categories') || 'null') || DEFAULT_BUDGET_CATEGORIES;
+budgetCategories = [...new Set([...
+  DEFAULT_BUDGET_CATEGORIES,
+  ...budgetCategories.filter((cat) => String(cat || '').trim()),
+  ...budgetEntries.map((entry) => entry.category).filter(Boolean)
+])];
 let currentStatusFilter = 'all';
 let currentWhoFilter = 'all';
 let currentWhenFilter = 'all';
@@ -1330,6 +1581,9 @@ let draggingTaskSection = null;
 let editingCategoryName = null;
 let editingTaskId = null;
 let editingFurnitureIndex = null;
+let editingBudgetId = null;
+let currentBudgetCategoryFilter = 'all';
+let currentBudgetPaidFilter = 'all';
 
 function save() {
   localStorage.setItem('move_tasks', JSON.stringify(tasks));
@@ -1341,6 +1595,256 @@ function save() {
   localStorage.setItem('move_furniture', JSON.stringify(furniture));
   localStorage.setItem('move_contacts', JSON.stringify(contacts));
   localStorage.setItem('move_events', JSON.stringify(events));
+  localStorage.setItem('move_budget_entries', JSON.stringify(budgetEntries));
+  localStorage.setItem('move_budget_categories', JSON.stringify(budgetCategories));
+}
+
+function formatCurrency(amount) {
+  return `£${(Number(amount) || 0).toFixed(2)}`;
+}
+
+function getBudgetCategories() {
+  const allCategories = [
+    ...DEFAULT_BUDGET_CATEGORIES,
+    ...budgetCategories,
+    ...budgetEntries.map((entry) => entry.category)
+  ].filter(Boolean).map((cat) => String(cat).trim());
+  budgetCategories = [...new Set(allCategories)];
+  return budgetCategories;
+}
+
+function renderBudgetCategoryOptions(selectedCategory = 'Other') {
+  const select = document.getElementById('b-category');
+  const categories = getBudgetCategories();
+  if (selectedCategory && !categories.includes(selectedCategory)) {
+    categories.push(selectedCategory);
+  }
+  select.innerHTML = categories.map((cat) => `<option value="${cat}">${cat}</option>`).join('');
+  select.value = categories.includes(selectedCategory)
+    ? selectedCategory
+    : (categories.includes('Other') ? 'Other' : categories[0]);
+}
+
+function renderBudgetFilterOptions() {
+  const select = document.getElementById('budget-filter-category');
+  const categories = getBudgetCategories();
+  const options = ['<option value="all">All</option>', ...categories.map((cat) => `<option value="${cat}">${cat}</option>`)];
+  select.innerHTML = options.join('');
+  select.value = currentBudgetCategoryFilter === 'all' || categories.includes(currentBudgetCategoryFilter)
+    ? currentBudgetCategoryFilter
+    : 'all';
+}
+
+function updateBudgetFilters() {
+  currentBudgetCategoryFilter = document.getElementById('budget-filter-category').value;
+  currentBudgetPaidFilter = document.getElementById('budget-filter-paid').value;
+  renderBudget();
+}
+
+function renderBudget() {
+  renderBudgetFilterOptions();
+
+  const listEl = document.getElementById('budget-list');
+  const breakdownEl = document.getElementById('budget-breakdown');
+
+  const orderedEntries = [...budgetEntries].sort((a, b) => b.id - a.id);
+  const visibleEntries = orderedEntries.filter((entry) => {
+    const categoryMatch = currentBudgetCategoryFilter === 'all' || entry.category === currentBudgetCategoryFilter;
+    const paidMatch = currentBudgetPaidFilter === 'all'
+      || (currentBudgetPaidFilter === 'paid' && entry.isPaid !== false)
+      || (currentBudgetPaidFilter === 'unpaid' && entry.isPaid === false);
+    return categoryMatch && paidMatch;
+  });
+
+  const total = visibleEntries.reduce((sum, entry) => sum + Number(entry.amount || 0), 0);
+  const count = visibleEntries.length;
+  const unpaidTotal = visibleEntries
+    .filter((entry) => entry.isPaid === false)
+    .reduce((sum, entry) => sum + Number(entry.amount || 0), 0);
+
+  document.getElementById('budget-total').textContent = formatCurrency(total);
+  document.getElementById('budget-count').textContent = count;
+  document.getElementById('budget-unpaid').textContent = formatCurrency(unpaidTotal);
+
+  if (!budgetEntries.length) {
+    listEl.innerHTML = '<div class="budget-empty">No expenses yet. Add your first one to start tracking.</div>';
+    breakdownEl.innerHTML = '<div class="budget-empty">Category totals will appear here.</div>';
+    return;
+  }
+
+  if (!visibleEntries.length) {
+    listEl.innerHTML = '<div class="budget-empty">No expenses match the current filters.</div>';
+    breakdownEl.innerHTML = '<div class="budget-empty">No category totals for the current filters.</div>';
+    return;
+  }
+
+  listEl.innerHTML = visibleEntries.map((entry) => `
+    <div class="budget-item">
+      <div class="budget-item-head">
+        <div class="budget-item-desc">${entry.description}</div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div class="budget-item-amount">${formatCurrency(entry.amount)}</div>
+          <span class="budget-status-pill ${entry.isPaid === false ? 'budget-status-unpaid' : 'budget-status-paid'}">${entry.isPaid === false ? 'Unpaid' : 'Paid'}</span>
+        </div>
+      </div>
+      <div class="budget-item-meta">${entry.category} | Paid by: ${entry.paidBy}</div>
+      ${entry.notes ? `<div class="budget-item-notes">${entry.notes}</div>` : ''}
+      <div class="furn-actions" style="margin-top:10px;">
+        <button class="furn-action-btn" onclick="openEditBudget(${entry.id})">Edit</button>
+        <button class="furn-action-btn delete" onclick="deleteBudget(${entry.id})">Delete</button>
+      </div>
+    </div>
+  `).join('');
+
+  const breakdownMap = visibleEntries.reduce((acc, entry) => {
+    acc[entry.category] = (acc[entry.category] || 0) + Number(entry.amount || 0);
+    return acc;
+  }, {});
+
+  const breakdownRows = Object.entries(breakdownMap)
+    .sort((a, b) => b[1] - a[1]);
+
+  breakdownEl.innerHTML = breakdownRows.map(([category, amount]) => {
+    const pct = total ? Math.round((amount / total) * 100) : 0;
+    return `
+      <div class="budget-breakdown-item">
+        <span>${category} (${pct}%)</span>
+        <span class="budget-breakdown-amount">${formatCurrency(amount)}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function openAddBudget() {
+  editingBudgetId = null;
+  document.getElementById('modal-budget-title').textContent = 'Add Expense';
+  document.getElementById('btn-save-budget').textContent = 'Add Expense';
+  document.getElementById('btn-delete-budget').classList.add('hidden');
+  document.getElementById('b-description').value = '';
+  document.getElementById('b-notes').value = '';
+  document.getElementById('b-amount').value = '';
+  renderBudgetCategoryOptions('Other');
+  document.getElementById('b-paid-by').value = 'Dani';
+  document.getElementById('b-payment-status').value = 'paid';
+  document.getElementById('modal-budget').classList.add('open');
+}
+
+function openEditBudget(entryId) {
+  const entry = budgetEntries.find((budgetEntry) => budgetEntry.id === entryId);
+  if (!entry) return;
+  editingBudgetId = entryId;
+  document.getElementById('modal-budget-title').textContent = 'Edit Expense';
+  document.getElementById('btn-save-budget').textContent = 'Save Changes';
+  document.getElementById('btn-delete-budget').classList.remove('hidden');
+  document.getElementById('b-description').value = entry.description;
+  document.getElementById('b-notes').value = entry.notes || '';
+  document.getElementById('b-amount').value = Number(entry.amount).toFixed(2);
+  renderBudgetCategoryOptions(entry.category);
+  document.getElementById('b-paid-by').value = PEOPLE_OPTIONS.includes(entry.paidBy) ? entry.paidBy : 'Dani/Ken';
+  document.getElementById('b-payment-status').value = entry.isPaid === false ? 'unpaid' : 'paid';
+  document.getElementById('modal-budget').classList.add('open');
+}
+
+function addBudgetCategory() {
+  const newCategory = prompt('New budget category name:');
+  if (!newCategory) return;
+  const normalized = newCategory.trim();
+  if (!normalized) return;
+  const exists = getBudgetCategories().some((cat) => cat.toLowerCase() === normalized.toLowerCase());
+  if (!exists) {
+    budgetCategories.push(normalized);
+  }
+  renderBudgetCategoryOptions(normalized);
+  renderBudgetFilterOptions();
+  save();
+}
+
+function exportBudgetCsv() {
+  if (!budgetEntries.length) {
+    alert('No budget entries to export yet.');
+    return;
+  }
+
+  const escapeCsv = (value) => {
+    const text = String(value ?? '');
+    if (/[",\n]/.test(text)) {
+      return `"${text.replace(/"/g, '""')}"`;
+    }
+    return text;
+  };
+
+  const rows = [
+    ['Description', 'Notes', 'AmountGBP', 'Category', 'PaidBy', 'PaymentStatus'],
+    ...budgetEntries.map((entry) => [
+      entry.description,
+      entry.notes || '',
+      Number(entry.amount || 0).toFixed(2),
+      entry.category,
+      entry.paidBy,
+      entry.isPaid === false ? 'Unpaid' : 'Paid'
+    ])
+  ];
+
+  const csvContent = rows.map((row) => row.map(escapeCsv).join(',')).join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  const datePart = new Date().toISOString().slice(0, 10);
+  link.href = url;
+  link.download = `move-budget-${datePart}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function saveBudget() {
+  const description = document.getElementById('b-description').value.trim();
+  const notes = document.getElementById('b-notes').value.trim();
+  const amount = Number(document.getElementById('b-amount').value);
+  const category = document.getElementById('b-category').value;
+  const paidBy = document.getElementById('b-paid-by').value;
+  const isPaid = document.getElementById('b-payment-status').value !== 'unpaid';
+
+  if (!description || Number.isNaN(amount) || amount < 0) return;
+
+  const expense = {
+    id: editingBudgetId || Date.now(),
+    description,
+    notes,
+    amount: Number(amount.toFixed(2)),
+    category,
+    paidBy: PEOPLE_OPTIONS.includes(paidBy) ? paidBy : 'Dani/Ken',
+    isPaid
+  };
+
+  if (editingBudgetId) {
+    const index = budgetEntries.findIndex((entry) => entry.id === editingBudgetId);
+    if (index === -1) return;
+    budgetEntries[index] = expense;
+    editingBudgetId = null;
+  } else {
+    budgetEntries.push(expense);
+  }
+
+  if (!budgetCategories.includes(category)) {
+    budgetCategories.push(category);
+  }
+
+  save();
+  renderBudget();
+  closeModal('modal-budget');
+}
+
+function deleteBudget(entryId) {
+  if (!confirm('Delete this expense?')) return;
+  budgetEntries = budgetEntries.filter((entry) => entry.id !== entryId);
+  if (editingBudgetId === entryId) {
+    editingBudgetId = null;
+    closeModal('modal-budget');
+  }
+  save();
+  renderBudget();
 }
 
 function getTaskCategories() {
@@ -1369,14 +1873,15 @@ function renderTaskCategoryOptions(selectedCategory = '') {
 }
 
 function showTab(t) {
-  ['tasks','furniture','contacts','calendar'].forEach(x => {
+  const tabs = ['tasks','furniture','contacts','budget','calendar'];
+  tabs.forEach(x => {
     const panel = document.getElementById('tab-'+x);
     const isActive = x === t;
     panel.classList.toggle('hidden', !isActive);
     panel.style.display = isActive ? '' : 'none';
   });
   document.querySelectorAll('.tab').forEach((btn, i) => {
-    btn.classList.toggle('active', ['tasks','furniture','contacts','calendar'][i] === t);
+    btn.classList.toggle('active', tabs[i] === t);
   });
 
   // Initialize calendar when switching to calendar tab
@@ -1830,7 +2335,7 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 
 function saveTask() {
   const t = {
-    id: editingTaskId || Date.now(),
+    id: editingTaskId !== null ? editingTaskId : Date.now(),
     cat: document.getElementById('new-cat').value,
     task: document.getElementById('new-task').value,
     notes: document.getElementById('new-notes').value,
@@ -1838,10 +2343,10 @@ function saveTask() {
     when: normalizeWhen(document.getElementById('new-when').value),
     status: document.getElementById('new-status').value,
     done: document.getElementById('new-status').value === 'Done',
-    priority: editingTaskId ? !!tasks.find(task => task.id === editingTaskId)?.priority : false
+    priority: editingTaskId !== null ? !!tasks.find(task => task.id === editingTaskId)?.priority : false
   };
   if (!t.task.trim()) return;
-  if (editingTaskId) {
+  if (editingTaskId !== null) {
     const index = tasks.findIndex(task => task.id === editingTaskId);
     if (index === -1) return;
     tasks[index] = t;
@@ -2304,6 +2809,7 @@ function renderCalendar() {
 renderTasks();
 renderFurniture();
 renderContacts();
+renderBudget();
 updateStats();
 showTab('tasks');
 save();
