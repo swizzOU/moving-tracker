@@ -837,6 +837,135 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
 });
 
+let editingEventId = null;
+
+function openAddEvent() {
+  editingEventId = null;
+  ['e-name','e-date','e-time','e-people','e-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('e-category').value = 'Other';
+  document.getElementById('modal-event-title').textContent = 'Add Event';
+  document.getElementById('modal-event').classList.add('open');
+}
+
+function openEditEvent(eventId) {
+  const event = events.find(e => e.id === eventId);
+  if (!event) return;
+  editingEventId = eventId;
+  document.getElementById('e-name').value = event.name;
+  document.getElementById('e-date').value = event.date;
+  document.getElementById('e-time').value = event.time || '';
+  document.getElementById('e-people').value = event.people.join(', ');
+  document.getElementById('e-notes').value = event.notes || '';
+  document.getElementById('e-category').value = event.category;
+  document.getElementById('modal-event-title').textContent = 'Edit Event';
+  document.getElementById('modal-event').classList.add('open');
+}
+
+function saveEvent() {
+  const name = document.getElementById('e-name').value.trim();
+  if (!name) return;
+
+  const eventData = {
+    id: editingEventId || Date.now(),
+    name: name,
+    date: document.getElementById('e-date').value,
+    time: document.getElementById('e-time').value,
+    people: document.getElementById('e-people').value
+      .split(',')
+      .map(p => p.trim())
+      .filter(p => p),
+    notes: document.getElementById('e-notes').value,
+    category: document.getElementById('e-category').value
+  };
+
+  if (editingEventId) {
+    const index = events.findIndex(e => e.id === editingEventId);
+    if (index !== -1) events[index] = eventData;
+  } else {
+    events.push(eventData);
+  }
+
+  save();
+  renderCalendar();
+  closeModal('modal-event');
+}
+
+function deleteEvent(eventId) {
+  if (!confirm('Delete this event?')) return;
+  events = events.filter(e => e.id !== eventId);
+  save();
+  renderCalendar();
+}
+
+let calendar = null;
+
+function renderCalendar() {
+  const calendarEl = document.getElementById('calendar-container');
+
+  if (calendar) {
+    calendar.destroy();
+  }
+
+  const eventObjects = events.map(e => ({
+    id: String(e.id),
+    title: e.name,
+    start: e.date + (e.time ? 'T' + e.time : ''),
+    extendedProps: {
+      time: e.time,
+      people: e.people,
+      notes: e.notes,
+      category: e.category
+    },
+    classNames: ['event-' + e.category],
+    backgroundColor: getCategoryColor(e.category),
+    borderColor: getCategoryColor(e.category)
+  }));
+
+  calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: 'dayGridMonth',
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,timeGridWeek'
+    },
+    editable: true,
+    selectable: true,
+    selectConstraint: 'businessHours',
+    eventClick: function(info) {
+      openEditEvent(parseInt(info.event.id));
+    },
+    dateClick: function(info) {
+      editingEventId = null;
+      ['e-name','e-date','e-time','e-people','e-notes'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('e-date').value = info.dateStr;
+      document.getElementById('e-category').value = 'Other';
+      document.getElementById('modal-event-title').textContent = 'Add Event';
+      document.getElementById('modal-event').classList.add('open');
+    },
+    eventDrop: function(info) {
+      const eventId = parseInt(info.event.id);
+      const event = events.find(e => e.id === eventId);
+      if (event) {
+        event.date = info.event.start.toISOString().split('T')[0];
+        save();
+      }
+    },
+    events: eventObjects
+  });
+
+  calendar.render();
+}
+
+function getCategoryColor(category) {
+  const colors = {
+    'Family': '#6B8F66',
+    'Services': '#C4704F',
+    'Logistics': '#D6E8F5',
+    'Other': '#EDE6D8'
+  };
+  return colors[category] || '#EDE6D8';
+}
+
 // Init
 renderTasks();
 renderFurniture();
