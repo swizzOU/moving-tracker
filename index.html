@@ -958,7 +958,7 @@ function saveEvent() {
     id: editingEventId || Date.now(),
     name: name,
     date: date,
-    endDate: document.getElementById('e-has-enddate').checked ? document.getElementById('e-enddate').value : null,
+    endDate: document.getElementById('e-has-enddate').checked ? document.getElementById('e-enddate')?.value || null : null,
     time: document.getElementById('e-time').value,
     people: people,
     notes: document.getElementById('e-notes').value,
@@ -968,7 +968,8 @@ function saveEvent() {
 
   if (editingEventId) {
     const index = events.findIndex(e => e.id === editingEventId);
-    if (index !== -1) events[index] = eventData;
+    if (index === -1) return; // Event not found, abort save
+    events[index] = eventData;
   } else {
     events.push(eventData);
   }
@@ -983,6 +984,7 @@ function deleteEvent(eventId) {
   events = events.filter(e => e.id !== eventId);
   save();
   renderCalendar();
+  closeModal('modal-event');
 }
 
 let calendar = null;
@@ -998,15 +1000,16 @@ function renderCalendar() {
     id: String(e.id),
     title: e.name,
     start: e.date + (e.time ? 'T' + e.time : ''),
+    end: e.endDate ? (new Date(e.endDate).getTime() > new Date(e.date).getTime() ? new Date(e.endDate).toISOString().split('T')[0] : null) : null,
     extendedProps: {
       time: e.time,
       people: e.people,
       notes: e.notes,
-      category: e.category
+      category: e.category,
+      color: e.color
     },
-    classNames: ['event-' + e.category],
-    backgroundColor: getCategoryColor(e.category),
-    borderColor: getCategoryColor(e.category)
+    backgroundColor: e.color,
+    borderColor: e.color
   }));
 
   calendar = new FullCalendar.Calendar(calendarEl, {
@@ -1018,15 +1021,22 @@ function renderCalendar() {
     },
     editable: true,
     selectable: true,
-    selectConstraint: 'businessHours',
     eventClick: function(info) {
       openEditEvent(parseInt(info.event.id));
     },
     dateClick: function(info) {
       editingEventId = null;
-      ['e-name','e-date','e-time','e-people','e-notes'].forEach(id => document.getElementById(id).value = '');
+      ['e-name','e-date','e-enddate','e-time','e-notes','e-color'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el.type === 'color') el.value = '#6B8F66';
+        else el.value = '';
+      });
       document.getElementById('e-date').value = info.dateStr;
+      document.getElementById('e-has-enddate').checked = false;
+      document.getElementById('e-enddate').style.display = 'none';
       document.getElementById('e-category').value = 'Other';
+      document.querySelectorAll('#e-people-select input').forEach(cb => cb.checked = false);
+      document.getElementById('btn-delete-event').style.display = 'none';
       document.getElementById('modal-event-title').textContent = 'Add Event';
       document.getElementById('modal-event').classList.add('open');
     },
@@ -1034,7 +1044,17 @@ function renderCalendar() {
       const eventId = parseInt(info.event.id);
       const event = events.find(e => e.id === eventId);
       if (event) {
+        const daysDiff = Math.floor((info.event.end || info.event.start - (info.event.start - info.oldEvent.start)) / 86400000);
         event.date = info.event.start.toISOString().split('T')[0];
+        if (event.endDate) {
+          const startDate = new Date(event.date);
+          const endDate = new Date(startDate);
+          if (info.oldEvent.end) {
+            const oldDays = Math.floor((info.oldEvent.end - info.oldEvent.start) / 86400000);
+            endDate.setDate(endDate.getDate() + oldDays);
+          }
+          event.endDate = endDate.toISOString().split('T')[0];
+        }
         save();
       }
     },
@@ -1044,15 +1064,6 @@ function renderCalendar() {
   calendar.render();
 }
 
-function getCategoryColor(category) {
-  const colors = {
-    'Family': '#6B8F66',
-    'Services': '#C4704F',
-    'Logistics': '#D6E8F5',
-    'Other': '#EDE6D8'
-  };
-  return colors[category] || '#EDE6D8';
-}
 
 // Init
 renderTasks();
