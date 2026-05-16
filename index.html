@@ -308,9 +308,85 @@
     transition: border-color 0.15s;
   }
   .modal input:focus, .modal select:focus, .modal textarea:focus { border-color: var(--sage); }
+  .modal input[type="checkbox"] {
+    width: auto;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+  }
   .modal-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
   .btn-cancel { padding: 8px 18px; border: 1.5px solid var(--border); border-radius: 8px; background: none; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; color: var(--muted); cursor: pointer; }
   .btn-save { padding: 8px 18px; background: var(--sage-dark); color: white; border: none; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500; cursor: pointer; }
+
+  .inline-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 500;
+  }
+
+  .day-summary-date {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .day-summary-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 45vh;
+    overflow-y: auto;
+  }
+
+  .day-summary-item {
+    border: 1.5px solid var(--border);
+    border-left-width: 6px;
+    border-radius: 8px;
+    padding: 9px 11px;
+    background: var(--cream);
+    cursor: pointer;
+  }
+
+  .day-summary-item:hover {
+    border-color: var(--sage);
+  }
+
+  .day-summary-time {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-bottom: 3px;
+  }
+
+  .day-summary-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.2;
+  }
+
+  .day-summary-meta {
+    font-size: 0.76rem;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  .day-summary-notes {
+    font-size: 0.74rem;
+    color: var(--muted);
+    margin-top: 2px;
+    line-height: 1.2;
+  }
+
+  .day-summary-empty {
+    color: var(--muted);
+    font-style: italic;
+    padding: 10px 0;
+  }
 
   /* Contacts tab */
   .contacts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
@@ -339,30 +415,148 @@
     min-height: 130px;
   }
 
-  .color-select {
-    --selected-color: #6B8F66;
-    padding-left: 36px;
-    background-image: linear-gradient(to right, var(--selected-color) 0 24px, var(--cream) 24px);
-    background-repeat: no-repeat;
-    background-size: 100% 100%;
+  .people-dropdown {
+    position: relative;
   }
 
-  .color-select option {
+  .people-dropdown-btn {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
     color: var(--text);
+    background: var(--cream);
+    text-align: left;
+    cursor: pointer;
+    min-height: 44px;
   }
 
-  .color-select option[value="#6B8F66"] { background: linear-gradient(to right, #6B8F66 0 20px, var(--cream) 20px); }
-  .color-select option[value="#4A6B46"] { background: linear-gradient(to right, #4A6B46 0 20px, var(--cream) 20px); }
-  .color-select option[value="#8FB996"] { background: linear-gradient(to right, #8FB996 0 20px, var(--cream) 20px); }
-  .color-select option[value="#C4704F"] { background: linear-gradient(to right, #C4704F 0 20px, var(--cream) 20px); }
-  .color-select option[value="#E08B69"] { background: linear-gradient(to right, #E08B69 0 20px, var(--cream) 20px); }
-  .color-select option[value="#D6E8F5"] { background: linear-gradient(to right, #D6E8F5 0 20px, var(--cream) 20px); }
-  .color-select option[value="#7FA7C4"] { background: linear-gradient(to right, #7FA7C4 0 20px, var(--cream) 20px); }
-  .color-select option[value="#A7C4A0"] { background: linear-gradient(to right, #A7C4A0 0 20px, var(--cream) 20px); }
-  .color-select option[value="#E7D6A4"] { background: linear-gradient(to right, #E7D6A4 0 20px, var(--cream) 20px); }
-  .color-select option[value="#C8B6A6"] { background: linear-gradient(to right, #C8B6A6 0 20px, var(--cream) 20px); }
-  .color-select option[value="#CFA7CF"] { background: linear-gradient(to right, #CFA7CF 0 20px, var(--cream) 20px); }
-  .color-select option[value="#B3B3B3"] { background: linear-gradient(to right, #B3B3B3 0 20px, var(--cream) 20px); }
+  .people-dropdown-btn::after {
+    content: '▾';
+    float: right;
+    color: var(--muted);
+  }
+
+  .people-dropdown-btn-text {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-right: 20px;
+  }
+
+  .people-placeholder {
+    color: var(--muted);
+  }
+
+  .people-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--cream-dark);
+    color: var(--sage-dark);
+    font-size: 0.78rem;
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  .people-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 20;
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.14);
+    padding: 6px;
+    max-height: 180px;
+    overflow-y: auto;
+  }
+
+  .people-dropdown-actions {
+    position: sticky;
+    bottom: 0;
+    background: var(--white);
+    padding: 8px 6px 4px;
+    border-top: 1px solid var(--border);
+    margin-top: 4px;
+  }
+
+  .people-done-btn {
+    width: 100%;
+    border: none;
+    border-radius: 6px;
+    padding: 7px 10px;
+    background: var(--sage-dark);
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .people-done-btn:hover {
+    background: var(--sage);
+  }
+
+  .modal .people-dropdown-item {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    font-size: 0.88rem;
+    color: var(--text);
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin: 0;
+  }
+
+  .modal .people-dropdown-item:hover {
+    background: var(--cream);
+  }
+
+  .people-dropdown-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--sage-dark);
+    flex-shrink: 0;
+  }
+
+  .people-dropdown-name {
+    line-height: 1.2;
+  }
+
+  .color-swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .color-swatch {
+    width: 100%;
+    height: 18px;
+    border: 2px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+  }
+
+  .color-swatch:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  }
+
+  .color-swatch.active {
+    border-color: #222;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(0,0,0,0.35);
+  }
 
   /* Delete button */
   .btn-delete {
@@ -395,17 +589,124 @@
   /* Calendar */
   #calendar-container { background: var(--white); border-radius: 10px; padding: 20px; }
   .fc { font-family: 'DM Sans', sans-serif; }
+  .fc .fc-daygrid-day-frame {
+    min-height: 100px;
+    height: auto;
+  }
   .fc-button-primary { background: var(--sage-dark); border-color: var(--sage-dark); }
   .fc-button-primary:hover { background: var(--sage); border-color: var(--sage); }
   .fc-button-primary.fc-button-active { background: var(--sage-dark); border-color: var(--sage-dark); }
   .fc-daygrid-day:hover { background-color: var(--sage-light); }
   .fc-col-header-cell { background: var(--cream-dark); color: var(--sage-dark); font-weight: 600; }
   .fc-daygrid-day-number { color: var(--text); }
-  .fc-daygrid-day-frame { min-height: 100px; }
-  .fc-event { border: none; border-radius: 6px; }
+  .fc-event { border: none; border-radius: 8px; }
+  .fc-daygrid-day-events {
+    margin-top: 4px;
+  }
+  .fc-daygrid-event-harness {
+    margin-top: 4px;
+  }
   .fc-daygrid-event {
     white-space: normal;
     align-items: flex-start;
+  }
+  .fc-daygrid-block-event {
+    overflow: hidden;
+  }
+  .fc-daygrid-block-event .fc-event-main {
+    padding: 6px 16px 6px 8px;
+  }
+  .fc-daygrid-block-event .fc-event-main-frame {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px 8px;
+    align-items: baseline;
+  }
+  .fc-daygrid-block-event .fc-event-time,
+  .fc-daygrid-block-event .fc-event-title {
+    white-space: normal;
+    overflow: visible;
+    word-break: break-word;
+  }
+  .fc-daygrid-block-event .fc-event-time {
+    font-weight: 600;
+    font-size: 0.72rem;
+    line-height: 1.1;
+  }
+  .fc-custom-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+  }
+  .fc-custom-time {
+    font-size: 0.7rem;
+    font-weight: 600;
+    line-height: 1.1;
+    opacity: 0.95;
+  }
+  .fc-custom-title {
+    font-weight: 600;
+    font-size: 0.92rem;
+    line-height: 1.25;
+    white-space: normal;
+    word-break: break-word;
+  }
+  .fc-custom-people {
+    font-size: 0.72rem;
+    line-height: 1.2;
+    opacity: 0.92;
+    white-space: normal;
+    word-break: break-word;
+  }
+  .fc-custom-meta {
+    font-size: 0.7rem;
+    line-height: 1.2;
+    opacity: 0.9;
+    white-space: normal;
+    word-break: break-word;
+  }
+  .fc-custom-notes {
+    font-size: 0.68rem;
+    line-height: 1.2;
+    opacity: 0.86;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .fc-daygrid-event .fc-event-resizer,
+  .fc-daygrid-block-event .fc-event-resizer-end {
+    width: 12px;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    cursor: ew-resize;
+    opacity: 1;
+    background: linear-gradient(to left, rgba(0,0,0,0.25), rgba(0,0,0,0));
+  }
+  .fc-daygrid-event .fc-event-resizer::after,
+  .fc-daygrid-block-event .fc-event-resizer-end::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 3px;
+    transform: translateY(-50%);
+    width: 2px;
+    height: 14px;
+    background: rgba(255,255,255,0.9);
+    border-radius: 2px;
+    box-shadow: -4px 0 0 rgba(255,255,255,0.7);
+    pointer-events: none;
+  }
+  .fc-daygrid-event:hover .fc-event-resizer,
+  .fc-daygrid-block-event:hover .fc-event-resizer-end {
+    background: linear-gradient(to left, rgba(0,0,0,0.35), rgba(0,0,0,0.08));
+  }
+  .fc-timegrid-event .fc-custom-content {
+    gap: 2px;
+  }
+  .fc-timegrid-event .fc-custom-people {
+    font-size: 0.72rem;
   }
   .fc-daygrid-event .fc-event-main,
   .fc-daygrid-event .fc-event-title {
@@ -413,18 +714,7 @@
     overflow: visible;
     word-break: break-word;
   }
-  .fc-event-title { font-weight: 500; padding: 2px 6px; }
-
-  /* Event category colors */
-  .event-Family { background-color: var(--sage); }
-  .event-Services { background-color: var(--warm); }
-  .event-Logistics { background-color: var(--blue); }
-  .event-Other { background-color: var(--cream-dark); color: var(--text); }
-
-  .fc-event.event-Family .fc-event-title { color: white; }
-  .fc-event.event-Services .fc-event-title { color: white; }
-  .fc-event.event-Logistics .fc-event-title { color: #2A5A7A; }
-  .fc-event.event-Other .fc-event-title { color: var(--text); }
+  .fc-event-title { font-weight: 500; padding: 0; }
 
   @media (max-width: 700px) {
     header { padding: 18px 20px; }
@@ -494,6 +784,19 @@
     <div id="calendar-container"></div>
   </div>
 
+</div>
+
+<!-- DAY SUMMARY MODAL -->
+<div class="modal-overlay" id="modal-day-summary">
+  <div class="modal">
+    <h3>Day Summary</h3>
+    <div class="day-summary-date" id="day-summary-date"></div>
+    <div class="day-summary-list" id="day-summary-list"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-day-summary')">Close</button>
+      <button class="btn-save" onclick="openAddEventFromSummary()">+ Add Event</button>
+    </div>
+  </div>
 </div>
 
 <!-- ADD TASK MODAL -->
@@ -592,39 +895,42 @@
     <label for="e-enddate">End date</label>
     <input type="date" id="e-enddate" />
     <label for="e-time">Time (optional)</label>
-    <input type="text" id="e-time" placeholder="e.g. 14:00, All day, Morning" />
-    <label for="e-people">People</label>
-    <select id="e-people" class="people-select" multiple>
-      <option value="Ken">Ken</option>
-      <option value="Dani">Dani</option>
-      <option value="Dad">Dad</option>
-      <option value="Caroline">Caroline</option>
-      <option value="Mum">Mum</option>
-    </select>
+    <input type="time" id="e-time" step="300" />
+    <label class="inline-check"><input type="checkbox" id="e-all-day" onchange="toggleAllDay()" /> All day</label>
+    <label for="e-people-btn">People</label>
+    <div class="people-dropdown" id="e-people-dropdown">
+      <button type="button" id="e-people-btn" class="people-dropdown-btn" onclick="togglePeopleDropdown()">
+        <span id="e-people-btn-text" class="people-dropdown-btn-text"><span class="people-placeholder">Select people</span></span>
+      </button>
+      <div id="e-people-menu" class="people-dropdown-menu hidden">
+        <label class="people-dropdown-item"><input type="checkbox" class="e-person" value="Ken" /><span class="people-dropdown-name">Ken</span></label>
+        <label class="people-dropdown-item"><input type="checkbox" class="e-person" value="Dani" /><span class="people-dropdown-name">Dani</span></label>
+        <label class="people-dropdown-item"><input type="checkbox" class="e-person" value="Dad" /><span class="people-dropdown-name">Dad</span></label>
+        <label class="people-dropdown-item"><input type="checkbox" class="e-person" value="Caroline" /><span class="people-dropdown-name">Caroline</span></label>
+        <label class="people-dropdown-item"><input type="checkbox" class="e-person" value="Mum" /><span class="people-dropdown-name">Mum</span></label>
+        <div class="people-dropdown-actions">
+          <button type="button" class="people-done-btn" onclick="closePeopleDropdown()">Done</button>
+        </div>
+      </div>
+    </div>
     <label for="e-notes">Notes (optional)</label>
     <input type="text" id="e-notes" placeholder="Any additional details..." />
-    <label for="e-category">Category</label>
-    <select id="e-category">
-      <option value="Family">Family</option>
-      <option value="Services">Services</option>
-      <option value="Logistics">Logistics</option>
-      <option value="Other">Other</option>
-    </select>
     <label for="e-color">Color</label>
-    <select id="e-color" class="color-select" onchange="updateEventColorPreview()">
-      <option value="#6B8F66">Sage</option>
-      <option value="#4A6B46">Forest</option>
-      <option value="#8FB996">Moss</option>
-      <option value="#C4704F">Terracotta</option>
-      <option value="#E08B69">Clay</option>
-      <option value="#D6E8F5">Dusty Blue</option>
-      <option value="#7FA7C4">Slate Blue</option>
-      <option value="#A7C4A0">Soft Green</option>
-      <option value="#E7D6A4">Sand</option>
-      <option value="#C8B6A6">Taupe</option>
-      <option value="#CFA7CF">Mauve</option>
-      <option value="#B3B3B3">Grey</option>
-    </select>
+    <input type="hidden" id="e-color" value="#33B679" />
+    <div class="color-swatch-grid" id="e-color-swatches" role="radiogroup" aria-label="Event color">
+      <button type="button" class="color-swatch" data-color="#33B679" style="background:#33B679" aria-label="Green"></button>
+      <button type="button" class="color-swatch" data-color="#0B8043" style="background:#0B8043" aria-label="Dark green"></button>
+      <button type="button" class="color-swatch" data-color="#039BE5" style="background:#039BE5" aria-label="Blue"></button>
+      <button type="button" class="color-swatch" data-color="#3F51B5" style="background:#3F51B5" aria-label="Indigo"></button>
+      <button type="button" class="color-swatch" data-color="#7986CB" style="background:#7986CB" aria-label="Lavender"></button>
+      <button type="button" class="color-swatch" data-color="#8E24AA" style="background:#8E24AA" aria-label="Purple"></button>
+      <button type="button" class="color-swatch" data-color="#E67C73" style="background:#E67C73" aria-label="Red"></button>
+      <button type="button" class="color-swatch" data-color="#D50000" style="background:#D50000" aria-label="Dark red"></button>
+      <button type="button" class="color-swatch" data-color="#F4511E" style="background:#F4511E" aria-label="Orange"></button>
+      <button type="button" class="color-swatch" data-color="#F6BF26" style="background:#F6BF26" aria-label="Yellow"></button>
+      <button type="button" class="color-swatch" data-color="#616161" style="background:#616161" aria-label="Graphite"></button>
+      <button type="button" class="color-swatch" data-color="#795548" style="background:#795548" aria-label="Brown"></button>
+    </div>
     <div class="modal-btns">
       <button class="btn-delete hidden" id="btn-delete-event" onclick="deleteEvent(editingEventId)">Delete</button>
       <button class="btn-cancel" onclick="closeModal('modal-event')">Cancel</button>
@@ -705,7 +1011,7 @@ function migrateEvents(oldEvents) {
   return oldEvents.map(e => ({
     ...e,
     endDate: e.endDate || null,
-    category: e.category || 'Other'
+    allDay: typeof e.allDay === 'boolean' ? e.allDay : String(e.time || '').toLowerCase().includes('all day')
   }));
 }
 
@@ -947,48 +1253,173 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
 });
 
 let editingEventId = null;
+let selectedSummaryDate = null;
 
 const EVENT_COLORS = [
-  '#6B8F66',
-  '#4A6B46',
-  '#8FB996',
-  '#C4704F',
-  '#E08B69',
-  '#D6E8F5',
-  '#7FA7C4',
-  '#A7C4A0',
-  '#E7D6A4',
-  '#C8B6A6',
-  '#CFA7CF',
-  '#B3B3B3'
+  '#33B679',
+  '#0B8043',
+  '#039BE5',
+  '#3F51B5',
+  '#7986CB',
+  '#8E24AA',
+  '#E67C73',
+  '#D50000',
+  '#F4511E',
+  '#F6BF26',
+  '#616161',
+  '#795548'
 ];
+
+function getSelectedPeople() {
+  return Array.from(document.querySelectorAll('.e-person:checked')).map((input) => input.value);
+}
+
+function setSelectedPeople(people) {
+  const selected = Array.isArray(people) ? people : [];
+  document.querySelectorAll('.e-person').forEach((input) => {
+    input.checked = selected.includes(input.value);
+  });
+  updatePeopleDropdownLabel();
+}
+
+function updatePeopleDropdownLabel() {
+  const selected = getSelectedPeople();
+  const textEl = document.getElementById('e-people-btn-text');
+  if (!selected.length) {
+    textEl.innerHTML = '<span class="people-placeholder">Select people</span>';
+    return;
+  }
+  textEl.innerHTML = selected.map((name) => `<span class="people-chip">${name}</span>`).join('');
+}
+
+function togglePeopleDropdown() {
+  document.getElementById('e-people-menu').classList.toggle('hidden');
+}
+
+function closePeopleDropdown() {
+  document.getElementById('e-people-menu').classList.add('hidden');
+}
+
+document.getElementById('e-people-menu').addEventListener('change', () => {
+  updatePeopleDropdownLabel();
+});
+
+document.addEventListener('click', (event) => {
+  const dropdown = document.getElementById('e-people-dropdown');
+  if (!dropdown.contains(event.target)) {
+    closePeopleDropdown();
+  }
+});
+
+document.getElementById('e-color-swatches').addEventListener('click', (event) => {
+  const swatch = event.target.closest('.color-swatch');
+  if (!swatch) return;
+  setEventColor(swatch.dataset.color);
+});
+
+function setEventColor(color) {
+  const selectedColor = EVENT_COLORS.includes(color) ? color : EVENT_COLORS[0];
+  document.getElementById('e-color').value = selectedColor;
+  document.querySelectorAll('.color-swatch').forEach((swatch) => {
+    swatch.classList.toggle('active', swatch.dataset.color === selectedColor);
+  });
+}
+
+function toggleAllDay() {
+  const isAllDay = document.getElementById('e-all-day').checked;
+  const timeInput = document.getElementById('e-time');
+  timeInput.disabled = isAllDay;
+  if (isAllDay) {
+    timeInput.value = '';
+  }
+}
 
 function resetEventForm(defaultDate = '') {
   editingEventId = null;
   document.getElementById('e-name').value = '';
   document.getElementById('e-date').value = defaultDate;
-  document.getElementById('e-enddate').value = defaultDate;
+  document.getElementById('e-enddate').value = '';
   document.getElementById('e-time').value = '';
+  document.getElementById('e-all-day').checked = true;
+  toggleAllDay();
   document.getElementById('e-notes').value = '';
-  document.getElementById('e-category').value = 'Other';
-  document.getElementById('e-color').value = '#6B8F66';
-  Array.from(document.getElementById('e-people').options).forEach(option => {
-    option.selected = false;
-  });
+  setEventColor(EVENT_COLORS[0]);
+  setSelectedPeople([]);
+  document.getElementById('e-people-menu').classList.add('hidden');
   document.getElementById('btn-delete-event').classList.add('hidden');
   document.getElementById('modal-event-title').textContent = 'Add Event';
   document.getElementById('btn-save-event').textContent = 'Add Event';
-  updateEventColorPreview();
-}
-
-function updateEventColorPreview() {
-  const colorInput = document.getElementById('e-color');
-  colorInput.style.setProperty('--selected-color', colorInput.value || '#6B8F66');
 }
 
 function openAddEvent() {
   resetEventForm('');
   document.getElementById('modal-event').classList.add('open');
+}
+
+function formatDisplayDate(dateStr) {
+  const d = new Date(`${dateStr}T00:00:00`);
+  return d.toLocaleDateString(undefined, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+}
+
+function getEventsForDate(dateStr) {
+  return events.filter((event) => {
+    const start = event.date;
+    const end = event.endDate || event.date;
+    return dateStr >= start && dateStr <= end;
+  });
+}
+
+function renderDaySummary(dateStr) {
+  const listEl = document.getElementById('day-summary-list');
+  const dayEvents = getEventsForDate(dateStr).sort((a, b) => {
+    const timeA = a.time || '99:99';
+    const timeB = b.time || '99:99';
+    return timeA.localeCompare(timeB);
+  });
+
+  if (!dayEvents.length) {
+    listEl.innerHTML = '<div class="day-summary-empty">No events for this day yet.</div>';
+    return;
+  }
+
+  listEl.innerHTML = dayEvents.map((event) => {
+    const people = Array.isArray(event.people) && event.people.length
+      ? `Who: ${event.people.join(', ')}`
+      : '';
+    const notes = event.notes ? `Notes: ${event.notes}` : '';
+    const timeLabel = event.allDay || !event.time ? 'All day' : event.time;
+    return `
+      <div class="day-summary-item" style="border-left-color:${event.color || '#6B8F66'}" onclick="openEditEventFromSummary(${event.id})">
+        <div class="day-summary-time">${timeLabel}</div>
+        <div class="day-summary-title">${event.name}</div>
+        ${people ? `<div class="day-summary-meta">${people}</div>` : ''}
+        ${notes ? `<div class="day-summary-notes">${notes}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function openDaySummary(dateStr) {
+  selectedSummaryDate = dateStr;
+  document.getElementById('day-summary-date').textContent = formatDisplayDate(dateStr);
+  renderDaySummary(dateStr);
+  document.getElementById('modal-day-summary').classList.add('open');
+}
+
+function openAddEventFromSummary() {
+  closeModal('modal-day-summary');
+  resetEventForm(selectedSummaryDate || '');
+  document.getElementById('modal-event').classList.add('open');
+}
+
+function openEditEventFromSummary(eventId) {
+  closeModal('modal-day-summary');
+  openEditEvent(eventId);
 }
 
 function openEditEvent(eventId) {
@@ -997,41 +1428,41 @@ function openEditEvent(eventId) {
   editingEventId = eventId;
   document.getElementById('e-name').value = event.name;
   document.getElementById('e-date').value = event.date;
-  document.getElementById('e-enddate').value = event.endDate || event.date;
+  document.getElementById('e-enddate').value = event.endDate || '';
   document.getElementById('e-time').value = event.time || '';
-  document.getElementById('e-color').value = EVENT_COLORS.includes(event.color) ? event.color : '#6B8F66';
+  document.getElementById('e-all-day').checked = event.allDay === true || !event.time;
+  toggleAllDay();
+  setEventColor(EVENT_COLORS.includes(event.color) ? event.color : EVENT_COLORS[0]);
   document.getElementById('e-notes').value = event.notes || '';
-  document.getElementById('e-category').value = event.category;
-  Array.from(document.getElementById('e-people').options).forEach(option => {
-    option.selected = event.people.includes(option.value);
-  });
+  setSelectedPeople(event.people || []);
+  document.getElementById('e-people-menu').classList.add('hidden');
   document.getElementById('btn-delete-event').classList.remove('hidden');
   document.getElementById('modal-event-title').textContent = 'Edit Event';
   document.getElementById('btn-save-event').textContent = 'Save Changes';
-  updateEventColorPreview();
   document.getElementById('modal-event').classList.add('open');
 }
 
 function saveEvent() {
   const name = document.getElementById('e-name').value.trim();
   const date = document.getElementById('e-date').value;
-  const endDateValue = document.getElementById('e-enddate').value || date;
+  const endDateValue = document.getElementById('e-enddate').value;
+  const allDay = document.getElementById('e-all-day').checked;
+  const timeValue = document.getElementById('e-time').value;
   if (!name || !date) return;
 
-  const people = Array.from(document.getElementById('e-people').selectedOptions)
-    .map(option => option.value);
+  const people = getSelectedPeople();
 
-  const normalizedEndDate = endDateValue > date ? endDateValue : null;
+  const normalizedEndDate = endDateValue && endDateValue > date ? endDateValue : null;
 
   const eventData = {
     id: editingEventId || Date.now(),
     name: name,
     date: date,
     endDate: normalizedEndDate,
-    time: document.getElementById('e-time').value,
+    time: allDay ? '' : timeValue,
+    allDay: allDay,
     people: people,
     notes: document.getElementById('e-notes').value,
-    category: document.getElementById('e-category').value,
     color: document.getElementById('e-color').value
   };
 
@@ -1064,6 +1495,73 @@ function formatEndDate(endDate, startDate) {
   return end.getTime() > start.getTime() ? end.toISOString().split('T')[0] : null;
 }
 
+function toInclusiveEndDate(fcEvent) {
+  if (!fcEvent.end) return null;
+  const startDate = fcEvent.start.toISOString().split('T')[0];
+  const endDate = new Date(fcEvent.end.getTime());
+  if (fcEvent.allDay) {
+    // FullCalendar stores all-day end dates as exclusive.
+    endDate.setDate(endDate.getDate() - 1);
+  }
+  const endDateStr = endDate.toISOString().split('T')[0];
+  return endDateStr > startDate ? endDateStr : null;
+}
+
+function syncEventDatesFromCalendar(storedEvent, fcEvent) {
+  if (!storedEvent || !fcEvent.start) return;
+  storedEvent.date = fcEvent.start.toISOString().split('T')[0];
+  storedEvent.endDate = toInclusiveEndDate(fcEvent);
+}
+
+function getValidTimePart(timeValue) {
+  const normalized = (timeValue || '').trim();
+  const hhmm = /^([01]\d|2[0-3]):([0-5]\d)$/;
+  const hhmmss = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
+  if (hhmm.test(normalized)) return `${normalized}:00`;
+  if (hhmmss.test(normalized)) return normalized;
+  return null;
+}
+
+function buildEventContent(arg) {
+  const people = Array.isArray(arg.event.extendedProps.people)
+    ? arg.event.extendedProps.people.filter(Boolean)
+    : [];
+  const notes = (arg.event.extendedProps.notes || '').trim();
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'fc-custom-content';
+
+  if (arg.timeText) {
+    const timeEl = document.createElement('span');
+    timeEl.className = 'fc-custom-time';
+    timeEl.textContent = arg.timeText;
+    wrapper.appendChild(timeEl);
+  }
+
+  const titleEl = document.createElement('span');
+  titleEl.className = 'fc-custom-title';
+  titleEl.textContent = arg.event.title;
+  wrapper.appendChild(titleEl);
+
+  const metaParts = [];
+  if (people.length) metaParts.push(`Who: ${people.join(', ')}`);
+  if (metaParts.length) {
+    const metaEl = document.createElement('span');
+    metaEl.className = 'fc-custom-meta';
+    metaEl.textContent = metaParts.join(' | ');
+    wrapper.appendChild(metaEl);
+  }
+
+  if (notes) {
+    const notesEl = document.createElement('span');
+    notesEl.className = 'fc-custom-notes';
+    notesEl.textContent = `Notes: ${notes}`;
+    wrapper.appendChild(notesEl);
+  }
+
+  return { domNodes: [wrapper] };
+}
+
 function renderCalendar() {
   const calendarEl = document.getElementById('calendar-container');
 
@@ -1071,24 +1569,41 @@ function renderCalendar() {
     calendar.destroy();
   }
 
-  const eventObjects = events.map(e => ({
-    id: String(e.id),
-    title: e.name,
-    start: e.date + (e.time ? 'T' + e.time : ''),
-    end: e.endDate ? formatEndDate(e.endDate, e.date) : null,
-    extendedProps: {
-      time: e.time,
-      people: e.people,
-      notes: e.notes,
-      category: e.category,
-      color: e.color
-    },
-    backgroundColor: e.color,
-    borderColor: e.color
-  }));
+  const eventObjects = events.map(e => {
+    const timePart = getValidTimePart(e.time);
+    return {
+      id: String(e.id),
+      title: e.name,
+      start: timePart && !e.allDay ? `${e.date}T${timePart}` : e.date,
+      end: e.endDate ? formatEndDate(e.endDate, e.date) : null,
+      allDay: e.allDay === true || !timePart,
+      extendedProps: {
+        time: e.time,
+        allDay: e.allDay,
+        people: e.people,
+        notes: e.notes,
+        color: e.color
+      },
+      backgroundColor: e.color,
+      borderColor: e.color
+    };
+  });
 
   calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: 'dayGridMonth',
+    contentHeight: 'auto',
+    fixedWeekCount: false,
+    eventDisplay: 'block',
+    eventDurationEditable: true,
+    eventResizableFromStart: false,
+    dayMaxEventRows: false,
+    dayMaxEvents: false,
+    eventTimeFormat: {
+      hour: 'numeric',
+      minute: '2-digit',
+      omitZeroMinute: true,
+      meridiem: 'short'
+    },
     headerToolbar: {
       left: 'prev,next today',
       center: 'title',
@@ -1096,26 +1611,36 @@ function renderCalendar() {
     },
     editable: true,
     selectable: true,
+    eventContent: function(arg) {
+      return buildEventContent(arg);
+    },
+    eventDidMount: function(info) {
+      const people = Array.isArray(info.event.extendedProps.people) ? info.event.extendedProps.people : [];
+      const notes = info.event.extendedProps.notes || '';
+      const detailParts = [info.event.title];
+      if (people.length) detailParts.push(`Who: ${people.join(', ')}`);
+      if (notes) detailParts.push(`Notes: ${notes}`);
+      info.el.title = detailParts.join(' | ');
+    },
     eventClick: function(info) {
       openEditEvent(parseInt(info.event.id));
     },
     dateClick: function(info) {
-      resetEventForm(info.dateStr);
-      document.getElementById('modal-event').classList.add('open');
+      openDaySummary(info.dateStr);
     },
     eventDrop: function(info) {
       const eventId = parseInt(info.event.id);
       const event = events.find(e => e.id === eventId);
       if (event) {
-        event.date = info.event.start.toISOString().split('T')[0];
-        if (event.endDate) {
-          const oldStart = info.oldEvent.start.getTime();
-          const oldEnd = info.oldEvent.end ? info.oldEvent.end.getTime() : oldStart;
-          const originalDuration = oldEnd - oldStart;
-          const newStart = info.event.start.getTime();
-          const newEnd = new Date(newStart + originalDuration);
-          event.endDate = newEnd.toISOString().split('T')[0];
-        }
+        syncEventDatesFromCalendar(event, info.event);
+        save();
+      }
+    },
+    eventResize: function(info) {
+      const eventId = parseInt(info.event.id);
+      const event = events.find(e => e.id === eventId);
+      if (event) {
+        syncEventDatesFromCalendar(event, info.event);
         save();
       }
     },
