@@ -331,7 +331,37 @@
   }
   .contact-edit-btn:hover { border-color: var(--sage); color: var(--sage-dark); }
 
-  .hidden { display: none; }
+  /* People multi-select */
+  .people-multi-select {
+    border: 1px solid var(--cream-dark);
+    border-radius: 6px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: var(--cream);
+  }
+
+  .people-multi-select input[type="checkbox"] {
+    margin-right: 6px;
+    cursor: pointer;
+  }
+
+  /* Delete button */
+  .btn-delete {
+    background: #d32f2f !important;
+    color: white !important;
+    border: none !important;
+  }
+
+  .btn-delete:hover {
+    background: #b71c1c !important;
+  }
+
+  /* Hidden visibility class */
+  .hidden {
+    display: none !important;
+  }
 
   /* Calendar */
   #calendar-container { background: var(--white); border-radius: 10px; padding: 20px; }
