@@ -328,7 +328,9 @@
   .sv-contribution-row { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--muted); flex-wrap: wrap; }
   .sv-contrib-who { font-weight: 600; color: var(--text); }
   .sv-contrib-amount { color: var(--sage-dark); font-weight: 600; }
-  .sv-contrib-delete { border: none; background: none; color: var(--danger); cursor: pointer; font-size: 0.8rem; margin-left: auto; padding: 0 4px; opacity: 0.6; }
+  .sv-contrib-edit { border: none; background: none; color: var(--muted); cursor: pointer; font-size: 0.75rem; padding: 0 4px; opacity: 0.7; margin-left: auto; }
+  .sv-contrib-edit:hover { color: var(--sage-dark); opacity: 1; }
+  .sv-contrib-delete { border: none; background: none; color: var(--danger); cursor: pointer; font-size: 0.8rem; margin-left: 0; padding: 0 4px; opacity: 0.6; }
   .sv-contrib-delete:hover { opacity: 1; }
 
   .sv-person-totals { margin-top: 6px; font-size: 0.78rem; color: var(--muted); }
@@ -799,6 +801,7 @@
   body.edit-locked .category-action-btn,
   body.edit-locked .sv-priority-btn,
   body.edit-locked .sv-contrib-delete,
+  body.edit-locked .sv-contrib-edit,
   body.edit-locked .checkbox,
   body.edit-locked .status-pill {
     opacity: 0.55;
@@ -2240,6 +2243,7 @@ let editingFurnitureIndex = null;
 let editingBudgetId = null;
 let editingSavingId = null;
 let contributingToGoalId = null;
+let editingContributionId = null;
 let currentBudgetCategoryFilter = 'all';
 let currentBudgetPaidFilter = 'all';
 
@@ -2328,7 +2332,7 @@ function applyActionLockToInteractiveElements() {
   document.body.classList.toggle('edit-locked', locked);
 
   const controls = document.querySelectorAll(
-    'button.add-btn, button.btn-save, button.btn-delete, button.furn-action-btn, button.contact-edit-btn, button.task-priority-btn, button.category-action-btn, button.sv-priority-btn, button.sv-contrib-delete'
+    'button.add-btn, button.btn-save, button.btn-delete, button.furn-action-btn, button.contact-edit-btn, button.task-priority-btn, button.category-action-btn, button.sv-priority-btn, button.sv-contrib-delete, button.sv-contrib-edit'
   );
 
   controls.forEach((el) => {
@@ -2997,6 +3001,7 @@ function renderSavings() {
         <span class="sv-contrib-amount">${formatCurrency(c.amount)}</span>
         <span>${new Date(c.date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
         ${c.note ? `<span style="font-style:italic;">${c.note}</span>` : ''}
+        <button class="sv-contrib-edit" onclick="openEditContribution(${g.id}, ${c.id})" title="Edit">✎</button>
         <button class="sv-contrib-delete" onclick="deleteContribution(${g.id}, ${c.id})" title="Remove">×</button>
       </div>`).join('');
 
@@ -3098,11 +3103,30 @@ function openAddContribution(goalId) {
   const g = savings.find(s => s.id === goalId);
   if (!g) return;
   contributingToGoalId = goalId;
+  editingContributionId = null;
+  document.getElementById('modal-contribution').querySelector('h3').textContent = 'Log Contribution';
   document.getElementById('contrib-goal-name').textContent = g.title;
   document.getElementById('contrib-who').value = getSavingsIdentity() || '';
   document.getElementById('contrib-amount').value = '';
   document.getElementById('contrib-date').value = new Date().toISOString().slice(0, 10);
   document.getElementById('contrib-note').value = '';
+  document.getElementById('modal-contribution').classList.add('open');
+}
+
+function openEditContribution(goalId, contributionId) {
+  if (!ensureCanEdit() || !isSavingsAllowed()) return;
+  const g = savings.find(s => s.id === goalId);
+  if (!g) return;
+  const c = (g.contributions || []).find(x => x.id === contributionId);
+  if (!c) return;
+  contributingToGoalId = goalId;
+  editingContributionId = contributionId;
+  document.getElementById('modal-contribution').querySelector('h3').textContent = 'Edit Contribution';
+  document.getElementById('contrib-goal-name').textContent = g.title;
+  document.getElementById('contrib-who').value = c.who;
+  document.getElementById('contrib-amount').value = c.amount.toFixed(2);
+  document.getElementById('contrib-date').value = c.date;
+  document.getElementById('contrib-note').value = c.note || '';
   document.getElementById('modal-contribution').classList.add('open');
 }
 
@@ -3112,16 +3136,22 @@ function saveContribution() {
   if (amount <= 0) { alert('Please enter an amount greater than 0.'); return; }
   const date = document.getElementById('contrib-date').value;
   const note = document.getElementById('contrib-note').value.trim();
-  const who = getSavingsIdentity();
-  if (!who) { alert('Cannot determine who you are. Please sign out and sign back in.'); return; }
   const g = savings.find(s => s.id === contributingToGoalId);
   if (!g) return;
   g.contributions = g.contributions || [];
-  g.contributions.push({ id: Date.now(), who, amount, date, note });
+  if (editingContributionId) {
+    const idx = g.contributions.findIndex(c => c.id === editingContributionId);
+    if (idx !== -1) g.contributions[idx] = { ...g.contributions[idx], amount, date, note };
+  } else {
+    const who = getSavingsIdentity();
+    if (!who) { alert('Cannot determine who you are. Please sign out and sign back in.'); return; }
+    g.contributions.push({ id: Date.now(), who, amount, date, note });
+  }
   save();
   renderSavings();
   closeModal('modal-contribution');
   contributingToGoalId = null;
+  editingContributionId = null;
 }
 
 function deleteContribution(goalId, contributionId) {
