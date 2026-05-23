@@ -1410,6 +1410,7 @@
   <button class="tab" onclick="showTab('furniture')">🛋️ Furniture from Sellers</button>
   <button class="tab" onclick="showTab('contacts')">📞 Key Contacts</button>
   <button class="tab" onclick="showTab('budget')">💷 Budget</button>
+  <button class="tab" id="tab-btn-savings" onclick="showTab('savings')">💰 Savings</button>
   <button class="tab" onclick="showTab('calendar')">📅 Calendar</button>
 </div>
 
@@ -1537,6 +1538,25 @@
           <div id="budget-breakdown" class="budget-breakdown"></div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- SAVINGS TAB -->
+  <div id="tab-savings" class="hidden">
+    <div class="task-panel">
+      <div class="budget-topbar">
+        <div class="budget-stats">
+          <div class="stat"><span id="savings-total">£0.00</span>Total saved</div>
+          <div class="stat"><span id="savings-count">0</span>Goals</div>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="add-btn" onclick="openAddSaving()">+ Add saving goal</button>
+        </div>
+      </div>
+    </div>
+    <div class="task-panel">
+      <h3 class="budget-heading">Savings Planner</h3>
+      <div id="savings-list" class="budget-list"></div>
     </div>
   </div>
 
@@ -1792,7 +1812,29 @@
   </div>
 </div>
 
-<!-- ADD EVENT MODAL -->
+  <!-- ADD SAVING GOAL MODAL -->
+  <div class="modal-overlay" id="modal-saving">
+    <div class="modal">
+      <h3 id="modal-saving-title">Add Saving Goal</h3>
+      <label for="s-title">Goal name</label>
+      <input type="text" id="s-title" placeholder="e.g. New sofa" />
+      <label for="s-target">Target amount (£)</label>
+      <input type="number" id="s-target" min="0" step="0.01" placeholder="0.00" />
+      <label for="s-saved">Already saved (£)</label>
+      <input type="number" id="s-saved" min="0" step="0.01" placeholder="0.00" />
+      <label for="s-monthly">Planned monthly contribution (£)</label>
+      <input type="number" id="s-monthly" min="0" step="0.01" placeholder="0.00" />
+      <label for="s-note">Notes (optional)</label>
+      <input type="text" id="s-note" placeholder="Optional note..." />
+      <div class="modal-btns">
+        <button class="btn-delete secondary hidden" id="btn-delete-saving" onclick="deleteSaving(editingSavingId)">Delete</button>
+        <button class="btn-cancel" onclick="closeModal('modal-saving')">Cancel</button>
+        <button class="btn-save" id="btn-save-saving" onclick="saveSaving()">Add Goal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD EVENT MODAL -->
 <div class="modal-overlay" id="modal-event">
   <div class="modal">
     <h3 id="modal-event-title">Add Event</h3>
@@ -1916,6 +1958,7 @@ const DEFAULT_CONTACTS = [
 const DEFAULT_EVENTS = [];
 const DEFAULT_BUDGET_CATEGORIES = ['Legal','Removals','Furniture','Deposits & Fees','Utilities','Other'];
 const DEFAULT_BUDGET_ENTRIES = [];
+const DEFAULT_SAVINGS = [];
 const PEOPLE_OPTIONS = ['Dani','Ken','Mum','Dad','Caroline','Dani/Ken'];
 const WHEN_OPTIONS = ['ASAP','2 weeks before','1 week before','Moving week','Day before','Night before','Moving day','After move'];
 
@@ -1971,6 +2014,18 @@ function migrateEvents(oldEvents) {
   }));
 }
 
+function migrateSavings(input) {
+  if (!Array.isArray(input)) return [];
+  return input.map((s, i) => ({
+    id: typeof s.id === 'number' ? s.id : Date.now() + i,
+    title: String(s.title || '').trim(),
+    target: Number(s.target) || 0,
+    saved: Number(s.saved) || 0,
+    monthly: Number(s.monthly) || 0,
+    note: String(s.note || '').trim()
+  })).filter(s => s.title && s.target >= 0 && s.saved >= 0);
+}
+
 // State
 const STORAGE_KEYS = {
   tasks: 'move_tasks',
@@ -1983,8 +2038,10 @@ const STORAGE_KEYS = {
   contacts: 'move_contacts',
   events: 'move_events',
   budgetEntries: 'move_budget_entries',
-  budgetCategories: 'move_budget_categories'
+  budgetCategories: 'move_budget_categories',
+  savings: 'move_savings_goals'
 };
+
 
 function readStoredJson(key, fallback) {
   try {
@@ -2007,6 +2064,12 @@ const FIREBASE_PUBLIC_CONFIG = {
 
 const SHARED_FAMILY_DOC_ID = 'spalding-family';
 
+// Update these with the Google account emails for Dani and Ken to restrict savings access.
+const ALLOWED_SAVINGS_EMAILS = [
+  'replace-with-dani-email@example.com',
+  'replace-with-ken-email@example.com'
+];
+
 let tasks = migrateTasks(readStoredJson(STORAGE_KEYS.tasks, null) || DEFAULT_TASKS.map((t,i) => ({...t, id: i})));
 let customTaskCategories = readStoredJson(STORAGE_KEYS.taskCategories, []);
 let customTaskCategoryIcons = readStoredJson(STORAGE_KEYS.taskCategoryIcons, {});
@@ -2025,6 +2088,7 @@ budgetCategories = [...new Set([...
   ...budgetCategories.filter((cat) => String(cat || '').trim()),
   ...budgetEntries.map((entry) => entry.category).filter(Boolean)
 ])];
+let savings = migrateSavings(readStoredJson(STORAGE_KEYS.savings, DEFAULT_SAVINGS));
 
 const syncRuntime = {
   app: null,
@@ -2053,6 +2117,7 @@ let editingTaskId = null;
 let viewingTaskId = null;
 let editingFurnitureIndex = null;
 let editingBudgetId = null;
+let editingSavingId = null;
 let currentBudgetCategoryFilter = 'all';
 let currentBudgetPaidFilter = 'all';
 
@@ -2068,7 +2133,8 @@ function exportStatePayload() {
     contacts,
     events,
     budgetEntries,
-    budgetCategories
+    budgetCategories,
+    savings
   };
 }
 
@@ -2084,6 +2150,7 @@ function persistLocalState() {
   localStorage.setItem(STORAGE_KEYS.events, JSON.stringify(events));
   localStorage.setItem(STORAGE_KEYS.budgetEntries, JSON.stringify(budgetEntries));
   localStorage.setItem(STORAGE_KEYS.budgetCategories, JSON.stringify(budgetCategories));
+  localStorage.setItem(STORAGE_KEYS.savings, JSON.stringify(savings));
 }
 
 function refreshAuthControls() {
@@ -2109,6 +2176,31 @@ function canMutate() {
   return !!(syncRuntime.connected && syncRuntime.currentUser && syncRuntime.canEdit);
 }
 
+function isSavingsAllowed() {
+  const user = syncRuntime.currentUser;
+  if (!user) return false;
+  const email = (user.email || '').toLowerCase();
+  if (ALLOWED_SAVINGS_EMAILS.some(e => e && e.toLowerCase() === email)) return true;
+  const name = (user.displayName || '').toLowerCase();
+  if (name.includes('dani') || name.includes('ken')) return true;
+  return false;
+}
+
+function refreshSavingsAccess() {
+  const btn = document.getElementById('tab-btn-savings');
+  const panel = document.getElementById('tab-savings');
+  if (!btn || !panel) return;
+  const allowed = isSavingsAllowed();
+  btn.classList.toggle('hidden', !allowed);
+  // If current tab is savings but user lost access, fall back to tasks.
+  if (allowed) {
+    // nothing
+  } else {
+    // hide panel if not allowed
+    panel.classList.add('hidden');
+  }
+}
+
 function applyActionLockToInteractiveElements() {
   const locked = !canMutate();
   document.body.classList.toggle('edit-locked', locked);
@@ -2125,6 +2217,7 @@ function applyActionLockToInteractiveElements() {
 function refreshSyncStatus() {
   refreshAuthControls();
   applyActionLockToInteractiveElements();
+  refreshSavingsAccess();
 }
 
 function applyPayload(payload) {
@@ -2144,6 +2237,7 @@ function applyPayload(payload) {
   contacts = Array.isArray(payload.contacts) ? payload.contacts : [];
   events = migrateEvents(payload.events || []);
   budgetEntries = migrateBudgetEntries(payload.budgetEntries || []);
+  savings = migrateSavings(payload.savings || []);
   budgetCategories = Array.isArray(payload.budgetCategories) ? payload.budgetCategories : [];
   budgetCategories = [...new Set([...
     DEFAULT_BUDGET_CATEGORIES,
@@ -2597,6 +2691,126 @@ function deleteBudget(entryId) {
   }
   save();
   renderBudget();
+}
+
+// Savings planner functions
+function renderSavings() {
+  const totalSaved = savings.reduce((s, g) => s + Number(g.saved || 0), 0);
+  const count = savings.length;
+  document.getElementById('savings-total').textContent = formatCurrency(totalSaved);
+  document.getElementById('savings-count').textContent = String(count);
+  const listEl = document.getElementById('savings-list');
+  if (!savings.length) {
+    listEl.innerHTML = '<div class="budget-empty">No saving goals yet. Add one to start planning.</div>';
+    return;
+  }
+
+  listEl.innerHTML = savings.slice().sort((a,b)=>b.id-a.id).map((g)=>{
+    const remaining = Math.max(0, Number(g.target || 0) - Number(g.saved || 0));
+    const monthly = Number(g.monthly || 0);
+    const months = monthly > 0 ? Math.ceil(remaining / monthly) : null;
+    let eta = '';
+    if (remaining <= 0) eta = 'Achieved';
+    else if (months === null) eta = 'Set a monthly amount';
+    else {
+      const d = new Date();
+      d.setMonth(d.getMonth() + months);
+      eta = d.toLocaleString(undefined, { month: 'short', year: 'numeric' });
+    }
+    return `
+      <div class="budget-item">
+        <div class="budget-item-head">
+          <div class="budget-item-desc">${g.title}</div>
+          <div style="text-align:right;">
+            <div class="budget-item-amount">${formatCurrency(g.target)}</div>
+            <div style="font-size:0.78rem; color:var(--muted);">Target</div>
+          </div>
+        </div>
+        <div class="budget-item-meta">Saved: ${formatCurrency(g.saved)} | Monthly: ${formatCurrency(g.monthly)} | ETA: ${eta}</div>
+        ${g.note?`<div class="budget-item-notes">${g.note}</div>`:''}
+        <div class="furn-actions" style="margin-top:10px;">
+          <button class="furn-action-btn" onclick="openEditSaving(${g.id})">Edit</button>
+          <button class="furn-action-btn delete" onclick="deleteSaving(${g.id})">Delete</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function openSavingsPlanner() {
+  showTab('budget');
+  const el = document.getElementById('savings-list');
+  if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function openAddSaving() {
+  if (!ensureCanEdit() || !isSavingsAllowed()) return;
+  editingSavingId = null;
+  document.getElementById('modal-saving-title').textContent = 'Add Saving Goal';
+  document.getElementById('btn-save-saving').textContent = 'Add Goal';
+  document.getElementById('btn-delete-saving').classList.add('hidden');
+  document.getElementById('s-title').value = '';
+  document.getElementById('s-target').value = '';
+  document.getElementById('s-saved').value = '';
+  document.getElementById('s-monthly').value = '';
+  document.getElementById('s-note').value = '';
+  document.getElementById('modal-saving').classList.add('open');
+}
+
+function openEditSaving(id) {
+  if (!ensureCanEdit() || !isSavingsAllowed()) return;
+  const g = savings.find(s => s.id === id);
+  if (!g) return;
+  editingSavingId = id;
+  document.getElementById('modal-saving-title').textContent = 'Edit Saving Goal';
+  document.getElementById('btn-save-saving').textContent = 'Save Changes';
+  document.getElementById('btn-delete-saving').classList.remove('hidden');
+  document.getElementById('s-title').value = g.title;
+  document.getElementById('s-target').value = Number(g.target || 0).toFixed(2);
+  document.getElementById('s-saved').value = Number(g.saved || 0).toFixed(2);
+  document.getElementById('s-monthly').value = Number(g.monthly || 0).toFixed(2);
+  document.getElementById('s-note').value = g.note || '';
+  document.getElementById('modal-saving').classList.add('open');
+}
+
+function saveSaving() {
+  if (!ensureCanEdit() || !isSavingsAllowed()) return;
+  const title = document.getElementById('s-title').value.trim();
+  const target = Number(document.getElementById('s-target').value) || 0;
+  const savedVal = Number(document.getElementById('s-saved').value) || 0;
+  const monthly = Number(document.getElementById('s-monthly').value) || 0;
+  const note = document.getElementById('s-note').value.trim();
+  if (!title || target < 0 || savedVal < 0) return alert('Please provide a valid name and amounts.');
+  const goal = {
+    id: editingSavingId || Date.now(),
+    title,
+    target: Number(target.toFixed(2)),
+    saved: Number(savedVal.toFixed(2)),
+    monthly: Number(monthly.toFixed(2)),
+    note
+  };
+  if (editingSavingId) {
+    const idx = savings.findIndex(s => s.id === editingSavingId);
+    if (idx === -1) return;
+    savings[idx] = goal;
+  } else {
+    savings.push(goal);
+  }
+  save();
+  renderSavings();
+  closeModal('modal-saving');
+}
+
+function deleteSaving(id) {
+  if (!ensureCanEdit() || !isSavingsAllowed()) return;
+  if (!confirm('Delete this saving goal?')) return;
+  savings = savings.filter(s => s.id !== id);
+  if (editingSavingId === id) {
+    editingSavingId = null;
+    closeModal('modal-saving');
+  }
+  save();
+  renderSavings();
 }
 
 function getTaskCategories() {
@@ -3734,6 +3948,7 @@ renderTasks();
 renderFurniture();
 renderContacts();
 renderBudget();
+renderSavings();
 updateStats();
 showTab('tasks');
 save();
