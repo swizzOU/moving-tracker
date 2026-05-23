@@ -2103,16 +2103,48 @@ function migrateEvents(oldEvents) {
   }));
 }
 
+function migrateContribution(c, index) {
+  return {
+    id: typeof c.id === 'number' ? c.id : Date.now() + index,
+    who: (c.who === 'Dani' || c.who === 'Ken') ? c.who : 'Dani',
+    amount: Math.max(0, Number(c.amount) || 0),
+    date: /^\d{4}-\d{2}-\d{2}$/.test(c.date) ? c.date : new Date().toISOString().slice(0, 10),
+    note: String(c.note || '').trim()
+  };
+}
+
 function migrateSavings(input) {
   if (!Array.isArray(input)) return [];
-  return input.map((s, i) => ({
-    id: typeof s.id === 'number' ? s.id : Date.now() + i,
-    title: String(s.title || '').trim(),
-    target: Number(s.target) || 0,
-    saved: Number(s.saved) || 0,
-    monthly: Number(s.monthly) || 0,
-    note: String(s.note || '').trim()
-  })).filter(s => s.title && s.target >= 0 && s.saved >= 0);
+  const today = new Date().toISOString().slice(0, 10);
+  return input.map((s, i) => {
+    const id = typeof s.id === 'number' ? s.id : Date.now() + i;
+    const title = String(s.title || '').trim();
+    const target = Number(s.target) || 0;
+    const monthly = Number(s.monthly) || 0;
+    const note = String(s.note || '').trim();
+
+    let contributions = [];
+    if (Array.isArray(s.contributions) && s.contributions.length > 0) {
+      contributions = s.contributions.map((c, ci) => migrateContribution(c, ci));
+    } else if (Number(s.saved) > 0) {
+      contributions = [{
+        id: id + 1,
+        who: 'Dani',
+        amount: Number(s.saved),
+        date: today,
+        note: 'Migrated from legacy saved amount'
+      }];
+    }
+
+    const priorities = (s.priorities && typeof s.priorities === 'object')
+      ? {
+          dani: ['high','medium','low'].includes(s.priorities.dani) ? s.priorities.dani : null,
+          ken:  ['high','medium','low'].includes(s.priorities.ken)  ? s.priorities.ken  : null
+        }
+      : { dani: null, ken: null };
+
+    return { id, title, target, monthly, note, contributions, priorities };
+  }).filter(s => s.title && s.target >= 0);
 }
 
 // State
@@ -2207,6 +2239,7 @@ let viewingTaskId = null;
 let editingFurnitureIndex = null;
 let editingBudgetId = null;
 let editingSavingId = null;
+let contributingToGoalId = null;
 let currentBudgetCategoryFilter = 'all';
 let currentBudgetPaidFilter = 'all';
 
@@ -2295,7 +2328,7 @@ function applyActionLockToInteractiveElements() {
   document.body.classList.toggle('edit-locked', locked);
 
   const controls = document.querySelectorAll(
-    'button.add-btn, button.btn-save, button.btn-delete, button.furn-action-btn, button.contact-edit-btn, button.task-priority-btn, button.category-action-btn'
+    'button.add-btn, button.btn-save, button.btn-delete, button.furn-action-btn, button.contact-edit-btn, button.task-priority-btn, button.category-action-btn, button.sv-priority-btn, button.sv-contrib-delete'
   );
 
   controls.forEach((el) => {
@@ -2342,6 +2375,7 @@ function applyPayload(payload) {
   renderFurniture();
   renderContacts();
   renderBudget();
+  renderSavings();
   updateStats();
   if (calendar) {
     renderCalendar();
