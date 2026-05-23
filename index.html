@@ -334,7 +334,22 @@
   .sv-contrib-delete:hover { opacity: 1; }
 
   .sv-person-totals { margin-top: 6px; font-size: 0.78rem; color: var(--muted); }
-  .sv-target-date-callout { margin-top: 6px; font-size: 0.78rem; color: var(--sage-dark); background: var(--sage-light); border-radius: 6px; padding: 5px 10px; }
+  .sv-card-body { display: flex; gap: 16px; align-items: flex-start; }
+  .sv-card-left { flex: 1 1 0; min-width: 0; }
+  .sv-card-chart { flex: 0 0 auto; width: 340px; max-width: 45%; }
+  .sv-eta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+  .sv-eta-chip { font-size: 0.76rem; padding: 3px 8px; border-radius: 20px; background: var(--card-bg); border: 1px solid var(--border); color: var(--text); white-space: nowrap; }
+  .sv-eta-chip.sv-eta-on-track { background: var(--sage-light); border-color: var(--sage); color: var(--sage-dark); }
+  .sv-eta-chip.sv-eta-behind { background: #fff3e0; border-color: #e6a817; color: #7a4f00; }
+  .sv-eta-chip.sv-eta-current { background: var(--card-bg); }
+  .sv-eta-chip.sv-eta-deadline { background: var(--sage-light); border-color: var(--sage); color: var(--sage-dark); }
+  .sv-eta-chip-icon { margin-right: 3px; font-weight: 700; }
+  .sv-eta-need { font-size: 0.74rem; color: var(--muted); }
+  .sv-eta-achieved-badge { font-size: 0.76rem; padding: 3px 10px; border-radius: 20px; background: var(--sage); color: var(--white); font-weight: 600; }
+  @media (max-width: 800px) {
+    .sv-card-body { flex-direction: column; }
+    .sv-card-chart { width: 100%; max-width: 100%; }
+  }
   .sv-modal-goal-name { font-size: 0.9rem; color: var(--sage-dark); font-weight: 600; margin-bottom: 4px; margin-top: -6px; }
 
   .sv-timeline-eta-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
@@ -1632,7 +1647,6 @@
       <h3 class="budget-heading">Saving Goals</h3>
       <div id="savings-list" class="budget-list"></div>
     </div>
-    <div id="savings-timelines"></div>
   </div>
 
   <!-- CALENDAR TAB -->
@@ -2950,40 +2964,6 @@ function renderGoalChart(projection, target) {
   return `<div class="sv-chart">${bars}</div>`;
 }
 
-function renderSavingsTimeline() {
-  const container = document.getElementById('savings-timelines');
-  if (!container) return;
-  if (!savings.length) { container.innerHTML = ''; return; }
-
-  const sorted = savings.slice().sort((a, b) => {
-    const diff = getPriorityScore(b) - getPriorityScore(a);
-    return diff !== 0 ? diff : b.id - a.id;
-  });
-
-  container.innerHTML = sorted.map(g => {
-    const eta = getGoalETA(g);
-    const target = Number(g.target) || 0;
-    const rate = getGoalMonthlyRate(g);
-    const saved = getSavedByPerson(g).total;
-    const remaining = Math.max(0, target - saved);
-    let monthsNeeded;
-    if (g.targetDate) {
-      const [y, m] = g.targetDate.split('-').map(Number);
-      const deadline = new Date(y, m - 1, 1);
-      const now = new Date(); now.setDate(1);
-      monthsNeeded = Math.max(1, (deadline.getFullYear() - now.getFullYear()) * 12 + (deadline.getMonth() - now.getMonth()));
-    } else {
-      monthsNeeded = (rate > 0 && target > 0) ? Math.ceil(remaining / rate) : 18;
-    }
-    const numMonths = Math.min(Math.max(monthsNeeded, 6), 120);
-    const projection = buildGoalProjection(g, numMonths);
-    const chart = renderGoalChart(projection, target);
-    return `<div class="task-panel">
-      <h3 class="budget-heading">${g.title} <span class="sv-timeline-eta-label ${eta.months === 0 ? 'sv-eta-achieved' : ''}" style="font-size:0.82rem;font-weight:400;">${eta.label}</span></h3>
-      <div class="sv-chart-wrap">${chart}</div>
-    </div>`;
-  }).join('');
-}
 
 function renderSavings() {
   const stats = computeDashboardStats();
@@ -3002,7 +2982,6 @@ function renderSavings() {
 
   if (!savings.length) {
     listEl.innerHTML = '<div class="budget-empty">No saving goals yet. Add one to start planning.</div>';
-    renderSavingsTimeline();
     return;
   }
 
@@ -3016,9 +2995,66 @@ function renderSavings() {
     const by = getSavedByPerson(g);
     const target = Number(g.target) || 0;
     const pct = target > 0 ? Math.min(100, Math.round((by.total / target) * 100)) : 0;
-    const eta = getGoalETA(g);
+    const currentRate = getGoalMonthlyRate(g);
     const reqMonthly = getRequiredMonthly(g);
     const p = g.priorities || { dani: null, ken: null };
+
+    // ETA at current rate (always calculated from monthly fields)
+    const saved = by.total;
+    const remaining = Math.max(0, target - saved);
+    let currentEtaLabel;
+    if (remaining <= 0) {
+      currentEtaLabel = 'Achieved';
+    } else if (currentRate > 0) {
+      const months = Math.ceil(remaining / currentRate);
+      const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + months);
+      currentEtaLabel = d.toLocaleString('en-GB', { month: 'short', year: 'numeric' });
+    } else {
+      currentEtaLabel = null;
+    }
+
+    // Deadline ETA (from target date field)
+    let deadlineLabel = null;
+    if (g.targetDate) {
+      const [y, m] = g.targetDate.split('-').map(Number);
+      const d = new Date(y, m - 1, 1);
+      deadlineLabel = d.toLocaleString('en-GB', { month: 'short', year: 'numeric' });
+    }
+
+    // Build ETA section
+    let etaHtml;
+    if (remaining <= 0) {
+      etaHtml = '<div class="sv-eta-row"><span class="sv-eta-achieved-badge">Achieved</span></div>';
+    } else if (deadlineLabel && reqMonthly !== null) {
+      const onTrack = currentRate >= reqMonthly * 0.99;
+      const statusClass = onTrack ? 'sv-eta-on-track' : 'sv-eta-behind';
+      const statusIcon = onTrack ? '✓' : '!';
+      etaHtml = `<div class="sv-eta-row">
+        <span class="sv-eta-chip ${statusClass}"><span class="sv-eta-chip-icon">${statusIcon}</span>Deadline: <strong>${deadlineLabel}</strong></span>
+        <span class="sv-eta-chip sv-eta-current">At current rate: <strong>${currentEtaLabel || 'unknown'}</strong></span>
+        <span class="sv-eta-need">Need <strong>${formatCurrency(reqMonthly)}/mo</strong> combined · ${formatCurrency(reqMonthly / 2)}/mo each</span>
+      </div>`;
+    } else if (deadlineLabel) {
+      etaHtml = `<div class="sv-eta-row"><span class="sv-eta-chip sv-eta-deadline">Deadline: <strong>${deadlineLabel}</strong></span>${currentEtaLabel ? `<span class="sv-eta-chip sv-eta-current">At current rate: <strong>${currentEtaLabel}</strong></span>` : ''}</div>`;
+    } else if (currentEtaLabel) {
+      etaHtml = `<div class="sv-eta-row"><span class="sv-eta-chip sv-eta-current">ETA: <strong>${currentEtaLabel}</strong></span></div>`;
+    } else {
+      etaHtml = `<div class="sv-eta-row"><span style="font-size:0.78rem;color:var(--muted);">Set a monthly rate to see ETA</span></div>`;
+    }
+
+    // Chart
+    let numMonths;
+    if (g.targetDate) {
+      const [y, m] = g.targetDate.split('-').map(Number);
+      const deadline = new Date(y, m - 1, 1);
+      const now = new Date(); now.setDate(1);
+      numMonths = Math.max(1, (deadline.getFullYear() - now.getFullYear()) * 12 + (deadline.getMonth() - now.getMonth()));
+    } else {
+      numMonths = currentRate > 0 && target > 0 ? Math.ceil(remaining / currentRate) : 18;
+    }
+    numMonths = Math.min(Math.max(numMonths, 6), 120);
+    const projection = buildGoalProjection(g, numMonths);
+    const chart = renderGoalChart(projection, target);
 
     const daniBadge = `<span class="sv-priority-badge ${p.dani || 'unset'}">Dani: ${p.dani ? p.dani.charAt(0).toUpperCase() + p.dani.slice(1) : '—'}</span>`;
     const kenBadge  = `<span class="sv-priority-badge ${p.ken  || 'unset'}">Ken: ${p.ken   ? p.ken.charAt(0).toUpperCase()  + p.ken.slice(1)  : '—'}</span>`;
@@ -3038,34 +3074,39 @@ function renderSavings() {
 
     return `
       <div class="budget-item">
-        <div class="budget-item-head">
-          <div class="budget-item-desc">${g.title}</div>
-          <div style="text-align:right;">
-            <div class="budget-item-amount">${formatCurrency(target)}</div>
-            <div style="font-size:0.78rem;color:var(--muted);">Target</div>
+        <div class="sv-card-body">
+          <div class="sv-card-left">
+            <div class="budget-item-head">
+              <div class="budget-item-desc">${g.title}</div>
+              <div style="text-align:right;">
+                <div class="budget-item-amount">${formatCurrency(target)}</div>
+                <div style="font-size:0.78rem;color:var(--muted);">Target</div>
+              </div>
+            </div>
+            <div class="sv-priority-row">${daniBadge}${kenBadge}${conflict}${myPriority}</div>
+            <div class="sv-progress-wrap">
+              <div class="progress-bar-outer"><div class="progress-bar-inner" style="width:${pct}%;"></div></div>
+              <div class="sv-progress-labels">${formatCurrency(by.total)} saved of ${formatCurrency(target)} · ${pct}%</div>
+            </div>
+            <div class="sv-person-totals">Dani ${formatCurrency(by.dani)} · Ken ${formatCurrency(by.ken)} · ${formatCurrency(g.monthlyDani || 0)}/mo Dani · ${formatCurrency(g.monthlyKen || 0)}/mo Ken</div>
+            ${etaHtml}
+            ${g.note ? `<div class="budget-item-notes">${g.note}</div>` : ''}
+            <details class="sv-contributions-log">
+              <summary>${contribs.length} contribution${contribs.length !== 1 ? 's' : ''} ▾</summary>
+              <div class="sv-contributions-list">${contribRows || '<div class="budget-empty">No contributions yet.</div>'}</div>
+            </details>
+            <div class="furn-actions" style="margin-top:10px;">
+              <button class="furn-action-btn" onclick="openEditSaving(${g.id})">Edit goal</button>
+              <button class="furn-action-btn" onclick="openAddContribution(${g.id})">+ Log contribution</button>
+              <button class="furn-action-btn delete" onclick="deleteSaving(${g.id})">Delete</button>
+            </div>
           </div>
-        </div>
-        <div class="sv-priority-row">${daniBadge}${kenBadge}${conflict}${myPriority}</div>
-        <div class="sv-progress-wrap">
-          <div class="progress-bar-outer"><div class="progress-bar-inner" style="width:${pct}%;"></div></div>
-          <div class="sv-progress-labels">${formatCurrency(by.total)} saved of ${formatCurrency(target)} · ${pct}%</div>
-        </div>
-        <div class="sv-person-totals">Dani ${formatCurrency(by.dani)} saved · Ken ${formatCurrency(by.ken)} saved · ${formatCurrency(g.monthlyDani || 0)}/mo Dani · ${formatCurrency(g.monthlyKen || 0)}/mo Ken · ETA: ${eta.label}</div>
-        ${reqMonthly ? `<div class="sv-target-date-callout">To hit your ${eta.label} deadline: need <strong>${formatCurrency(reqMonthly)}/month combined</strong> (${formatCurrency(reqMonthly / 2)}/mo each if split evenly)</div>` : ''}
-        ${g.note ? `<div class="budget-item-notes">${g.note}</div>` : ''}
-        <details class="sv-contributions-log">
-          <summary>${contribs.length} contribution${contribs.length !== 1 ? 's' : ''} ▾</summary>
-          <div class="sv-contributions-list">${contribRows || '<div class="budget-empty">No contributions yet.</div>'}</div>
-        </details>
-        <div class="furn-actions" style="margin-top:10px;">
-          <button class="furn-action-btn" onclick="openEditSaving(${g.id})">Edit goal</button>
-          <button class="furn-action-btn" onclick="openAddContribution(${g.id})">+ Log contribution</button>
-          <button class="furn-action-btn delete" onclick="deleteSaving(${g.id})">Delete</button>
+          <div class="sv-card-chart">
+            <div class="sv-chart-wrap">${chart}</div>
+          </div>
         </div>
       </div>`;
   }).join('');
-
-  renderSavingsTimeline();
 }
 
 function openAddSaving() {
