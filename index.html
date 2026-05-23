@@ -2899,7 +2899,7 @@ function buildGoalProjection(goal, numMonths) {
 }
 
 function renderGoalChart(projection, target) {
-  const maxAmount = Math.max(target, ...projection.map(p => p.amount), 1);
+  const maxAmount = Math.max(...projection.map(p => p.amount), 1);
   const chartH = 112;
   if (projection.every(p => p.amount <= 0)) {
     return '<div class="sv-chart-empty">Set a monthly rate to see the projection.</div>';
@@ -2907,7 +2907,10 @@ function renderGoalChart(projection, target) {
   const bars = projection.map(p => {
     const h = Math.max(4, Math.round((p.amount / maxAmount) * chartH));
     const dot = p.funded ? '<div class="sv-chart-milestone-dot"></div>' : '';
-    const tip = p.funded ? '<div class="sv-chart-milestone-tip">Goal funded!</div>' : '';
+    const tipText = p.funded
+      ? `Goal funded! · ${formatCurrency(p.amount)}`
+      : formatCurrency(p.amount);
+    const tip = `<div class="sv-chart-milestone-tip">${tipText}</div>`;
     return `<div class="sv-chart-bar-group">
       <div class="sv-chart-bar${p.funded ? ' has-milestone' : ''}" style="height:${h}px;">${dot}${tip}</div>
       <div class="sv-chart-label">${p.label}</div>
