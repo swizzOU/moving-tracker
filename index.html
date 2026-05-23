@@ -2839,23 +2839,7 @@ function getSavedByPerson(goal) {
 }
 
 function getGoalMonthlyRate(goal) {
-  const contribs = goal.contributions || [];
-  if (!contribs.length) return Number(goal.monthly) || 0;
-
-  const now = new Date();
-  const months = [];
-  for (let i = 0; i <= 2; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
-  }
-  let total = 0;
-  contribs.forEach(c => {
-    if (months.includes((c.date || '').slice(0, 7))) {
-      total += Number(c.amount) || 0;
-    }
-  });
-  if (total === 0) return Number(goal.monthly) || 0;
-  return total / 3;
+  return Number(goal.monthly) || 0;
 }
 
 function getGoalETA(goal) {
