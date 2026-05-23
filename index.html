@@ -2786,7 +2786,7 @@ function parseTags(meta) {
 
 function setActiveTag(tag) {
   filesState.activeTag = filesState.activeTag === tag ? null : tag;
-  renderFilesView();
+  renderFilesView().catch((err) => console.error('renderFilesView failed', err));
 }
 
 function renderTagFilterBar(allTags) {
@@ -2866,6 +2866,13 @@ async function handleFileUpload(event) {
     uploadingEl.appendChild(row);
     try {
       const fileRef = storage.ref(`move-tracker-files/${file.name}`);
+      try {
+        await fileRef.getMetadata();
+        if (!confirm(`"${file.name}" already exists. Overwrite it?`)) {
+          row.remove();
+          continue;
+        }
+      } catch (_notFound) { /* file doesn't exist — proceed */ }
       const task = fileRef.put(file);
       await new Promise((resolve, reject) => {
         task.on('state_changed',
@@ -2988,7 +2995,11 @@ async function renderFilesView() {
       view.appendChild(card);
     });
   } catch (err) {
-    view.innerHTML = `<div style="color:var(--danger);font-size:0.88rem">Failed to load files: ${err.message}</div>`;
+    view.innerHTML = '';
+    const errEl = document.createElement('div');
+    errEl.style.cssText = 'color:var(--danger);font-size:0.88rem';
+    errEl.textContent = `Failed to load files: ${err.message}`;
+    view.appendChild(errEl);
   }
 }
 
