@@ -2852,8 +2852,18 @@ function formatFileDate(isoString) {
 async function loadFolders() {
   const col = getFoldersCollection();
   if (!col) return;
-  const snap = await col.orderBy('createdAt', 'asc').get();
-  filesState.folders = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  try {
+    const snap = await col.orderBy('createdAt', 'asc').get();
+    filesState.folders = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    // orderBy may fail if index not yet created — fall back to unordered
+    try {
+      const snap = await col.get();
+      filesState.folders = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    } catch (err2) {
+      console.error('loadFolders failed', err2);
+    }
+  }
 }
 
 function openNewFolderModal() {
@@ -2886,7 +2896,7 @@ async function saveFolderName() {
     await col.add({ name, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
   }
   await loadFolders();
-  renderFilesView();
+  await renderFilesView();
 }
 
 async function deleteFolder(folderId, folderName) {
