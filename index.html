@@ -2822,6 +2822,10 @@ function getFoldersCollection() {
     .collection('files_folders');
 }
 
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function fileIcon(name) {
   const ext = (name.split('.').pop() || '').toLowerCase();
   const map = {
@@ -2892,14 +2896,19 @@ async function deleteFolder(folderId, folderName) {
   try {
     const folderRef = storage.ref(`move-tracker-files/${folderId}`);
     const result = await folderRef.listAll();
-    await Promise.all(result.items.map((itemRef) => itemRef.delete()));
+    if (result.items.length > 0) {
+      await Promise.all(result.items.map((itemRef) => itemRef.delete()));
+    }
   } catch (err) {
-    // folder may be empty, proceed
+    if (err.code !== 'storage/object-not-found') {
+      alert(`Could not delete folder files: ${err.message}`);
+      return;
+    }
   }
   const col = getFoldersCollection();
   if (col) await col.doc(folderId).delete();
   await loadFolders();
-  renderFilesView();
+  await renderFilesView();
 }
 
 function filesNavRoot() {
@@ -3027,11 +3036,12 @@ async function handleFileUpload(event) {
     row.className = 'files-upload-progress';
     row.id = rowId;
     row.innerHTML = `
-      <span style="min-width:140px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${file.name}</span>
+      <span class="files-upload-name" style="min-width:140px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
       <div class="files-upload-progress-bar-outer">
         <div class="files-upload-progress-bar-inner" id="${rowId}-bar" style="width:0%"></div>
       </div>
       <span id="${rowId}-pct" style="min-width:36px;text-align:right">0%</span>`;
+    row.querySelector('.files-upload-name').textContent = file.name;
     uploadingEl.appendChild(row);
     try {
       const fileRef = storage.ref(`move-tracker-files/${folderSegment}/${file.name}`);
@@ -3120,11 +3130,12 @@ async function renderFilesView() {
         card.className = 'folder-card';
         card.innerHTML = `
           <div class="folder-card-icon">📁</div>
-          <div class="folder-card-name">${folder.name}</div>
+          <div class="folder-card-name"></div>
           <div class="folder-card-actions">
-            <button class="folder-action-btn" data-action="rename" data-id="${folder.id}">Rename</button>
-            <button class="folder-action-btn danger" data-action="delete" data-id="${folder.id}" data-name="${folder.name}">Delete</button>
+            <button class="folder-action-btn" data-action="rename">Rename</button>
+            <button class="folder-action-btn danger" data-action="delete">Delete</button>
           </div>`;
+        card.querySelector('.folder-card-name').textContent = folder.name;
         card.querySelector('[data-action="rename"]').addEventListener('click', (e) => {
           e.stopPropagation();
           openRenameFolderModal(folder.id);
@@ -3186,13 +3197,15 @@ async function renderFileList(container, folderSegment, sectionLabel) {
         <input type="checkbox" class="file-card-checkbox" ${isSelected ? 'checked' : ''}>
         <div class="file-card-icon">${fileIcon(meta.name)}</div>
         <div class="file-card-info">
-          <div class="file-card-name" title="${meta.name}">${meta.name}</div>
+          <div class="file-card-name"></div>
           <div class="file-card-meta">${formatBytes(meta.size)} · ${formatFileDate(meta.timeCreated)}</div>
         </div>
         <div class="file-card-actions">
           <button class="file-btn file-btn-download">Download</button>
           <button class="file-btn file-btn-delete">Delete</button>
         </div>`;
+      card.querySelector('.file-card-name').textContent = meta.name;
+      card.querySelector('.file-card-name').title = meta.name;
       const checkbox = card.querySelector('.file-card-checkbox');
       checkbox.addEventListener('change', () => filesToggleSelect(itemRef.fullPath, checkbox));
       card.querySelector('.file-btn-download').addEventListener('click', () => downloadFile(itemRef.fullPath));
@@ -4483,6 +4496,10 @@ function openAddContact() {
   document.getElementById('modal-contact-title').textContent = 'Add Contact';
   document.getElementById('modal-contact').classList.add('open');
 }
+document.getElementById('folder-name-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') saveFolderName();
+});
+
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
   if (id === 'modal-event-view') {
