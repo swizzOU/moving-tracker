@@ -2919,8 +2919,7 @@ function computeDashboardStats() {
 function buildGoalProjection(goal, numMonths) {
   const now = new Date();
   const startAmount = getSavedByPerson(goal).total;
-  const reqMonthly = getRequiredMonthly(goal);
-  const rate = reqMonthly !== null ? reqMonthly : getGoalMonthlyRate(goal);
+  const rate = getGoalMonthlyRate(goal);
   const target = Number(goal.target) || 0;
   const result = [];
   for (let i = 0; i < numMonths; i++) {
