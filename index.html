@@ -4496,8 +4496,10 @@ function openAddContact() {
   document.getElementById('modal-contact-title').textContent = 'Add Contact';
   document.getElementById('modal-contact').classList.add('open');
 }
-document.getElementById('folder-name-input').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') saveFolderName();
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('folder-name-input')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') saveFolderName();
+  });
 });
 
 function closeModal(id) {
