@@ -1608,8 +1608,12 @@
     <div class="task-panel">
       <div class="budget-topbar">
         <div class="budget-stats">
-          <div class="stat"><span id="savings-total">£0.00</span>Total saved</div>
-          <div class="stat"><span id="savings-count">0</span>Goals</div>
+          <div class="stat"><span id="sv-total-saved">£0.00</span>Total saved</div>
+          <div class="stat"><span id="sv-dani-saved">£0.00</span>Dani's total</div>
+          <div class="stat"><span id="sv-ken-saved">£0.00</span>Ken's total</div>
+          <div class="stat"><span id="sv-monthly-rate">£0.00</span>Monthly rate</div>
+          <div class="stat"><span id="sv-goal-count">0</span>Goals</div>
+          <div class="stat"><span id="sv-achieved-count">0</span>Achieved</div>
         </div>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
           <button class="add-btn" onclick="openAddSaving()">+ Add saving goal</button>
@@ -1617,8 +1621,13 @@
       </div>
     </div>
     <div class="task-panel">
-      <h3 class="budget-heading">Savings Planner</h3>
+      <h3 class="budget-heading">Saving Goals</h3>
       <div id="savings-list" class="budget-list"></div>
+    </div>
+    <div class="task-panel">
+      <h3 class="budget-heading">Savings Timeline</h3>
+      <div id="savings-timeline-eta" class="sv-timeline-eta-list"></div>
+      <div id="savings-timeline-chart" class="sv-chart-wrap"></div>
     </div>
   </div>
 
