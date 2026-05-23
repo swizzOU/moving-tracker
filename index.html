@@ -1614,7 +1614,9 @@
           <div class="stat"><span id="sv-total-saved">£0.00</span>Total saved</div>
           <div class="stat"><span id="sv-dani-saved">£0.00</span>Dani's total</div>
           <div class="stat"><span id="sv-ken-saved">£0.00</span>Ken's total</div>
-          <div class="stat"><span id="sv-monthly-rate">£0.00</span>Monthly rate</div>
+          <div class="stat"><span id="sv-monthly-dani">£0.00</span>Dani/month</div>
+          <div class="stat"><span id="sv-monthly-ken">£0.00</span>Ken/month</div>
+          <div class="stat"><span id="sv-monthly-rate">£0.00</span>Combined/month</div>
           <div class="stat"><span id="sv-goal-count">0</span>Goals</div>
           <div class="stat"><span id="sv-achieved-count">0</span>Achieved</div>
         </div>
@@ -1627,11 +1629,7 @@
       <h3 class="budget-heading">Saving Goals</h3>
       <div id="savings-list" class="budget-list"></div>
     </div>
-    <div class="task-panel">
-      <h3 class="budget-heading">Savings Timeline</h3>
-      <div id="savings-timeline-eta" class="sv-timeline-eta-list"></div>
-      <div id="savings-timeline-chart" class="sv-chart-wrap"></div>
-    </div>
+    <div id="savings-timelines"></div>
   </div>
 
   <!-- CALENDAR TAB -->
@@ -2870,81 +2868,74 @@ function hasPriorityConflict(goal) {
 }
 
 function computeDashboardStats() {
-  let totalSaved = 0, daniSaved = 0, kenSaved = 0, monthlyRate = 0, achieved = 0;
+  let totalSaved = 0, daniSaved = 0, kenSaved = 0, monthlyDani = 0, monthlyKen = 0, achieved = 0;
   savings.forEach(g => {
     const by = getSavedByPerson(g);
     totalSaved += by.total;
     daniSaved += by.dani;
     kenSaved += by.ken;
-    monthlyRate += getGoalMonthlyRate(g);
+    monthlyDani += Number(g.monthlyDani) || 0;
+    monthlyKen += Number(g.monthlyKen) || 0;
     if (by.total >= Number(g.target)) achieved++;
   });
-  return { totalSaved, daniSaved, kenSaved, monthlyRate, goalCount: savings.length, achievedCount: achieved };
+  return { totalSaved, daniSaved, kenSaved, monthlyDani, monthlyKen, monthlyRate: monthlyDani + monthlyKen, goalCount: savings.length, achievedCount: achieved };
 }
 
-function buildCumulativeProjection(numMonths) {
+function buildGoalProjection(goal, numMonths) {
   const now = new Date();
-  const startAmount = savings.reduce((s, g) => s + getSavedByPerson(g).total, 0);
-  const totalRate = savings.reduce((s, g) => s + getGoalMonthlyRate(g), 0);
-  const totalTarget = savings.reduce((s, g) => s + Number(g.target), 0);
+  const startAmount = getSavedByPerson(goal).total;
+  const rate = getGoalMonthlyRate(goal);
+  const target = Number(goal.target) || 0;
   const result = [];
   for (let i = 0; i < numMonths; i++) {
-    const raw = startAmount + totalRate * (i + 1);
-    const projected = totalTarget > 0 ? Math.min(raw, totalTarget) : raw;
-    const prevRaw = startAmount + totalRate * i;
-    const prevProjected = totalTarget > 0 ? Math.min(prevRaw, totalTarget) : prevRaw;
+    const raw = startAmount + rate * (i + 1);
+    const amount = target > 0 ? Math.min(raw, target) : raw;
     const d = new Date(now.getFullYear(), now.getMonth() + i + 1, 1);
     const label = d.toLocaleString('en-GB', { month: 'short', year: '2-digit' });
-    const milestones = savings
-      .filter(g => Number(g.target) > prevProjected && Number(g.target) <= projected)
-      .map(g => g.title);
-    result.push({ label, amount: projected, milestones });
+    const funded = raw >= target && target > 0 && (startAmount + rate * i) < target;
+    result.push({ label, amount, funded });
   }
   return result;
 }
 
-function renderCumulativeChart(projection) {
-  const el = document.getElementById('savings-timeline-chart');
-  if (!el) return;
-  const maxAmount = Math.max(...projection.map(p => p.amount), 1);
+function renderGoalChart(projection, target) {
+  const maxAmount = Math.max(target, ...projection.map(p => p.amount), 1);
   const chartH = 112;
   if (projection.every(p => p.amount <= 0)) {
-    el.innerHTML = '<div class="sv-chart-empty">Add contributions or a monthly rate to see your savings projection.</div>';
-    return;
+    return '<div class="sv-chart-empty">Set a monthly rate to see the projection.</div>';
   }
   const bars = projection.map(p => {
     const h = Math.max(4, Math.round((p.amount / maxAmount) * chartH));
-    const hasMilestone = p.milestones.length > 0;
-    const tip = hasMilestone ? `<div class="sv-chart-milestone-tip">${p.milestones.join(', ')}</div>` : '';
-    const dot = hasMilestone ? '<div class="sv-chart-milestone-dot"></div>' : '';
+    const dot = p.funded ? '<div class="sv-chart-milestone-dot"></div>' : '';
+    const tip = p.funded ? '<div class="sv-chart-milestone-tip">Goal funded!</div>' : '';
     return `<div class="sv-chart-bar-group">
-      <div class="sv-chart-bar${hasMilestone ? ' has-milestone' : ''}" style="height:${h}px;">${dot}${tip}</div>
+      <div class="sv-chart-bar${p.funded ? ' has-milestone' : ''}" style="height:${h}px;">${dot}${tip}</div>
       <div class="sv-chart-label">${p.label}</div>
     </div>`;
   }).join('');
-  el.innerHTML = `<div class="sv-chart">${bars}</div>`;
+  return `<div class="sv-chart">${bars}</div>`;
 }
 
 function renderSavingsTimeline() {
-  const etaEl = document.getElementById('savings-timeline-eta');
-  if (!etaEl) return;
+  const container = document.getElementById('savings-timelines');
+  if (!container) return;
+  if (!savings.length) { container.innerHTML = ''; return; }
 
-  const withETA = savings.map(g => ({ g, eta: getGoalETA(g) }));
-  const achieved = withETA.filter(x => x.eta.months === 0);
-  const withDate = withETA.filter(x => x.eta.months !== null && x.eta.months > 0)
-    .sort((a, b) => a.eta.months - b.eta.months);
-  const noRate = withETA.filter(x => x.eta.months === null);
+  const sorted = savings.slice().sort((a, b) => {
+    const diff = getPriorityScore(b) - getPriorityScore(a);
+    return diff !== 0 ? diff : b.id - a.id;
+  });
 
-  const rows = [...achieved, ...withDate, ...noRate].map(({ g, eta }) => `
-    <div class="sv-timeline-eta-row">
-      <span>${g.title}</span>
-      <span class="sv-timeline-eta-label ${eta.months === 0 ? 'sv-eta-achieved' : ''}">${eta.label}</span>
-    </div>`).join('');
-
-  etaEl.innerHTML = rows || '<div class="budget-empty">No goals yet.</div>';
-
-  const projection = buildCumulativeProjection(18);
-  renderCumulativeChart(projection);
+  container.innerHTML = sorted.map(g => {
+    const eta = getGoalETA(g);
+    const projection = buildGoalProjection(g, 18);
+    const target = Number(g.target) || 0;
+    const chart = renderGoalChart(projection, target);
+    return `<div class="task-panel">
+      <h3 class="budget-heading">${g.title} <span class="sv-timeline-eta-label ${eta.months === 0 ? 'sv-eta-achieved' : ''}" style="font-size:0.82rem;font-weight:400;">${eta.label}</span></h3>
+      <div class="sv-chart-wrap">${chart}</div>
+    </div>`;
+  }).join('');
 }
 
 function renderSavings() {
@@ -2953,6 +2944,8 @@ function renderSavings() {
   if (el('sv-total-saved')) el('sv-total-saved').textContent = formatCurrency(stats.totalSaved);
   if (el('sv-dani-saved')) el('sv-dani-saved').textContent = formatCurrency(stats.daniSaved);
   if (el('sv-ken-saved')) el('sv-ken-saved').textContent = formatCurrency(stats.kenSaved);
+  if (el('sv-monthly-dani')) el('sv-monthly-dani').textContent = formatCurrency(stats.monthlyDani);
+  if (el('sv-monthly-ken')) el('sv-monthly-ken').textContent = formatCurrency(stats.monthlyKen);
   if (el('sv-monthly-rate')) el('sv-monthly-rate').textContent = formatCurrency(stats.monthlyRate);
   if (el('sv-goal-count')) el('sv-goal-count').textContent = String(stats.goalCount);
   if (el('sv-achieved-count')) el('sv-achieved-count').textContent = String(stats.achievedCount);
