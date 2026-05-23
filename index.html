@@ -1837,23 +1837,11 @@
     <div class="files-panel">
       <div id="files-auth-notice" class="files-auth-notice hidden">Sign in to upload and manage files.</div>
       <div id="files-toolbar" class="files-toolbar hidden">
-        <div class="files-breadcrumb">
-          <button class="files-crumb-root" onclick="filesNavRoot()">📁 All Folders</button>
-          <span id="files-crumb-folder" class="files-crumb-folder hidden"> › <span id="files-crumb-folder-name"></span></span>
-        </div>
-        <div class="files-toolbar-actions">
-          <button class="add-btn secondary" id="files-new-folder-btn" onclick="openNewFolderModal()">+ New Folder</button>
-          <label class="add-btn files-upload-label" id="files-upload-btn">
-            + Upload File
-            <input type="file" id="files-input" multiple style="display:none" onchange="handleFileUpload(event)">
-          </label>
-        </div>
-      </div>
-      <div id="files-bulk-bar" class="files-bulk-bar hidden">
-        <span id="files-bulk-count"></span>
-        <button class="file-btn file-btn-move" onclick="openMoveModal()">Move to…</button>
-        <button class="file-btn file-btn-delete" onclick="bulkDeleteFiles()">Delete selected</button>
-        <button class="file-btn" style="background:var(--cream-dark);color:var(--muted)" onclick="filesClearSelection()">Cancel</button>
+        <div id="files-tag-filter" class="files-tag-filter"></div>
+        <label class="add-btn files-upload-label">
+          + Upload File
+          <input type="file" id="files-input" multiple style="display:none" onchange="handleFileUpload(event)">
+        </label>
       </div>
       <div id="files-uploading" class="files-uploading hidden"></div>
       <div id="files-view" class="files-view"></div>
@@ -4507,8 +4495,8 @@ function openAddContact() {
   document.getElementById('modal-contact').classList.add('open');
 }
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('folder-name-input')?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') saveFolderName();
+  document.getElementById('tags-input')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') saveFileTags();
   });
 });
 
@@ -5104,28 +5092,16 @@ refreshSyncStatus();
 configureCloudSync();
 </script>
 
-<!-- FOLDER NAME MODAL -->
-<div class="modal-overlay" id="modal-folder-name">
+<!-- FILE TAGS MODAL -->
+<div class="modal-overlay" id="modal-file-tags">
   <div class="modal">
-    <h3 id="modal-folder-name-title">New Folder</h3>
-    <label>Folder name</label>
-    <input type="text" id="folder-name-input" placeholder="e.g. Contracts" maxlength="60" />
+    <h3>Edit Tags</h3>
+    <div id="modal-tags-filename" style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;word-break:break-all;"></div>
+    <label>Tags <span style="font-weight:400;color:var(--muted);font-size:0.82rem;">(comma-separated)</span></label>
+    <input type="text" id="tags-input" placeholder="e.g. contract, mortgage, survey" maxlength="200" />
     <div class="modal-btns">
-      <button class="btn-cancel" onclick="closeModal('modal-folder-name')">Cancel</button>
-      <button class="btn-save" onclick="saveFolderName()">Save</button>
-    </div>
-  </div>
-</div>
-
-<!-- MOVE FILES MODAL -->
-<div class="modal-overlay" id="modal-move-files">
-  <div class="modal">
-    <h3>Move to Folder</h3>
-    <label>Destination folder</label>
-    <select id="move-folder-select" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.95rem;background:var(--white);margin-bottom:8px;"></select>
-    <div class="modal-btns">
-      <button class="btn-cancel" onclick="closeModal('modal-move-files')">Cancel</button>
-      <button class="btn-save" onclick="confirmMoveFiles()">Move</button>
+      <button class="btn-cancel" onclick="closeModal('modal-file-tags')">Cancel</button>
+      <button class="btn-save" onclick="saveFileTags()">Save</button>
     </div>
   </div>
 </div>
