@@ -1459,11 +1459,128 @@
     }
     .modal { max-height: 82vh; }
   }
+
+  /* Files tab */
+  .files-panel {
+    padding: var(--space-lg) var(--space-xl);
+    max-width: 800px;
+  }
+  .files-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .files-upload-label {
+    cursor: pointer;
+    display: inline-block;
+  }
+  .files-auth-notice {
+    color: var(--muted);
+    font-size: 0.88rem;
+    background: var(--cream-dark);
+    border-radius: 8px;
+    padding: 8px 14px;
+  }
+  .files-uploading {
+    margin-bottom: 12px;
+    font-size: 0.88rem;
+    color: var(--muted);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .files-upload-progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .files-upload-progress-bar-outer {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .files-upload-progress-bar-inner {
+    height: 100%;
+    background: var(--sage);
+    border-radius: 999px;
+    transition: width 0.2s;
+  }
+  .files-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .file-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .file-card-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    width: 36px;
+    text-align: center;
+  }
+  .file-card-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .file-card-name {
+    font-size: 0.95rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .file-card-meta {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .file-card-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .file-btn {
+    font-size: 0.8rem;
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 500;
+  }
+  .file-btn-download {
+    background: var(--sage-light);
+    color: var(--sage-dark);
+  }
+  .file-btn-download:hover { background: #bfd9bb; }
+  .file-btn-delete {
+    background: #fde8e8;
+    color: var(--danger);
+  }
+  .file-btn-delete:hover { background: #f9cece; }
+  .files-empty {
+    color: var(--muted);
+    font-size: 0.9rem;
+    padding: 30px 0;
+    text-align: center;
+  }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
 </head>
 <body>
 
@@ -1488,6 +1605,7 @@
   <button class="tab" onclick="showTab('budget')">💷 Budget</button>
   <button class="tab" id="tab-btn-savings" onclick="showTab('savings')">💰 Savings</button>
   <button class="tab" onclick="showTab('calendar')">📅 Calendar</button>
+  <button class="tab" onclick="showTab('files')">📁 Files</button>
 </div>
 
 <div class="main">
@@ -1639,6 +1757,22 @@
     <div class="task-panel">
       <h3 class="budget-heading">Saving Goals</h3>
       <div id="savings-list" class="budget-list"></div>
+    </div>
+  </div>
+
+  <!-- FILES TAB -->
+  <div id="tab-files" class="hidden">
+    <div class="files-panel">
+      <div class="files-header">
+        <div id="files-auth-notice" class="files-auth-notice hidden">Sign in to upload and manage files.</div>
+        <label id="files-upload-btn" class="add-btn files-upload-label">
+          + Upload File
+          <input type="file" id="files-input" multiple style="display:none" onchange="handleFileUpload(event)">
+        </label>
+      </div>
+      <div id="files-uploading" class="files-uploading hidden"></div>
+      <div id="files-list" class="files-list"></div>
+      <div id="files-empty" class="files-empty hidden">No files uploaded yet.</div>
     </div>
   </div>
 
@@ -2197,6 +2331,7 @@ const FIREBASE_PUBLIC_CONFIG = {
   apiKey: '__FIREBASE_WEB_API_KEY__',
   authDomain: 'moving-app-bbb0b.firebaseapp.com',
   projectId: 'moving-app-bbb0b',
+  storageBucket: 'moving-app-bbb0b.firebasestorage.app',
   appId: '1:430081326861:web:ae86c0bb21b73de2bf7a44'
 };
 
@@ -2310,6 +2445,7 @@ function refreshAuthControls() {
     signInBtn.classList.remove('hidden');
     signOutBtn.classList.add('hidden');
   }
+  refreshFilesTab();
 }
 
 function canMutate() {
@@ -2577,6 +2713,175 @@ async function signOutGoogle() {
 function save() {
   persistLocalState();
   queueCloudPush();
+}
+
+// ── Files Tab ────────────────────────────────────────────────────────────────
+
+function getStorageRef() {
+  if (!syncRuntime.app) return null;
+  const storage = firebase.storage(syncRuntime.app);
+  return storage.ref('move-tracker-files');
+}
+
+function fileIcon(name) {
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  const map = { pdf: '📄', doc: '📝', docx: '📝', xls: '📊', xlsx: '📊', csv: '📊',
+    jpg: '🖼️', jpeg: '🖼️', png: '🖼️', gif: '🖼️', webp: '🖼️', heic: '🖼️',
+    mp4: '🎬', mov: '🎬', mp3: '🎵', zip: '🗜️', rar: '🗜️' };
+  return map[ext] || '📎';
+}
+
+function formatBytes(bytes) {
+  if (!bytes) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatFileDate(isoString) {
+  if (!isoString) return '';
+  const d = new Date(isoString);
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+async function loadFilesList() {
+  const ref = getStorageRef();
+  if (!ref) return;
+
+  const list = document.getElementById('files-list');
+  const empty = document.getElementById('files-empty');
+  list.innerHTML = '<div style="color:var(--muted);font-size:0.88rem;padding:10px 0">Loading…</div>';
+  empty.classList.add('hidden');
+
+  try {
+    const result = await ref.listAll();
+    list.innerHTML = '';
+
+    if (result.items.length === 0) {
+      empty.classList.remove('hidden');
+      return;
+    }
+
+    const metaPromises = result.items.map(async (itemRef) => {
+      const meta = await itemRef.getMetadata();
+      return { ref: itemRef, meta };
+    });
+
+    const items = await Promise.all(metaPromises);
+    items.sort((a, b) => new Date(b.meta.timeCreated) - new Date(a.meta.timeCreated));
+
+    items.forEach(({ ref: itemRef, meta }) => {
+      const card = document.createElement('div');
+      card.className = 'file-card';
+      card.innerHTML = `
+        <div class="file-card-icon">${fileIcon(meta.name)}</div>
+        <div class="file-card-info">
+          <div class="file-card-name" title="${meta.name}">${meta.name}</div>
+          <div class="file-card-meta">${formatBytes(meta.size)} · ${formatFileDate(meta.timeCreated)}</div>
+        </div>
+        <div class="file-card-actions">
+          <button class="file-btn file-btn-download" onclick="downloadFile(${JSON.stringify(itemRef.fullPath)})">Download</button>
+          <button class="file-btn file-btn-delete" onclick="deleteFile(${JSON.stringify(itemRef.fullPath)}, ${JSON.stringify(meta.name)})">Delete</button>
+        </div>`;
+      list.appendChild(card);
+    });
+  } catch (err) {
+    list.innerHTML = `<div style="color:var(--danger);font-size:0.88rem">Failed to load files. ${err.message}</div>`;
+  }
+}
+
+async function handleFileUpload(event) {
+  const files = Array.from(event.target.files);
+  event.target.value = '';
+  if (!files.length) return;
+
+  const ref = getStorageRef();
+  if (!ref) return;
+
+  const uploadingEl = document.getElementById('files-uploading');
+  uploadingEl.classList.remove('hidden');
+
+  for (const file of files) {
+    const rowId = `upload-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const row = document.createElement('div');
+    row.className = 'files-upload-progress';
+    row.id = rowId;
+    row.innerHTML = `
+      <span style="min-width:140px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${file.name}</span>
+      <div class="files-upload-progress-bar-outer">
+        <div class="files-upload-progress-bar-inner" id="${rowId}-bar" style="width:0%"></div>
+      </div>
+      <span id="${rowId}-pct" style="min-width:36px;text-align:right">0%</span>`;
+    uploadingEl.appendChild(row);
+
+    try {
+      const fileRef = ref.child(file.name);
+      const task = fileRef.put(file);
+      await new Promise((resolve, reject) => {
+        task.on('state_changed',
+          (snap) => {
+            const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+            const bar = document.getElementById(`${rowId}-bar`);
+            const pctEl = document.getElementById(`${rowId}-pct`);
+            if (bar) bar.style.width = `${pct}%`;
+            if (pctEl) pctEl.textContent = `${pct}%`;
+          },
+          reject,
+          resolve
+        );
+      });
+    } catch (err) {
+      console.error('Upload failed', file.name, err);
+      alert(`Upload failed for ${file.name}: ${err.message}`);
+    }
+
+    document.getElementById(rowId)?.remove();
+  }
+
+  uploadingEl.classList.add('hidden');
+  await loadFilesList();
+}
+
+async function downloadFile(fullPath) {
+  try {
+    const storage = firebase.storage(syncRuntime.app);
+    const url = await storage.ref(fullPath).getDownloadURL();
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.click();
+  } catch (err) {
+    alert(`Download failed: ${err.message}`);
+  }
+}
+
+async function deleteFile(fullPath, name) {
+  if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+  try {
+    const storage = firebase.storage(syncRuntime.app);
+    await storage.ref(fullPath).delete();
+    await loadFilesList();
+  } catch (err) {
+    alert(`Delete failed: ${err.message}`);
+  }
+}
+
+function refreshFilesTab() {
+  const isSignedIn = !!syncRuntime.currentUser;
+  const notice = document.getElementById('files-auth-notice');
+  const uploadBtn = document.getElementById('files-upload-btn');
+  if (!notice || !uploadBtn) return;
+  if (isSignedIn) {
+    notice.classList.add('hidden');
+    uploadBtn.style.display = '';
+    loadFilesList();
+  } else {
+    notice.classList.remove('hidden');
+    uploadBtn.style.display = 'none';
+    document.getElementById('files-list').innerHTML = '';
+    document.getElementById('files-empty').classList.add('hidden');
+  }
 }
 
 function formatCurrency(amount) {
@@ -3307,7 +3612,7 @@ function renderTaskCategoryOptions(selectedCategory = '') {
 }
 
 function showTab(t) {
-  const tabs = ['tasks','furniture','contacts','budget','savings','calendar'];
+  const tabs = ['tasks','furniture','contacts','budget','savings','calendar','files'];
   tabs.forEach(x => {
     const panel = document.getElementById('tab-'+x);
     const isActive = x === t;
@@ -3327,6 +3632,10 @@ function showTab(t) {
       calendar.updateSize();
       setTimeout(() => calendar.updateSize(), 60);
     });
+  }
+
+  if (t === 'files') {
+    refreshFilesTab();
   }
 }
 
