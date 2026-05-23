@@ -299,6 +299,66 @@
     line-height: 1.25;
   }
 
+  /* ── Savings redesign ───────────────────────────────────────── */
+  .sv-progress-wrap { margin-top: 10px; }
+  .sv-progress-wrap .progress-bar-outer { width: 100%; height: 10px; border-radius: 6px; background: var(--cream-dark); overflow: hidden; }
+  .sv-progress-wrap .progress-bar-inner { height: 100%; background: var(--sage); border-radius: 6px; transition: width 0.4s; }
+  .sv-progress-labels { margin-top: 4px; font-size: 0.76rem; color: var(--muted); }
+
+  .sv-priority-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .sv-priority-badge { font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; border: 1.5px solid var(--border); white-space: nowrap; }
+  .sv-priority-badge.high   { background: #FDE8D8; color: #8A3A1A; border-color: #F5C8AA; }
+  .sv-priority-badge.medium { background: var(--yellow); color: #7A6210; border-color: #EDD98A; }
+  .sv-priority-badge.low    { background: var(--blue); color: #1A4A7A; border-color: #A8C8E8; }
+  .sv-priority-badge.unset  { background: var(--cream-dark); color: var(--muted); border-color: var(--border); }
+  .sv-conflict-badge { font-size: 0.68rem; padding: 2px 7px; border-radius: 10px; background: #FDE8D8; color: #8A3A1A; border: 1.5px solid #F5C8AA; }
+  .sv-priority-btn { font-size: 0.72rem; padding: 3px 8px; border: 1.5px solid var(--border); border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; white-space: nowrap; font-family: 'DM Sans', sans-serif; }
+  .sv-priority-btn:hover { border-color: var(--sage); color: var(--sage-dark); }
+
+  .sv-priority-popover { position: fixed; z-index: 600; background: var(--white); border: 1.5px solid var(--border); border-radius: 8px; box-shadow: 0 6px 24px rgba(0,0,0,0.12); padding: 6px; display: flex; flex-direction: column; gap: 4px; min-width: 130px; }
+  .sv-priority-popover button { width: 100%; text-align: left; padding: 6px 10px; border: none; border-radius: 6px; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.82rem; cursor: pointer; color: var(--text); }
+  .sv-priority-popover button:hover { background: var(--cream-dark); }
+  .sv-priority-popover .sv-pop-clear { font-size: 0.74rem; color: var(--muted); text-align: center; cursor: pointer; padding: 3px 0; border-top: 1px solid var(--border); margin-top: 2px; }
+  .sv-priority-popover .sv-pop-clear:hover { color: var(--danger); }
+
+  .sv-contributions-log { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; }
+  .sv-contributions-log summary { font-size: 0.78rem; color: var(--muted); cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px; user-select: none; }
+  .sv-contributions-log summary::-webkit-details-marker { display: none; }
+  .sv-contributions-list { margin-top: 8px; display: flex; flex-direction: column; gap: 5px; }
+  .sv-contribution-row { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--muted); flex-wrap: wrap; }
+  .sv-contrib-who { font-weight: 600; color: var(--text); }
+  .sv-contrib-amount { color: var(--sage-dark); font-weight: 600; }
+  .sv-contrib-delete { border: none; background: none; color: var(--danger); cursor: pointer; font-size: 0.8rem; margin-left: auto; padding: 0 4px; opacity: 0.6; }
+  .sv-contrib-delete:hover { opacity: 1; }
+
+  .sv-person-totals { margin-top: 6px; font-size: 0.78rem; color: var(--muted); }
+  .sv-modal-goal-name { font-size: 0.9rem; color: var(--sage-dark); font-weight: 600; margin-bottom: 4px; margin-top: -6px; }
+
+  .sv-timeline-eta-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+  .sv-timeline-eta-row { display: flex; align-items: center; gap: 12px; font-size: 0.82rem; }
+  .sv-timeline-eta-label { min-width: 80px; font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
+  .sv-eta-achieved { color: var(--sage-dark); font-weight: 600; }
+
+  .sv-chart-wrap { overflow-x: auto; margin-top: 8px; }
+  .sv-chart { display: flex; align-items: flex-end; gap: 6px; height: 140px; padding-bottom: 28px; position: relative; min-width: max-content; }
+  .sv-chart-bar-group { display: flex; flex-direction: column; align-items: center; position: relative; width: 36px; }
+  .sv-chart-bar { width: 28px; background: var(--sage-light); border-radius: 4px 4px 0 0; border: 1.5px solid var(--sage); min-height: 4px; position: relative; }
+  .sv-chart-bar.has-milestone { background: var(--sage); }
+  .sv-chart-milestone-dot { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); width: 8px; height: 8px; border-radius: 50%; background: var(--warm); border: 2px solid var(--white); }
+  .sv-chart-label { position: absolute; bottom: -26px; font-size: 0.62rem; color: var(--muted); white-space: nowrap; transform: rotate(-45deg); transform-origin: top left; left: 14px; }
+  .sv-chart-milestone-tip { display: none; position: absolute; bottom: calc(100% + 12px); left: 50%; transform: translateX(-50%); background: var(--text); color: var(--white); font-size: 0.64rem; padding: 3px 7px; border-radius: 5px; white-space: nowrap; pointer-events: none; z-index: 10; }
+  .sv-chart-bar-group:hover .sv-chart-milestone-tip { display: block; }
+  .sv-chart-empty { color: var(--muted); font-style: italic; font-size: 0.84rem; padding: 6px 2px; }
+
+  @media (max-width: 700px) {
+    .sv-priority-row { gap: 5px; }
+    .sv-priority-badge { font-size: 0.65rem; }
+    .sv-chart { height: 110px; }
+    .sv-chart-bar-group { width: 28px; }
+    .sv-chart-bar { width: 20px; }
+  }
+  /* ── End savings redesign ───────────────────────────────────── */
+
   .budget-empty {
     color: var(--muted);
     font-style: italic;
@@ -737,6 +797,8 @@
   body.edit-locked .contact-edit-btn,
   body.edit-locked .task-priority-btn,
   body.edit-locked .category-action-btn,
+  body.edit-locked .sv-priority-btn,
+  body.edit-locked .sv-contrib-delete,
   body.edit-locked .checkbox,
   body.edit-locked .status-pill {
     opacity: 0.55;
