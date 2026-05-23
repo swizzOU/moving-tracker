@@ -334,6 +334,7 @@
   .sv-contrib-delete:hover { opacity: 1; }
 
   .sv-person-totals { margin-top: 6px; font-size: 0.78rem; color: var(--muted); }
+  .sv-target-date-callout { margin-top: 6px; font-size: 0.78rem; color: var(--sage-dark); background: var(--sage-light); border-radius: 6px; padding: 5px 10px; }
   .sv-modal-goal-name { font-size: 0.9rem; color: var(--sage-dark); font-weight: 600; margin-bottom: 4px; margin-top: -6px; }
 
   .sv-timeline-eta-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
@@ -1894,6 +1895,8 @@
       <input type="text" id="s-title" placeholder="e.g. New sofa" />
       <label for="s-target">Target amount (£)</label>
       <input type="number" id="s-target" min="0" step="0.01" placeholder="0.00" />
+      <label for="s-target-date">Target date (optional — we'll calculate required monthly)</label>
+      <input type="month" id="s-target-date" />
       <label for="s-monthly-dani">Dani's monthly contribution (£)</label>
       <input type="number" id="s-monthly-dani" min="0" step="0.01" placeholder="0.00" />
       <label for="s-monthly-ken">Ken's monthly contribution (£)</label>
@@ -2149,7 +2152,8 @@ function migrateSavings(input) {
         }
       : { dani: null, ken: null };
 
-    return { id, title, target, monthlyDani, monthlyKen, note, contributions, priorities };
+    const targetDate = /^\d{4}-\d{2}$/.test(s.targetDate) ? s.targetDate : null;
+    return { id, title, target, monthlyDani, monthlyKen, note, contributions, priorities, targetDate };
   }).filter(s => s.title && s.target >= 0);
 }
 
@@ -2569,7 +2573,10 @@ function save() {
 }
 
 function formatCurrency(amount) {
-  return `£${(Number(amount) || 0).toFixed(2)}`;
+  const n = Number(amount) || 0;
+  return n % 1 === 0
+    ? `£${n.toLocaleString('en-GB')}`
+    : `£${n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function getBudgetCategories() {
@@ -2849,6 +2856,11 @@ function getGoalETA(goal) {
   const saved = getSavedByPerson(goal).total;
   const remaining = (Number(goal.target) || 0) - saved;
   if (remaining <= 0) return { months: 0, date: new Date(), label: 'Achieved' };
+  if (goal.targetDate) {
+    const [y, m] = goal.targetDate.split('-').map(Number);
+    const d = new Date(y, m - 1, 1);
+    return { months: null, date: d, label: d.toLocaleString('en-GB', { month: 'short', year: 'numeric' }) };
+  }
   const rate = getGoalMonthlyRate(goal);
   if (rate <= 0) return { months: null, date: null, label: 'Set a monthly rate' };
   const months = Math.ceil(remaining / rate);
@@ -2856,6 +2868,20 @@ function getGoalETA(goal) {
   d.setDate(1);
   d.setMonth(d.getMonth() + months);
   return { months, date: d, label: d.toLocaleString('en-GB', { month: 'short', year: 'numeric' }) };
+}
+
+function getRequiredMonthly(goal) {
+  if (!goal.targetDate) return null;
+  const saved = getSavedByPerson(goal).total;
+  const remaining = (Number(goal.target) || 0) - saved;
+  if (remaining <= 0) return null;
+  const [y, m] = goal.targetDate.split('-').map(Number);
+  const deadline = new Date(y, m - 1, 1);
+  const now = new Date();
+  now.setDate(1);
+  const months = (deadline.getFullYear() - now.getFullYear()) * 12 + (deadline.getMonth() - now.getMonth());
+  if (months <= 0) return null;
+  return remaining / months;
 }
 
 function getPriorityScore(goal) {
@@ -2886,7 +2912,8 @@ function computeDashboardStats() {
 function buildGoalProjection(goal, numMonths) {
   const now = new Date();
   const startAmount = getSavedByPerson(goal).total;
-  const rate = getGoalMonthlyRate(goal);
+  const reqMonthly = getRequiredMonthly(goal);
+  const rate = reqMonthly !== null ? reqMonthly : getGoalMonthlyRate(goal);
   const target = Number(goal.target) || 0;
   const result = [];
   for (let i = 0; i < numMonths; i++) {
@@ -2939,7 +2966,15 @@ function renderSavingsTimeline() {
     const rate = getGoalMonthlyRate(g);
     const saved = getSavedByPerson(g).total;
     const remaining = Math.max(0, target - saved);
-    const monthsNeeded = (rate > 0 && target > 0) ? Math.ceil(remaining / rate) : 18;
+    let monthsNeeded;
+    if (g.targetDate) {
+      const [y, m] = g.targetDate.split('-').map(Number);
+      const deadline = new Date(y, m - 1, 1);
+      const now = new Date(); now.setDate(1);
+      monthsNeeded = Math.max(1, (deadline.getFullYear() - now.getFullYear()) * 12 + (deadline.getMonth() - now.getMonth()));
+    } else {
+      monthsNeeded = (rate > 0 && target > 0) ? Math.ceil(remaining / rate) : 18;
+    }
     const numMonths = Math.min(Math.max(monthsNeeded, 6), 120);
     const projection = buildGoalProjection(g, numMonths);
     const chart = renderGoalChart(projection, target);
@@ -2982,6 +3017,7 @@ function renderSavings() {
     const target = Number(g.target) || 0;
     const pct = target > 0 ? Math.min(100, Math.round((by.total / target) * 100)) : 0;
     const eta = getGoalETA(g);
+    const reqMonthly = getRequiredMonthly(g);
     const p = g.priorities || { dani: null, ken: null };
 
     const daniBadge = `<span class="sv-priority-badge ${p.dani || 'unset'}">Dani: ${p.dani ? p.dani.charAt(0).toUpperCase() + p.dani.slice(1) : '—'}</span>`;
@@ -3015,6 +3051,7 @@ function renderSavings() {
           <div class="sv-progress-labels">${formatCurrency(by.total)} saved of ${formatCurrency(target)} · ${pct}%</div>
         </div>
         <div class="sv-person-totals">Dani ${formatCurrency(by.dani)} saved · Ken ${formatCurrency(by.ken)} saved · ${formatCurrency(g.monthlyDani || 0)}/mo Dani · ${formatCurrency(g.monthlyKen || 0)}/mo Ken · ETA: ${eta.label}</div>
+        ${reqMonthly ? `<div class="sv-target-date-callout">To hit your ${eta.label} deadline: need <strong>${formatCurrency(reqMonthly)}/month combined</strong> (${formatCurrency(reqMonthly / 2)}/mo each if split evenly)</div>` : ''}
         ${g.note ? `<div class="budget-item-notes">${g.note}</div>` : ''}
         <details class="sv-contributions-log">
           <summary>${contribs.length} contribution${contribs.length !== 1 ? 's' : ''} ▾</summary>
@@ -3039,6 +3076,7 @@ function openAddSaving() {
   document.getElementById('btn-delete-saving').classList.add('hidden');
   document.getElementById('s-title').value = '';
   document.getElementById('s-target').value = '';
+  document.getElementById('s-target-date').value = '';
   document.getElementById('s-monthly-dani').value = '';
   document.getElementById('s-monthly-ken').value = '';
   document.getElementById('s-note').value = '';
@@ -3055,6 +3093,7 @@ function openEditSaving(id) {
   document.getElementById('btn-delete-saving').classList.remove('hidden');
   document.getElementById('s-title').value = g.title;
   document.getElementById('s-target').value = g.target.toFixed(2);
+  document.getElementById('s-target-date').value = g.targetDate || '';
   document.getElementById('s-monthly-dani').value = g.monthlyDani ? g.monthlyDani.toFixed(2) : '';
   document.getElementById('s-monthly-ken').value = g.monthlyKen ? g.monthlyKen.toFixed(2) : '';
   document.getElementById('s-note').value = g.note || '';
@@ -3065,6 +3104,7 @@ function saveSaving() {
   if (!ensureCanEdit() || !isSavingsAllowed()) return;
   const title = document.getElementById('s-title').value.trim();
   const target = parseFloat(document.getElementById('s-target').value) || 0;
+  const targetDate = document.getElementById('s-target-date').value || null;
   const monthlyDani = parseFloat(document.getElementById('s-monthly-dani').value) || 0;
   const monthlyKen = parseFloat(document.getElementById('s-monthly-ken').value) || 0;
   const note = document.getElementById('s-note').value.trim();
@@ -3074,10 +3114,10 @@ function saveSaving() {
   if (editingSavingId) {
     const idx = savings.findIndex(s => s.id === editingSavingId);
     if (idx !== -1) {
-      savings[idx] = { ...savings[idx], title, target, monthlyDani, monthlyKen, note };
+      savings[idx] = { ...savings[idx], title, target, targetDate, monthlyDani, monthlyKen, note };
     }
   } else {
-    savings.push({ id: Date.now(), title, target, monthlyDani, monthlyKen, note, contributions: [], priorities: { dani: null, ken: null } });
+    savings.push({ id: Date.now(), title, target, targetDate, monthlyDani, monthlyKen, note, contributions: [], priorities: { dani: null, ken: null } });
   }
   save();
   renderSavings();
