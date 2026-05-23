@@ -334,9 +334,6 @@
   .sv-contrib-delete:hover { opacity: 1; }
 
   .sv-person-totals { margin-top: 6px; font-size: 0.78rem; color: var(--muted); }
-  .sv-card-body { display: flex; gap: 16px; align-items: flex-start; }
-  .sv-card-left { flex: 1 1 0; min-width: 0; }
-  .sv-card-chart { flex: 0 0 auto; width: 340px; max-width: 45%; }
   .sv-eta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
   .sv-eta-chip { font-size: 0.76rem; padding: 3px 8px; border-radius: 20px; background: var(--card-bg); border: 1px solid var(--border); color: var(--text); white-space: nowrap; }
   .sv-eta-chip.sv-eta-on-track { background: var(--sage-light); border-color: var(--sage); color: var(--sage-dark); }
@@ -346,10 +343,6 @@
   .sv-eta-chip-icon { margin-right: 3px; font-weight: 700; }
   .sv-eta-need { font-size: 0.74rem; color: var(--muted); }
   .sv-eta-achieved-badge { font-size: 0.76rem; padding: 3px 10px; border-radius: 20px; background: var(--sage); color: var(--white); font-weight: 600; }
-  @media (max-width: 800px) {
-    .sv-card-body { flex-direction: column; }
-    .sv-card-chart { width: 100%; max-width: 100%; }
-  }
   .sv-modal-goal-name { font-size: 0.9rem; color: var(--sage-dark); font-weight: 600; margin-bottom: 4px; margin-top: -6px; }
 
   .sv-timeline-eta-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
@@ -3042,17 +3035,16 @@ function renderSavings() {
       etaHtml = `<div class="sv-eta-row"><span style="font-size:0.78rem;color:var(--muted);">Set a monthly rate to see ETA</span></div>`;
     }
 
-    // Chart
-    let numMonths;
+    // Chart — show up to the later of: current-rate ETA or deadline
+    const currentRateMonths = currentRate > 0 && target > 0 ? Math.ceil(remaining / currentRate) : 18;
+    let deadlineMonths = 0;
     if (g.targetDate) {
       const [y, m] = g.targetDate.split('-').map(Number);
       const deadline = new Date(y, m - 1, 1);
       const now = new Date(); now.setDate(1);
-      numMonths = Math.max(1, (deadline.getFullYear() - now.getFullYear()) * 12 + (deadline.getMonth() - now.getMonth()));
-    } else {
-      numMonths = currentRate > 0 && target > 0 ? Math.ceil(remaining / currentRate) : 18;
+      deadlineMonths = Math.max(1, (deadline.getFullYear() - now.getFullYear()) * 12 + (deadline.getMonth() - now.getMonth()));
     }
-    numMonths = Math.min(Math.max(numMonths, 6), 120);
+    const numMonths = Math.min(Math.max(currentRateMonths, deadlineMonths, 6), 120);
     const projection = buildGoalProjection(g, numMonths);
     const chart = renderGoalChart(projection, target);
 
@@ -3074,36 +3066,30 @@ function renderSavings() {
 
     return `
       <div class="budget-item">
-        <div class="sv-card-body">
-          <div class="sv-card-left">
-            <div class="budget-item-head">
-              <div class="budget-item-desc">${g.title}</div>
-              <div style="text-align:right;">
-                <div class="budget-item-amount">${formatCurrency(target)}</div>
-                <div style="font-size:0.78rem;color:var(--muted);">Target</div>
-              </div>
-            </div>
-            <div class="sv-priority-row">${daniBadge}${kenBadge}${conflict}${myPriority}</div>
-            <div class="sv-progress-wrap">
-              <div class="progress-bar-outer"><div class="progress-bar-inner" style="width:${pct}%;"></div></div>
-              <div class="sv-progress-labels">${formatCurrency(by.total)} saved of ${formatCurrency(target)} · ${pct}%</div>
-            </div>
-            <div class="sv-person-totals">Dani ${formatCurrency(by.dani)} · Ken ${formatCurrency(by.ken)} · ${formatCurrency(g.monthlyDani || 0)}/mo Dani · ${formatCurrency(g.monthlyKen || 0)}/mo Ken</div>
-            ${etaHtml}
-            ${g.note ? `<div class="budget-item-notes">${g.note}</div>` : ''}
-            <details class="sv-contributions-log">
-              <summary>${contribs.length} contribution${contribs.length !== 1 ? 's' : ''} ▾</summary>
-              <div class="sv-contributions-list">${contribRows || '<div class="budget-empty">No contributions yet.</div>'}</div>
-            </details>
-            <div class="furn-actions" style="margin-top:10px;">
-              <button class="furn-action-btn" onclick="openEditSaving(${g.id})">Edit goal</button>
-              <button class="furn-action-btn" onclick="openAddContribution(${g.id})">+ Log contribution</button>
-              <button class="furn-action-btn delete" onclick="deleteSaving(${g.id})">Delete</button>
-            </div>
+        <div class="budget-item-head">
+          <div class="budget-item-desc">${g.title}</div>
+          <div style="text-align:right;">
+            <div class="budget-item-amount">${formatCurrency(target)}</div>
+            <div style="font-size:0.78rem;color:var(--muted);">Target</div>
           </div>
-          <div class="sv-card-chart">
-            <div class="sv-chart-wrap">${chart}</div>
-          </div>
+        </div>
+        <div class="sv-priority-row">${daniBadge}${kenBadge}${conflict}${myPriority}</div>
+        <div class="sv-progress-wrap">
+          <div class="progress-bar-outer"><div class="progress-bar-inner" style="width:${pct}%;"></div></div>
+          <div class="sv-progress-labels">${formatCurrency(by.total)} saved of ${formatCurrency(target)} · ${pct}%</div>
+        </div>
+        <div class="sv-person-totals">Dani ${formatCurrency(by.dani)} · Ken ${formatCurrency(by.ken)} · ${formatCurrency(g.monthlyDani || 0)}/mo Dani · ${formatCurrency(g.monthlyKen || 0)}/mo Ken</div>
+        ${etaHtml}
+        <div class="sv-chart-wrap">${chart}</div>
+        ${g.note ? `<div class="budget-item-notes">${g.note}</div>` : ''}
+        <details class="sv-contributions-log">
+          <summary>${contribs.length} contribution${contribs.length !== 1 ? 's' : ''} ▾</summary>
+          <div class="sv-contributions-list">${contribRows || '<div class="budget-empty">No contributions yet.</div>'}</div>
+        </details>
+        <div class="furn-actions" style="margin-top:10px;">
+          <button class="furn-action-btn" onclick="openEditSaving(${g.id})">Edit goal</button>
+          <button class="furn-action-btn" onclick="openAddContribution(${g.id})">+ Log contribution</button>
+          <button class="furn-action-btn delete" onclick="deleteSaving(${g.id})">Delete</button>
         </div>
       </div>`;
   }).join('');
