@@ -1894,8 +1894,10 @@
       <input type="text" id="s-title" placeholder="e.g. New sofa" />
       <label for="s-target">Target amount (£)</label>
       <input type="number" id="s-target" min="0" step="0.01" placeholder="0.00" />
-      <label for="s-monthly">Planned monthly contribution (£)</label>
-      <input type="number" id="s-monthly" min="0" step="0.01" placeholder="0.00" />
+      <label for="s-monthly-dani">Dani's monthly contribution (£)</label>
+      <input type="number" id="s-monthly-dani" min="0" step="0.01" placeholder="0.00" />
+      <label for="s-monthly-ken">Ken's monthly contribution (£)</label>
+      <input type="number" id="s-monthly-ken" min="0" step="0.01" placeholder="0.00" />
       <label for="s-note">Notes (optional)</label>
       <input type="text" id="s-note" placeholder="Optional note..." />
       <div class="modal-btns">
@@ -2123,7 +2125,8 @@ function migrateSavings(input) {
     const id = typeof s.id === 'number' ? s.id : Date.now() + i;
     const title = String(s.title || '').trim();
     const target = Number(s.target) || 0;
-    const monthly = Number(s.monthly) || 0;
+    const monthlyDani = Number(s.monthlyDani != null ? s.monthlyDani : s.monthly) || 0;
+    const monthlyKen = Number(s.monthlyKen) || 0;
     const note = String(s.note || '').trim();
 
     let contributions = [];
@@ -2146,7 +2149,7 @@ function migrateSavings(input) {
         }
       : { dani: null, ken: null };
 
-    return { id, title, target, monthly, note, contributions, priorities };
+    return { id, title, target, monthlyDani, monthlyKen, note, contributions, priorities };
   }).filter(s => s.title && s.target >= 0);
 }
 
@@ -2839,7 +2842,7 @@ function getSavedByPerson(goal) {
 }
 
 function getGoalMonthlyRate(goal) {
-  return Number(goal.monthly) || 0;
+  return (Number(goal.monthlyDani) || 0) + (Number(goal.monthlyKen) || 0);
 }
 
 function getGoalETA(goal) {
@@ -3006,7 +3009,7 @@ function renderSavings() {
           <div class="progress-bar-outer"><div class="progress-bar-inner" style="width:${pct}%;"></div></div>
           <div class="sv-progress-labels">${formatCurrency(by.total)} saved of ${formatCurrency(target)} · ${pct}%</div>
         </div>
-        <div class="sv-person-totals">Dani ${formatCurrency(by.dani)} · Ken ${formatCurrency(by.ken)} · ETA: ${eta.label}</div>
+        <div class="sv-person-totals">Dani ${formatCurrency(by.dani)} saved · Ken ${formatCurrency(by.ken)} saved · ${formatCurrency(g.monthlyDani || 0)}/mo Dani · ${formatCurrency(g.monthlyKen || 0)}/mo Ken · ETA: ${eta.label}</div>
         ${g.note ? `<div class="budget-item-notes">${g.note}</div>` : ''}
         <details class="sv-contributions-log">
           <summary>${contribs.length} contribution${contribs.length !== 1 ? 's' : ''} ▾</summary>
@@ -3031,7 +3034,8 @@ function openAddSaving() {
   document.getElementById('btn-delete-saving').classList.add('hidden');
   document.getElementById('s-title').value = '';
   document.getElementById('s-target').value = '';
-  document.getElementById('s-monthly').value = '';
+  document.getElementById('s-monthly-dani').value = '';
+  document.getElementById('s-monthly-ken').value = '';
   document.getElementById('s-note').value = '';
   document.getElementById('modal-saving').classList.add('open');
 }
@@ -3046,7 +3050,8 @@ function openEditSaving(id) {
   document.getElementById('btn-delete-saving').classList.remove('hidden');
   document.getElementById('s-title').value = g.title;
   document.getElementById('s-target').value = g.target.toFixed(2);
-  document.getElementById('s-monthly').value = g.monthly ? g.monthly.toFixed(2) : '';
+  document.getElementById('s-monthly-dani').value = g.monthlyDani ? g.monthlyDani.toFixed(2) : '';
+  document.getElementById('s-monthly-ken').value = g.monthlyKen ? g.monthlyKen.toFixed(2) : '';
   document.getElementById('s-note').value = g.note || '';
   document.getElementById('modal-saving').classList.add('open');
 }
@@ -3055,7 +3060,8 @@ function saveSaving() {
   if (!ensureCanEdit() || !isSavingsAllowed()) return;
   const title = document.getElementById('s-title').value.trim();
   const target = parseFloat(document.getElementById('s-target').value) || 0;
-  const monthly = parseFloat(document.getElementById('s-monthly').value) || 0;
+  const monthlyDani = parseFloat(document.getElementById('s-monthly-dani').value) || 0;
+  const monthlyKen = parseFloat(document.getElementById('s-monthly-ken').value) || 0;
   const note = document.getElementById('s-note').value.trim();
   if (!title) { alert('Please enter a goal name.'); return; }
   if (target < 0) { alert('Target must be 0 or more.'); return; }
@@ -3063,10 +3069,10 @@ function saveSaving() {
   if (editingSavingId) {
     const idx = savings.findIndex(s => s.id === editingSavingId);
     if (idx !== -1) {
-      savings[idx] = { ...savings[idx], title, target, monthly, note };
+      savings[idx] = { ...savings[idx], title, target, monthlyDani, monthlyKen, note };
     }
   } else {
-    savings.push({ id: Date.now(), title, target, monthly, note, contributions: [], priorities: { dani: null, ken: null } });
+    savings.push({ id: Date.now(), title, target, monthlyDani, monthlyKen, note, contributions: [], priorities: { dani: null, ken: null } });
   }
   save();
   renderSavings();
