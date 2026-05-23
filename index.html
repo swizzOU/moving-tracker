@@ -1891,8 +1891,6 @@
       <input type="text" id="s-title" placeholder="e.g. New sofa" />
       <label for="s-target">Target amount (£)</label>
       <input type="number" id="s-target" min="0" step="0.01" placeholder="0.00" />
-      <label for="s-saved">Already saved (£)</label>
-      <input type="number" id="s-saved" min="0" step="0.01" placeholder="0.00" />
       <label for="s-monthly">Planned monthly contribution (£)</label>
       <input type="number" id="s-monthly" min="0" step="0.01" placeholder="0.00" />
       <label for="s-note">Notes (optional)</label>
@@ -1901,6 +1899,26 @@
         <button class="btn-delete secondary hidden" id="btn-delete-saving" onclick="deleteSaving(editingSavingId)">Delete</button>
         <button class="btn-cancel" onclick="closeModal('modal-saving')">Cancel</button>
         <button class="btn-save" id="btn-save-saving" onclick="saveSaving()">Add Goal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOG CONTRIBUTION MODAL -->
+  <div class="modal-overlay" id="modal-contribution">
+    <div class="modal">
+      <h3>Log Contribution</h3>
+      <p class="sv-modal-goal-name" id="contrib-goal-name"></p>
+      <label for="contrib-who">Who</label>
+      <input type="text" id="contrib-who" readonly style="background:var(--cream-dark);color:var(--muted);" />
+      <label for="contrib-amount">Amount (£)</label>
+      <input type="number" id="contrib-amount" min="0.01" step="0.01" placeholder="0.00" />
+      <label for="contrib-date">Date</label>
+      <input type="date" id="contrib-date" />
+      <label for="contrib-note">Note (optional)</label>
+      <input type="text" id="contrib-note" placeholder="e.g. March salary transfer" />
+      <div class="modal-btns">
+        <button class="btn-cancel" onclick="closeModal('modal-contribution')">Cancel</button>
+        <button class="btn-save" onclick="saveContribution()">Log Contribution</button>
       </div>
     </div>
   </div>
