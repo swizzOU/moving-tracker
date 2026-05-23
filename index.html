@@ -343,12 +343,12 @@
 
   .sv-chart-wrap { overflow-x: auto; margin-top: 8px; }
   .sv-chart { display: flex; align-items: flex-end; gap: 6px; height: 140px; padding-bottom: 28px; position: relative; min-width: max-content; }
-  .sv-chart-bar-group { display: flex; flex-direction: column; align-items: center; position: relative; width: 36px; }
-  .sv-chart-bar { width: 28px; background: var(--sage-light); border-radius: 4px 4px 0 0; border: 1.5px solid var(--sage); min-height: 4px; position: relative; }
+  .sv-chart-bar-group { display: flex; flex-direction: column; align-items: center; position: relative; width: 20px; }
+  .sv-chart-bar { width: 14px; background: var(--sage-light); border-radius: 3px 3px 0 0; border: 1px solid var(--sage); min-height: 4px; position: relative; }
   .sv-chart-bar.has-milestone { background: var(--sage); }
   .sv-chart-milestone-dot { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); width: 8px; height: 8px; border-radius: 50%; background: var(--warm); border: 2px solid var(--white); }
-  .sv-chart-label { position: absolute; bottom: -26px; font-size: 0.62rem; color: var(--muted); white-space: nowrap; transform: rotate(-45deg); transform-origin: top left; left: 14px; }
-  .sv-chart-milestone-tip { display: none; position: absolute; bottom: calc(100% + 12px); left: 50%; transform: translateX(-50%); background: var(--text); color: var(--white); font-size: 0.64rem; padding: 3px 7px; border-radius: 5px; white-space: nowrap; pointer-events: none; z-index: 10; }
+  .sv-chart-label { position: absolute; bottom: -26px; font-size: 0.58rem; color: var(--muted); white-space: nowrap; transform: rotate(-45deg); transform-origin: top left; left: 10px; }
+  .sv-chart-milestone-tip { display: none; position: absolute; top: calc(100% + 30px); left: 50%; transform: translateX(-50%); background: var(--text); color: var(--white); font-size: 0.64rem; padding: 3px 7px; border-radius: 5px; white-space: nowrap; pointer-events: none; z-index: 10; }
   .sv-chart-bar-group:hover .sv-chart-milestone-tip { display: block; }
   .sv-chart-empty { color: var(--muted); font-style: italic; font-size: 0.84rem; padding: 6px 2px; }
 
@@ -356,7 +356,7 @@
     .sv-priority-row { gap: 5px; }
     .sv-priority-badge { font-size: 0.65rem; }
     .sv-chart { height: 110px; }
-    .sv-chart-bar-group { width: 28px; }
+    .sv-chart-bar-group { width: 18px; }
     .sv-chart-bar { width: 20px; }
   }
   /* ── End savings redesign ───────────────────────────────────── */
@@ -2931,8 +2931,13 @@ function renderSavingsTimeline() {
 
   container.innerHTML = sorted.map(g => {
     const eta = getGoalETA(g);
-    const projection = buildGoalProjection(g, 18);
     const target = Number(g.target) || 0;
+    const rate = getGoalMonthlyRate(g);
+    const saved = getSavedByPerson(g).total;
+    const remaining = Math.max(0, target - saved);
+    const monthsNeeded = (rate > 0 && target > 0) ? Math.ceil(remaining / rate) : 18;
+    const numMonths = Math.min(Math.max(monthsNeeded, 6), 120);
+    const projection = buildGoalProjection(g, numMonths);
     const chart = renderGoalChart(projection, target);
     return `<div class="task-panel">
       <h3 class="budget-heading">${g.title} <span class="sv-timeline-eta-label ${eta.months === 0 ? 'sv-eta-achieved' : ''}" style="font-size:0.82rem;font-weight:400;">${eta.label}</span></h3>
