@@ -2780,9 +2780,11 @@ async function loadFilesList() {
           <div class="file-card-meta">${formatBytes(meta.size)} · ${formatFileDate(meta.timeCreated)}</div>
         </div>
         <div class="file-card-actions">
-          <button class="file-btn file-btn-download" onclick="downloadFile(${JSON.stringify(itemRef.fullPath)})">Download</button>
-          <button class="file-btn file-btn-delete" onclick="deleteFile(${JSON.stringify(itemRef.fullPath)}, ${JSON.stringify(meta.name)})">Delete</button>
+          <button class="file-btn file-btn-download">Download</button>
+          <button class="file-btn file-btn-delete">Delete</button>
         </div>`;
+      card.querySelector('.file-btn-download').addEventListener('click', () => downloadFile(itemRef.fullPath));
+      card.querySelector('.file-btn-delete').addEventListener('click', () => deleteFile(itemRef.fullPath, meta.name));
       list.appendChild(card);
     });
   } catch (err) {
