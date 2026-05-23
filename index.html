@@ -2816,54 +2816,219 @@ function deleteBudget(entryId) {
   renderBudget();
 }
 
-// Savings planner functions
+// ── Savings redesign ──────────────────────────────────────────────────────
+
+function getSavingsIdentity() {
+  const email = (syncRuntime.currentUser && syncRuntime.currentUser.email || '').toLowerCase();
+  if (email === ALLOWED_SAVINGS_EMAILS[0].toLowerCase()) return 'Dani';
+  if (email === ALLOWED_SAVINGS_EMAILS[1].toLowerCase()) return 'Ken';
+  return null;
+}
+
+function getSavedByPerson(goal) {
+  let dani = 0, ken = 0;
+  (goal.contributions || []).forEach(c => {
+    if (c.who === 'Dani') dani += Number(c.amount) || 0;
+    else if (c.who === 'Ken') ken += Number(c.amount) || 0;
+  });
+  return { dani, ken, total: dani + ken };
+}
+
+function getGoalMonthlyRate(goal) {
+  const contribs = goal.contributions || [];
+  if (!contribs.length) return Number(goal.monthly) || 0;
+
+  const now = new Date();
+  const months = [];
+  for (let i = 1; i <= 3; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  }
+  let total = 0;
+  contribs.forEach(c => {
+    if (months.includes((c.date || '').slice(0, 7))) {
+      total += Number(c.amount) || 0;
+    }
+  });
+  if (total === 0) return Number(goal.monthly) || 0;
+  return total / 3;
+}
+
+function getGoalETA(goal) {
+  const saved = getSavedByPerson(goal).total;
+  const remaining = (Number(goal.target) || 0) - saved;
+  if (remaining <= 0) return { months: 0, date: new Date(), label: 'Achieved' };
+  const rate = getGoalMonthlyRate(goal);
+  if (rate <= 0) return { months: null, date: null, label: 'Set a monthly rate' };
+  const months = Math.ceil(remaining / rate);
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + months);
+  return { months, date: d, label: d.toLocaleString('en-GB', { month: 'short', year: 'numeric' }) };
+}
+
+function getPriorityScore(goal) {
+  const map = { high: 3, medium: 2, low: 1 };
+  return (map[goal.priorities && goal.priorities.dani] || 0) +
+         (map[goal.priorities && goal.priorities.ken]  || 0);
+}
+
+function hasPriorityConflict(goal) {
+  const p = goal.priorities || {};
+  return p.dani && p.ken && p.dani !== p.ken;
+}
+
+function computeDashboardStats() {
+  let totalSaved = 0, daniSaved = 0, kenSaved = 0, monthlyRate = 0, achieved = 0;
+  savings.forEach(g => {
+    const by = getSavedByPerson(g);
+    totalSaved += by.total;
+    daniSaved += by.dani;
+    kenSaved += by.ken;
+    monthlyRate += getGoalMonthlyRate(g);
+    if (by.total >= Number(g.target)) achieved++;
+  });
+  return { totalSaved, daniSaved, kenSaved, monthlyRate, goalCount: savings.length, achievedCount: achieved };
+}
+
+function buildCumulativeProjection(numMonths) {
+  const now = new Date();
+  const startAmount = savings.reduce((s, g) => s + getSavedByPerson(g).total, 0);
+  const totalRate = savings.reduce((s, g) => s + getGoalMonthlyRate(g), 0);
+  const result = [];
+  for (let i = 0; i < numMonths; i++) {
+    const projected = startAmount + totalRate * (i + 1);
+    const prevProjected = startAmount + totalRate * i;
+    const d = new Date(now.getFullYear(), now.getMonth() + i + 1, 1);
+    const label = d.toLocaleString('en-GB', { month: 'short', year: '2-digit' });
+    const milestones = savings
+      .filter(g => Number(g.target) > prevProjected && Number(g.target) <= projected)
+      .map(g => g.title);
+    result.push({ label, amount: projected, milestones });
+  }
+  return result;
+}
+
+function renderCumulativeChart(projection) {
+  const el = document.getElementById('savings-timeline-chart');
+  if (!el) return;
+  const maxAmount = Math.max(...projection.map(p => p.amount), 1);
+  const chartH = 112;
+  if (projection.every(p => p.amount <= 0)) {
+    el.innerHTML = '<div class="sv-chart-empty">Add contributions or a monthly rate to see your savings projection.</div>';
+    return;
+  }
+  const bars = projection.map(p => {
+    const h = Math.max(4, Math.round((p.amount / maxAmount) * chartH));
+    const hasMilestone = p.milestones.length > 0;
+    const tip = hasMilestone ? `<div class="sv-chart-milestone-tip">${p.milestones.join(', ')}</div>` : '';
+    const dot = hasMilestone ? '<div class="sv-chart-milestone-dot"></div>' : '';
+    return `<div class="sv-chart-bar-group">
+      <div class="sv-chart-bar${hasMilestone ? ' has-milestone' : ''}" style="height:${h}px;">${dot}${tip}</div>
+      <div class="sv-chart-label">${p.label}</div>
+    </div>`;
+  }).join('');
+  el.innerHTML = `<div class="sv-chart">${bars}</div>`;
+}
+
+function renderSavingsTimeline() {
+  const etaEl = document.getElementById('savings-timeline-eta');
+  if (!etaEl) return;
+
+  const withETA = savings.map(g => ({ g, eta: getGoalETA(g) }));
+  const achieved = withETA.filter(x => x.eta.months === 0);
+  const withDate = withETA.filter(x => x.eta.months !== null && x.eta.months > 0)
+    .sort((a, b) => a.eta.months - b.eta.months);
+  const noRate = withETA.filter(x => x.eta.months === null);
+
+  const rows = [...achieved, ...withDate, ...noRate].map(({ g, eta }) => `
+    <div class="sv-timeline-eta-row">
+      <span>${g.title}</span>
+      <span class="sv-timeline-eta-label ${eta.months === 0 ? 'sv-eta-achieved' : ''}">${eta.label}</span>
+    </div>`).join('');
+
+  etaEl.innerHTML = rows || '<div class="budget-empty">No goals yet.</div>';
+
+  const projection = buildCumulativeProjection(18);
+  renderCumulativeChart(projection);
+}
+
 function renderSavings() {
-  const totalSaved = savings.reduce((s, g) => s + Number(g.saved || 0), 0);
-  const count = savings.length;
-  document.getElementById('savings-total').textContent = formatCurrency(totalSaved);
-  document.getElementById('savings-count').textContent = String(count);
+  const stats = computeDashboardStats();
+  const el = (id) => document.getElementById(id);
+  if (el('sv-total-saved')) el('sv-total-saved').textContent = formatCurrency(stats.totalSaved);
+  if (el('sv-dani-saved')) el('sv-dani-saved').textContent = formatCurrency(stats.daniSaved);
+  if (el('sv-ken-saved')) el('sv-ken-saved').textContent = formatCurrency(stats.kenSaved);
+  if (el('sv-monthly-rate')) el('sv-monthly-rate').textContent = formatCurrency(stats.monthlyRate);
+  if (el('sv-goal-count')) el('sv-goal-count').textContent = String(stats.goalCount);
+  if (el('sv-achieved-count')) el('sv-achieved-count').textContent = String(stats.achievedCount);
+
   const listEl = document.getElementById('savings-list');
+  if (!listEl) return;
+
   if (!savings.length) {
     listEl.innerHTML = '<div class="budget-empty">No saving goals yet. Add one to start planning.</div>';
+    renderSavingsTimeline();
     return;
   }
 
-  listEl.innerHTML = savings.slice().sort((a,b)=>b.id-a.id).map((g)=>{
-    const remaining = Math.max(0, Number(g.target || 0) - Number(g.saved || 0));
-    const monthly = Number(g.monthly || 0);
-    const months = monthly > 0 ? Math.ceil(remaining / monthly) : null;
-    let eta = '';
-    if (remaining <= 0) eta = 'Achieved';
-    else if (months === null) eta = 'Set a monthly amount';
-    else {
-      const d = new Date();
-      d.setMonth(d.getMonth() + months);
-      eta = d.toLocaleString(undefined, { month: 'short', year: 'numeric' });
-    }
+  const identity = getSavingsIdentity();
+  const sorted = savings.slice().sort((a, b) => {
+    const diff = getPriorityScore(b) - getPriorityScore(a);
+    return diff !== 0 ? diff : b.id - a.id;
+  });
+
+  listEl.innerHTML = sorted.map(g => {
+    const by = getSavedByPerson(g);
+    const target = Number(g.target) || 0;
+    const pct = target > 0 ? Math.min(100, Math.round((by.total / target) * 100)) : 0;
+    const eta = getGoalETA(g);
+    const p = g.priorities || { dani: null, ken: null };
+
+    const daniBadge = `<span class="sv-priority-badge ${p.dani || 'unset'}">Dani: ${p.dani ? p.dani.charAt(0).toUpperCase() + p.dani.slice(1) : '—'}</span>`;
+    const kenBadge  = `<span class="sv-priority-badge ${p.ken  || 'unset'}">Ken: ${p.ken   ? p.ken.charAt(0).toUpperCase()  + p.ken.slice(1)  : '—'}</span>`;
+    const conflict  = hasPriorityConflict(g) ? '<span class="sv-conflict-badge">Disagreement</span>' : '';
+    const myPriority = identity ? `<button class="sv-priority-btn" onclick="openPriorityPicker(${g.id}, this)">Set my priority ▾</button>` : '';
+
+    const contribs = (g.contributions || []).slice().sort((a, b) => b.id - a.id);
+    const contribRows = contribs.map(c => `
+      <div class="sv-contribution-row">
+        <span class="sv-contrib-who">${c.who}</span>
+        <span class="sv-contrib-amount">${formatCurrency(c.amount)}</span>
+        <span>${new Date(c.date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+        ${c.note ? `<span style="font-style:italic;">${c.note}</span>` : ''}
+        <button class="sv-contrib-delete" onclick="deleteContribution(${g.id}, ${c.id})" title="Remove">×</button>
+      </div>`).join('');
+
     return `
       <div class="budget-item">
         <div class="budget-item-head">
           <div class="budget-item-desc">${g.title}</div>
           <div style="text-align:right;">
-            <div class="budget-item-amount">${formatCurrency(g.target)}</div>
-            <div style="font-size:0.78rem; color:var(--muted);">Target</div>
+            <div class="budget-item-amount">${formatCurrency(target)}</div>
+            <div style="font-size:0.78rem;color:var(--muted);">Target</div>
           </div>
         </div>
-        <div class="budget-item-meta">Saved: ${formatCurrency(g.saved)} | Monthly: ${formatCurrency(g.monthly)} | ETA: ${eta}</div>
-        ${g.note?`<div class="budget-item-notes">${g.note}</div>`:''}
+        <div class="sv-priority-row">${daniBadge}${kenBadge}${conflict}${myPriority}</div>
+        <div class="sv-progress-wrap">
+          <div class="progress-bar-outer"><div class="progress-bar-inner" style="width:${pct}%;"></div></div>
+          <div class="sv-progress-labels">${formatCurrency(by.total)} saved of ${formatCurrency(target)} · ${pct}%</div>
+        </div>
+        <div class="sv-person-totals">Dani ${formatCurrency(by.dani)} · Ken ${formatCurrency(by.ken)} · ETA: ${eta.label}</div>
+        ${g.note ? `<div class="budget-item-notes">${g.note}</div>` : ''}
+        <details class="sv-contributions-log">
+          <summary>${contribs.length} contribution${contribs.length !== 1 ? 's' : ''} ▾</summary>
+          <div class="sv-contributions-list">${contribRows || '<div class="budget-empty">No contributions yet.</div>'}</div>
+        </details>
         <div class="furn-actions" style="margin-top:10px;">
-          <button class="furn-action-btn" onclick="openEditSaving(${g.id})">Edit</button>
+          <button class="furn-action-btn" onclick="openEditSaving(${g.id})">Edit goal</button>
+          <button class="furn-action-btn" onclick="openAddContribution(${g.id})">+ Log contribution</button>
           <button class="furn-action-btn delete" onclick="deleteSaving(${g.id})">Delete</button>
         </div>
-      </div>
-    `;
+      </div>`;
   }).join('');
-}
 
-function openSavingsPlanner() {
-  showTab('budget');
-  const el = document.getElementById('savings-list');
-  if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
+  renderSavingsTimeline();
 }
 
 function openAddSaving() {
@@ -2874,7 +3039,6 @@ function openAddSaving() {
   document.getElementById('btn-delete-saving').classList.add('hidden');
   document.getElementById('s-title').value = '';
   document.getElementById('s-target').value = '';
-  document.getElementById('s-saved').value = '';
   document.getElementById('s-monthly').value = '';
   document.getElementById('s-note').value = '';
   document.getElementById('modal-saving').classList.add('open');
@@ -2889,9 +3053,8 @@ function openEditSaving(id) {
   document.getElementById('btn-save-saving').textContent = 'Save Changes';
   document.getElementById('btn-delete-saving').classList.remove('hidden');
   document.getElementById('s-title').value = g.title;
-  document.getElementById('s-target').value = Number(g.target || 0).toFixed(2);
-  document.getElementById('s-saved').value = Number(g.saved || 0).toFixed(2);
-  document.getElementById('s-monthly').value = Number(g.monthly || 0).toFixed(2);
+  document.getElementById('s-target').value = g.target.toFixed(2);
+  document.getElementById('s-monthly').value = g.monthly ? g.monthly.toFixed(2) : '';
   document.getElementById('s-note').value = g.note || '';
   document.getElementById('modal-saving').classList.add('open');
 }
@@ -2899,25 +3062,19 @@ function openEditSaving(id) {
 function saveSaving() {
   if (!ensureCanEdit() || !isSavingsAllowed()) return;
   const title = document.getElementById('s-title').value.trim();
-  const target = Number(document.getElementById('s-target').value) || 0;
-  const savedVal = Number(document.getElementById('s-saved').value) || 0;
-  const monthly = Number(document.getElementById('s-monthly').value) || 0;
+  const target = parseFloat(document.getElementById('s-target').value) || 0;
+  const monthly = parseFloat(document.getElementById('s-monthly').value) || 0;
   const note = document.getElementById('s-note').value.trim();
-  if (!title || target < 0 || savedVal < 0) return alert('Please provide a valid name and amounts.');
-  const goal = {
-    id: editingSavingId || Date.now(),
-    title,
-    target: Number(target.toFixed(2)),
-    saved: Number(savedVal.toFixed(2)),
-    monthly: Number(monthly.toFixed(2)),
-    note
-  };
+  if (!title) { alert('Please enter a goal name.'); return; }
+  if (target < 0) { alert('Target must be 0 or more.'); return; }
+
   if (editingSavingId) {
     const idx = savings.findIndex(s => s.id === editingSavingId);
-    if (idx === -1) return;
-    savings[idx] = goal;
+    if (idx !== -1) {
+      savings[idx] = { ...savings[idx], title, target, monthly, note };
+    }
   } else {
-    savings.push(goal);
+    savings.push({ id: Date.now(), title, target, monthly, note, contributions: [], priorities: { dani: null, ken: null } });
   }
   save();
   renderSavings();
@@ -2935,6 +3092,100 @@ function deleteSaving(id) {
   save();
   renderSavings();
 }
+
+function openAddContribution(goalId) {
+  if (!ensureCanEdit() || !isSavingsAllowed()) return;
+  const g = savings.find(s => s.id === goalId);
+  if (!g) return;
+  contributingToGoalId = goalId;
+  document.getElementById('contrib-goal-name').textContent = g.title;
+  document.getElementById('contrib-who').value = getSavingsIdentity() || '';
+  document.getElementById('contrib-amount').value = '';
+  document.getElementById('contrib-date').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('contrib-note').value = '';
+  document.getElementById('modal-contribution').classList.add('open');
+}
+
+function saveContribution() {
+  if (!ensureCanEdit() || !isSavingsAllowed()) return;
+  const amount = parseFloat(document.getElementById('contrib-amount').value) || 0;
+  if (amount <= 0) { alert('Please enter an amount greater than 0.'); return; }
+  const date = document.getElementById('contrib-date').value;
+  const note = document.getElementById('contrib-note').value.trim();
+  const who = getSavingsIdentity();
+  if (!who) { alert('Cannot determine who you are. Please sign out and sign back in.'); return; }
+  const g = savings.find(s => s.id === contributingToGoalId);
+  if (!g) return;
+  g.contributions = g.contributions || [];
+  g.contributions.push({ id: Date.now(), who, amount, date, note });
+  save();
+  renderSavings();
+  closeModal('modal-contribution');
+  contributingToGoalId = null;
+}
+
+function deleteContribution(goalId, contributionId) {
+  if (!ensureCanEdit() || !isSavingsAllowed()) return;
+  if (!confirm('Remove this contribution?')) return;
+  const g = savings.find(s => s.id === goalId);
+  if (!g) return;
+  g.contributions = (g.contributions || []).filter(c => c.id !== contributionId);
+  save();
+  renderSavings();
+}
+
+let _priorityPopover = null;
+let _priorityPopoverGoalId = null;
+let _priorityPopoverCloseHandler = null;
+
+function openPriorityPicker(goalId, anchorEl) {
+  if (!ensureCanEdit() || !isSavingsAllowed()) return;
+  if (_priorityPopover) {
+    _priorityPopover.remove();
+    _priorityPopover = null;
+    document.removeEventListener('click', _priorityPopoverCloseHandler);
+    if (_priorityPopoverGoalId === goalId) { _priorityPopoverGoalId = null; return; }
+  }
+  _priorityPopoverGoalId = goalId;
+  const pop = document.createElement('div');
+  pop.className = 'sv-priority-popover';
+  ['High','Medium','Low'].forEach(level => {
+    const btn = document.createElement('button');
+    btn.textContent = level;
+    btn.onclick = () => { setPriority(goalId, level.toLowerCase()); pop.remove(); _priorityPopover = null; document.removeEventListener('click', _priorityPopoverCloseHandler); };
+    pop.appendChild(btn);
+  });
+  const clear = document.createElement('div');
+  clear.className = 'sv-pop-clear';
+  clear.textContent = 'Clear';
+  clear.onclick = () => { setPriority(goalId, null); pop.remove(); _priorityPopover = null; document.removeEventListener('click', _priorityPopoverCloseHandler); };
+  pop.appendChild(clear);
+  document.body.appendChild(pop);
+  _priorityPopover = pop;
+
+  const rect = anchorEl.getBoundingClientRect();
+  pop.style.top = `${rect.bottom + 6}px`;
+  pop.style.left = `${rect.left}px`;
+
+  _priorityPopoverCloseHandler = (e) => {
+    if (!pop.contains(e.target)) { pop.remove(); _priorityPopover = null; document.removeEventListener('click', _priorityPopoverCloseHandler); }
+  };
+  setTimeout(() => document.addEventListener('click', _priorityPopoverCloseHandler), 0);
+}
+
+function setPriority(goalId, level) {
+  if (!ensureCanEdit() || !isSavingsAllowed()) return;
+  const identity = getSavingsIdentity();
+  if (!identity) return;
+  const g = savings.find(s => s.id === goalId);
+  if (!g) return;
+  g.priorities = g.priorities || { dani: null, ken: null };
+  g.priorities[identity.toLowerCase()] = level;
+  save();
+  renderSavings();
+}
+
+// ── End savings redesign ──────────────────────────────────────────────────
 
 function getTaskCategories() {
   const taskCats = [...new Set(tasks.map(t => t.cat).filter(Boolean))];
