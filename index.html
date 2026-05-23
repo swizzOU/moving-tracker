@@ -1763,16 +1763,28 @@
   <!-- FILES TAB -->
   <div id="tab-files" class="hidden">
     <div class="files-panel">
-      <div class="files-header">
-        <div id="files-auth-notice" class="files-auth-notice hidden">Sign in to upload and manage files.</div>
-        <label id="files-upload-btn" class="add-btn files-upload-label">
-          + Upload File
-          <input type="file" id="files-input" multiple style="display:none" onchange="handleFileUpload(event)">
-        </label>
+      <div id="files-auth-notice" class="files-auth-notice hidden">Sign in to upload and manage files.</div>
+      <div id="files-toolbar" class="files-toolbar hidden">
+        <div class="files-breadcrumb">
+          <button class="files-crumb-root" onclick="filesNavRoot()">📁 All Folders</button>
+          <span id="files-crumb-folder" class="files-crumb-folder hidden"> › <span id="files-crumb-folder-name"></span></span>
+        </div>
+        <div class="files-toolbar-actions">
+          <button class="add-btn secondary" id="files-new-folder-btn" onclick="openNewFolderModal()">+ New Folder</button>
+          <label class="add-btn files-upload-label" id="files-upload-btn">
+            + Upload File
+            <input type="file" id="files-input" multiple style="display:none" onchange="handleFileUpload(event)">
+          </label>
+        </div>
+      </div>
+      <div id="files-bulk-bar" class="files-bulk-bar hidden">
+        <span id="files-bulk-count"></span>
+        <button class="file-btn file-btn-move" onclick="openMoveModal()">Move to…</button>
+        <button class="file-btn file-btn-delete" onclick="bulkDeleteFiles()">Delete selected</button>
+        <button class="file-btn" style="background:var(--cream-dark);color:var(--muted)" onclick="filesClearSelection()">Cancel</button>
       </div>
       <div id="files-uploading" class="files-uploading hidden"></div>
-      <div id="files-list" class="files-list"></div>
-      <div id="files-empty" class="files-empty hidden">No files uploaded yet.</div>
+      <div id="files-view" class="files-view"></div>
     </div>
   </div>
 
@@ -4734,5 +4746,31 @@ save();
 refreshSyncStatus();
 configureCloudSync();
 </script>
+
+<!-- FOLDER NAME MODAL -->
+<div class="modal-overlay" id="modal-folder-name">
+  <div class="modal">
+    <h3 id="modal-folder-name-title">New Folder</h3>
+    <label>Folder name</label>
+    <input type="text" id="folder-name-input" placeholder="e.g. Contracts" maxlength="60" />
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-folder-name')">Cancel</button>
+      <button class="btn-save" onclick="saveFolderName()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- MOVE FILES MODAL -->
+<div class="modal-overlay" id="modal-move-files">
+  <div class="modal">
+    <h3>Move to Folder</h3>
+    <label>Destination folder</label>
+    <select id="move-folder-select" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.95rem;background:var(--white);margin-bottom:8px;"></select>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-move-files')">Cancel</button>
+      <button class="btn-save" onclick="confirmMoveFiles()">Move</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
