@@ -2801,17 +2801,34 @@ function save() {
 
 // ── Files Tab ────────────────────────────────────────────────────────────────
 
-function getStorageRef() {
+const filesState = {
+  currentFolderId: null,
+  currentFolderName: null,
+  folders: [],
+  selectedPaths: new Set(),
+  editingFolderId: null,
+};
+
+function getStorage() {
   if (!syncRuntime.app) return null;
-  const storage = firebase.storage(syncRuntime.app);
-  return storage.ref('move-tracker-files');
+  return firebase.storage(syncRuntime.app);
+}
+
+function getFoldersCollection() {
+  if (!syncRuntime.db) return null;
+  return syncRuntime.db
+    .collection('move_tracker_households')
+    .doc(SHARED_FAMILY_DOC_ID)
+    .collection('files_folders');
 }
 
 function fileIcon(name) {
   const ext = (name.split('.').pop() || '').toLowerCase();
-  const map = { pdf: '📄', doc: '📝', docx: '📝', xls: '📊', xlsx: '📊', csv: '📊',
+  const map = {
+    pdf: '📄', doc: '📝', docx: '📝', xls: '📊', xlsx: '📊', csv: '📊',
     jpg: '🖼️', jpeg: '🖼️', png: '🖼️', gif: '🖼️', webp: '🖼️', heic: '🖼️',
-    mp4: '🎬', mov: '🎬', mp3: '🎵', zip: '🗜️', rar: '🗜️' };
+    mp4: '🎬', mov: '🎬', mp3: '🎵', zip: '🗜️', rar: '🗜️',
+  };
   return map[ext] || '📎';
 }
 
@@ -2828,65 +2845,182 @@ function formatFileDate(isoString) {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-async function loadFilesList() {
-  const ref = getStorageRef();
-  if (!ref) return;
+async function loadFolders() {
+  const col = getFoldersCollection();
+  if (!col) return;
+  const snap = await col.orderBy('createdAt', 'asc').get();
+  filesState.folders = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
 
-  const list = document.getElementById('files-list');
-  const empty = document.getElementById('files-empty');
-  list.innerHTML = '<div style="color:var(--muted);font-size:0.88rem;padding:10px 0">Loading…</div>';
-  empty.classList.add('hidden');
+function openNewFolderModal() {
+  filesState.editingFolderId = null;
+  document.getElementById('modal-folder-name-title').textContent = 'New Folder';
+  document.getElementById('folder-name-input').value = '';
+  document.getElementById('modal-folder-name').classList.add('open');
+  setTimeout(() => document.getElementById('folder-name-input').focus(), 50);
+}
 
-  try {
-    const result = await ref.listAll();
-    list.innerHTML = '';
+function openRenameFolderModal(folderId) {
+  const folder = filesState.folders.find((f) => f.id === folderId);
+  if (!folder) return;
+  filesState.editingFolderId = folderId;
+  document.getElementById('modal-folder-name-title').textContent = 'Rename Folder';
+  document.getElementById('folder-name-input').value = folder.name;
+  document.getElementById('modal-folder-name').classList.add('open');
+  setTimeout(() => document.getElementById('folder-name-input').focus(), 50);
+}
 
-    if (result.items.length === 0) {
-      empty.classList.remove('hidden');
-      return;
-    }
-
-    const metaPromises = result.items.map(async (itemRef) => {
-      const meta = await itemRef.getMetadata();
-      return { ref: itemRef, meta };
-    });
-
-    const items = await Promise.all(metaPromises);
-    items.sort((a, b) => new Date(b.meta.timeCreated) - new Date(a.meta.timeCreated));
-
-    items.forEach(({ ref: itemRef, meta }) => {
-      const card = document.createElement('div');
-      card.className = 'file-card';
-      card.innerHTML = `
-        <div class="file-card-icon">${fileIcon(meta.name)}</div>
-        <div class="file-card-info">
-          <div class="file-card-name" title="${meta.name}">${meta.name}</div>
-          <div class="file-card-meta">${formatBytes(meta.size)} · ${formatFileDate(meta.timeCreated)}</div>
-        </div>
-        <div class="file-card-actions">
-          <button class="file-btn file-btn-download">Download</button>
-          <button class="file-btn file-btn-delete">Delete</button>
-        </div>`;
-      card.querySelector('.file-btn-download').addEventListener('click', () => downloadFile(itemRef.fullPath));
-      card.querySelector('.file-btn-delete').addEventListener('click', () => deleteFile(itemRef.fullPath, meta.name));
-      list.appendChild(card);
-    });
-  } catch (err) {
-    list.innerHTML = `<div style="color:var(--danger);font-size:0.88rem">Failed to load files. ${err.message}</div>`;
+async function saveFolderName() {
+  const name = document.getElementById('folder-name-input').value.trim();
+  if (!name) return;
+  const col = getFoldersCollection();
+  if (!col) return;
+  closeModal('modal-folder-name');
+  if (filesState.editingFolderId) {
+    await col.doc(filesState.editingFolderId).update({ name });
+  } else {
+    await col.add({ name, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
   }
+  await loadFolders();
+  renderFilesView();
+}
+
+async function deleteFolder(folderId, folderName) {
+  if (!confirm(`Delete folder "${folderName}" and all its files? This cannot be undone.`)) return;
+  const storage = getStorage();
+  if (!storage) return;
+  try {
+    const folderRef = storage.ref(`move-tracker-files/${folderId}`);
+    const result = await folderRef.listAll();
+    await Promise.all(result.items.map((itemRef) => itemRef.delete()));
+  } catch (err) {
+    // folder may be empty, proceed
+  }
+  const col = getFoldersCollection();
+  if (col) await col.doc(folderId).delete();
+  await loadFolders();
+  renderFilesView();
+}
+
+function filesNavRoot() {
+  filesState.currentFolderId = null;
+  filesState.currentFolderName = null;
+  filesClearSelection();
+  renderFilesView();
+}
+
+function filesNavFolder(folderId, folderName) {
+  filesState.currentFolderId = folderId;
+  filesState.currentFolderName = folderName;
+  filesClearSelection();
+  renderFilesView();
+}
+
+function filesToggleSelect(fullPath, checkbox) {
+  if (checkbox.checked) {
+    filesState.selectedPaths.add(fullPath);
+  } else {
+    filesState.selectedPaths.delete(fullPath);
+  }
+  const card = checkbox.closest('.file-card');
+  if (card) card.classList.toggle('selected', checkbox.checked);
+  updateBulkBar();
+}
+
+function filesClearSelection() {
+  filesState.selectedPaths.clear();
+  document.querySelectorAll('.file-card-checkbox').forEach((cb) => {
+    cb.checked = false;
+    cb.closest('.file-card')?.classList.remove('selected');
+  });
+  updateBulkBar();
+}
+
+function updateBulkBar() {
+  const bar = document.getElementById('files-bulk-bar');
+  const countEl = document.getElementById('files-bulk-count');
+  if (!bar || !countEl) return;
+  const n = filesState.selectedPaths.size;
+  if (n === 0) {
+    bar.classList.add('hidden');
+  } else {
+    bar.classList.remove('hidden');
+    countEl.textContent = `${n} file${n === 1 ? '' : 's'} selected`;
+  }
+}
+
+function openMoveModal() {
+  if (filesState.selectedPaths.size === 0) return;
+  const select = document.getElementById('move-folder-select');
+  select.innerHTML = '';
+  const rootOpt = document.createElement('option');
+  rootOpt.value = '__root__';
+  rootOpt.textContent = '📁 Root (no folder)';
+  select.appendChild(rootOpt);
+  filesState.folders.forEach((f) => {
+    if (f.id === filesState.currentFolderId) return;
+    const opt = document.createElement('option');
+    opt.value = f.id;
+    opt.textContent = `📁 ${f.name}`;
+    select.appendChild(opt);
+  });
+  document.getElementById('modal-move-files').classList.add('open');
+}
+
+async function confirmMoveFiles() {
+  const select = document.getElementById('move-folder-select');
+  const destFolderId = select.value === '__root__' ? null : select.value;
+  closeModal('modal-move-files');
+  const storage = getStorage();
+  if (!storage) return;
+  const paths = Array.from(filesState.selectedPaths);
+  for (const fullPath of paths) {
+    try {
+      const srcRef = storage.ref(fullPath);
+      const meta = await srcRef.getMetadata();
+      const fileName = meta.name;
+      const destPath = destFolderId
+        ? `move-tracker-files/${destFolderId}/${fileName}`
+        : `move-tracker-files/__root__/${fileName}`;
+      const url = await srcRef.getDownloadURL();
+      const response = await fetch(url);
+      const blob = await response.blob();
+      await storage.ref(destPath).put(blob, { contentType: meta.contentType });
+      await srcRef.delete();
+    } catch (err) {
+      alert(`Failed to move a file: ${err.message}`);
+    }
+  }
+  filesClearSelection();
+  await renderFilesView();
+}
+
+async function bulkDeleteFiles() {
+  const n = filesState.selectedPaths.size;
+  if (!confirm(`Delete ${n} file${n === 1 ? '' : 's'}? This cannot be undone.`)) return;
+  const storage = getStorage();
+  if (!storage) return;
+  const paths = Array.from(filesState.selectedPaths);
+  for (const fullPath of paths) {
+    try {
+      await storage.ref(fullPath).delete();
+    } catch (err) {
+      alert(`Failed to delete a file: ${err.message}`);
+    }
+  }
+  filesClearSelection();
+  await renderFilesView();
 }
 
 async function handleFileUpload(event) {
   const files = Array.from(event.target.files);
   event.target.value = '';
   if (!files.length) return;
-
-  const ref = getStorageRef();
-  if (!ref) return;
-
+  const storage = getStorage();
+  if (!storage) return;
   const uploadingEl = document.getElementById('files-uploading');
   uploadingEl.classList.remove('hidden');
-
+  const folderSegment = filesState.currentFolderId ? filesState.currentFolderId : '__root__';
   for (const file of files) {
     const rowId = `upload-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const row = document.createElement('div');
@@ -2899,9 +3033,8 @@ async function handleFileUpload(event) {
       </div>
       <span id="${rowId}-pct" style="min-width:36px;text-align:right">0%</span>`;
     uploadingEl.appendChild(row);
-
     try {
-      const fileRef = ref.child(file.name);
+      const fileRef = storage.ref(`move-tracker-files/${folderSegment}/${file.name}`);
       const task = fileRef.put(file);
       await new Promise((resolve, reject) => {
         task.on('state_changed',
@@ -2917,20 +3050,17 @@ async function handleFileUpload(event) {
         );
       });
     } catch (err) {
-      console.error('Upload failed', file.name, err);
       alert(`Upload failed for ${file.name}: ${err.message}`);
     }
-
     document.getElementById(rowId)?.remove();
   }
-
   uploadingEl.classList.add('hidden');
-  await loadFilesList();
+  await renderFilesView();
 }
 
 async function downloadFile(fullPath) {
   try {
-    const storage = firebase.storage(syncRuntime.app);
+    const storage = getStorage();
     const url = await storage.ref(fullPath).getDownloadURL();
     const a = document.createElement('a');
     a.href = url;
@@ -2945,28 +3075,154 @@ async function downloadFile(fullPath) {
 async function deleteFile(fullPath, name) {
   if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
   try {
-    const storage = firebase.storage(syncRuntime.app);
+    const storage = getStorage();
     await storage.ref(fullPath).delete();
-    await loadFilesList();
+    filesState.selectedPaths.delete(fullPath);
+    updateBulkBar();
+    await renderFilesView();
   } catch (err) {
     alert(`Delete failed: ${err.message}`);
   }
 }
 
-function refreshFilesTab() {
+async function renderFilesView() {
+  const view = document.getElementById('files-view');
+  if (!view) return;
+  view.innerHTML = '<div style="color:var(--muted);font-size:0.88rem;padding:10px 0">Loading…</div>';
+
+  const crumbFolder = document.getElementById('files-crumb-folder');
+  const crumbFolderName = document.getElementById('files-crumb-folder-name');
+  if (filesState.currentFolderId) {
+    crumbFolder.classList.remove('hidden');
+    crumbFolderName.textContent = filesState.currentFolderName || '';
+  } else {
+    crumbFolder.classList.add('hidden');
+  }
+
+  const newFolderBtn = document.getElementById('files-new-folder-btn');
+  if (newFolderBtn) newFolderBtn.style.display = filesState.currentFolderId ? 'none' : '';
+
+  const storage = getStorage();
+  if (!storage) { view.innerHTML = ''; return; }
+
+  view.innerHTML = '';
+
+  if (!filesState.currentFolderId) {
+    if (filesState.folders.length > 0) {
+      const label = document.createElement('div');
+      label.className = 'files-section-label';
+      label.textContent = 'Folders';
+      view.appendChild(label);
+      const grid = document.createElement('div');
+      grid.className = 'files-folders-grid';
+      filesState.folders.forEach((folder) => {
+        const card = document.createElement('div');
+        card.className = 'folder-card';
+        card.innerHTML = `
+          <div class="folder-card-icon">📁</div>
+          <div class="folder-card-name">${folder.name}</div>
+          <div class="folder-card-actions">
+            <button class="folder-action-btn" data-action="rename" data-id="${folder.id}">Rename</button>
+            <button class="folder-action-btn danger" data-action="delete" data-id="${folder.id}" data-name="${folder.name}">Delete</button>
+          </div>`;
+        card.querySelector('[data-action="rename"]').addEventListener('click', (e) => {
+          e.stopPropagation();
+          openRenameFolderModal(folder.id);
+        });
+        card.querySelector('[data-action="delete"]').addEventListener('click', (e) => {
+          e.stopPropagation();
+          deleteFolder(folder.id, folder.name);
+        });
+        card.addEventListener('click', () => filesNavFolder(folder.id, folder.name));
+        grid.appendChild(card);
+      });
+      view.appendChild(grid);
+    }
+    await renderFileList(view, '__root__', 'Files (not in a folder)');
+  } else {
+    await renderFileList(view, filesState.currentFolderId, null);
+  }
+}
+
+async function renderFileList(container, folderSegment, sectionLabel) {
+  const storage = getStorage();
+  try {
+    const folderRef = storage.ref(`move-tracker-files/${folderSegment}`);
+    const result = await folderRef.listAll();
+    if (result.items.length === 0) {
+      if (!filesState.currentFolderId && filesState.folders.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'files-empty';
+        empty.textContent = 'No folders or files yet. Create a folder or upload a file to get started.';
+        container.appendChild(empty);
+      } else if (filesState.currentFolderId) {
+        const empty = document.createElement('div');
+        empty.className = 'files-empty';
+        empty.textContent = 'No files in this folder yet.';
+        container.appendChild(empty);
+      }
+      return;
+    }
+    const metaPromises = result.items.map(async (itemRef) => {
+      const meta = await itemRef.getMetadata();
+      return { ref: itemRef, meta };
+    });
+    const items = await Promise.all(metaPromises);
+    items.sort((a, b) => new Date(b.meta.timeCreated) - new Date(a.meta.timeCreated));
+
+    if (sectionLabel) {
+      const label = document.createElement('div');
+      label.className = 'files-section-label';
+      label.style.marginTop = '12px';
+      label.textContent = sectionLabel;
+      container.appendChild(label);
+    }
+
+    items.forEach(({ ref: itemRef, meta }) => {
+      const isSelected = filesState.selectedPaths.has(itemRef.fullPath);
+      const card = document.createElement('div');
+      card.className = `file-card${isSelected ? ' selected' : ''}`;
+      card.innerHTML = `
+        <input type="checkbox" class="file-card-checkbox" ${isSelected ? 'checked' : ''}>
+        <div class="file-card-icon">${fileIcon(meta.name)}</div>
+        <div class="file-card-info">
+          <div class="file-card-name" title="${meta.name}">${meta.name}</div>
+          <div class="file-card-meta">${formatBytes(meta.size)} · ${formatFileDate(meta.timeCreated)}</div>
+        </div>
+        <div class="file-card-actions">
+          <button class="file-btn file-btn-download">Download</button>
+          <button class="file-btn file-btn-delete">Delete</button>
+        </div>`;
+      const checkbox = card.querySelector('.file-card-checkbox');
+      checkbox.addEventListener('change', () => filesToggleSelect(itemRef.fullPath, checkbox));
+      card.querySelector('.file-btn-download').addEventListener('click', () => downloadFile(itemRef.fullPath));
+      card.querySelector('.file-btn-delete').addEventListener('click', () => deleteFile(itemRef.fullPath, meta.name));
+      container.appendChild(card);
+    });
+  } catch (err) {
+    const errEl = document.createElement('div');
+    errEl.style.cssText = 'color:var(--danger);font-size:0.88rem';
+    errEl.textContent = `Failed to load files: ${err.message}`;
+    container.appendChild(errEl);
+  }
+}
+
+async function refreshFilesTab() {
   const isSignedIn = !!syncRuntime.currentUser;
   const notice = document.getElementById('files-auth-notice');
-  const uploadBtn = document.getElementById('files-upload-btn');
-  if (!notice || !uploadBtn) return;
+  const toolbar = document.getElementById('files-toolbar');
+  if (!notice || !toolbar) return;
   if (isSignedIn) {
     notice.classList.add('hidden');
-    uploadBtn.style.display = '';
-    loadFilesList();
+    toolbar.classList.remove('hidden');
+    await loadFolders();
+    await renderFilesView();
   } else {
     notice.classList.remove('hidden');
-    uploadBtn.style.display = 'none';
-    document.getElementById('files-list').innerHTML = '';
-    document.getElementById('files-empty').classList.add('hidden');
+    toolbar.classList.add('hidden');
+    const view = document.getElementById('files-view');
+    if (view) view.innerHTML = '';
+    document.getElementById('files-bulk-bar')?.classList.add('hidden');
   }
 }
 
