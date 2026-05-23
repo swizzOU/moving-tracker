@@ -2883,10 +2883,13 @@ function buildCumulativeProjection(numMonths) {
   const now = new Date();
   const startAmount = savings.reduce((s, g) => s + getSavedByPerson(g).total, 0);
   const totalRate = savings.reduce((s, g) => s + getGoalMonthlyRate(g), 0);
+  const totalTarget = savings.reduce((s, g) => s + Number(g.target), 0);
   const result = [];
   for (let i = 0; i < numMonths; i++) {
-    const projected = startAmount + totalRate * (i + 1);
-    const prevProjected = startAmount + totalRate * i;
+    const raw = startAmount + totalRate * (i + 1);
+    const projected = totalTarget > 0 ? Math.min(raw, totalTarget) : raw;
+    const prevRaw = startAmount + totalRate * i;
+    const prevProjected = totalTarget > 0 ? Math.min(prevRaw, totalTarget) : prevRaw;
     const d = new Date(now.getFullYear(), now.getMonth() + i + 1, 1);
     const label = d.toLocaleString('en-GB', { month: 'short', year: '2-digit' });
     const milestones = savings
