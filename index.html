@@ -2919,7 +2919,12 @@ async function handleFileUpload(event) {
   await renderFilesView();
 }
 
-async function downloadFile(fullPath) {
+function isViewable(name) {
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  return ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'mp4', 'mov', 'mp3'].includes(ext);
+}
+
+async function openOrDownloadFile(fullPath, name) {
   try {
     const storage = getStorage();
     const url = await storage.ref(fullPath).getDownloadURL();
@@ -2927,9 +2932,10 @@ async function downloadFile(fullPath) {
     a.href = url;
     a.target = '_blank';
     a.rel = 'noopener';
+    if (!isViewable(name)) a.download = name;
     a.click();
   } catch (err) {
-    alert(`Download failed: ${err.message}`);
+    alert(`Failed to open file: ${err.message}`);
   }
 }
 
@@ -2995,7 +3001,7 @@ async function renderFilesView() {
         </div>
         <div class="file-card-actions">
           <button class="file-btn file-btn-tags">Tags</button>
-          <button class="file-btn file-btn-download">Download</button>
+          <button class="file-btn file-btn-download"></button>
           <button class="file-btn file-btn-delete">Delete</button>
         </div>`;
 
@@ -3012,8 +3018,9 @@ async function renderFilesView() {
         tagsEl.appendChild(chip);
       });
 
+      card.querySelector('.file-btn-download').textContent = isViewable(meta.name) ? 'Open' : 'Download';
       card.querySelector('.file-btn-tags').addEventListener('click', () => openTagModal(itemRef.fullPath, tags, meta.name));
-      card.querySelector('.file-btn-download').addEventListener('click', () => downloadFile(itemRef.fullPath));
+      card.querySelector('.file-btn-download').addEventListener('click', () => openOrDownloadFile(itemRef.fullPath, meta.name));
       card.querySelector('.file-btn-delete').addEventListener('click', () => deleteFile(itemRef.fullPath, meta.name));
       view.appendChild(card);
     });
