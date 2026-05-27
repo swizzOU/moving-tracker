@@ -1930,17 +1930,21 @@
         </div>
       </div>
     </div>
-    <div id="packing-bulk-bar" class="task-panel hidden" style="background:var(--panel-bg); border:2px solid var(--accent); border-radius:10px; padding:14px 16px;">
-      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
-        <strong id="packing-bulk-count" style="color:var(--accent);">0 selected</strong>
-        <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer;">
-          <input type="checkbox" id="packing-select-all" onchange="toggleSelectAll(this.checked)"> Select all
-        </label>
+    <div id="packing-bulk-bar" class="hidden" style="margin:0 0 12px 0; background:#2d4a2d; border-radius:12px; padding:18px 20px; color:#fff;">
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+        <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+          <span style="font-size:1rem; font-weight:600; letter-spacing:0.01em;">✏️ Bulk edit boxes</span>
+          <span id="packing-bulk-count" style="background:rgba(255,255,255,0.15); border-radius:20px; padding:2px 12px; font-size:0.85rem;">0 selected</span>
+          <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer; opacity:0.85;">
+            <input type="checkbox" id="packing-select-all" onchange="toggleSelectAll(this.checked)"> Select all visible
+          </label>
+        </div>
+        <p style="font-size:0.78rem; opacity:0.65; margin:0;">Only filled fields will be updated. Blank = no change.</p>
       </div>
-      <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap:10px; margin-bottom:12px;">
+      <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap:10px; margin-bottom:14px;">
         <div>
-          <label class="filter-label">Destination</label>
-          <select id="bulk-destination" class="filter-select">
+          <label style="display:block; font-size:0.75rem; font-weight:600; opacity:0.75; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.04em;">Destination</label>
+          <select id="bulk-destination" style="width:100%; padding:7px 10px; border-radius:6px; border:none; background:#fff; color:#333; font-size:0.88rem;">
             <option value="">— No change —</option>
             <optgroup label="Ground Floor">
               <option>Living Room</option>
@@ -1959,16 +1963,16 @@
           </select>
         </div>
         <div>
-          <label class="filter-label">Carried by</label>
-          <input type="text" id="bulk-carried-by" class="filter-select" placeholder="— No change —" list="bx-carried-by-list">
+          <label style="display:block; font-size:0.75rem; font-weight:600; opacity:0.75; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.04em;">Carried by</label>
+          <input type="text" id="bulk-carried-by" placeholder="— No change —" list="bx-carried-by-list" style="width:100%; padding:7px 10px; border-radius:6px; border:none; background:#fff; color:#333; font-size:0.88rem; box-sizing:border-box;">
         </div>
         <div>
-          <label class="filter-label">Trip date</label>
-          <input type="date" id="bulk-trip-date" class="filter-select">
+          <label style="display:block; font-size:0.75rem; font-weight:600; opacity:0.75; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.04em;">Trip date</label>
+          <input type="date" id="bulk-trip-date" style="width:100%; padding:7px 10px; border-radius:6px; border:none; background:#fff; color:#333; font-size:0.88rem; box-sizing:border-box;">
         </div>
         <div>
-          <label class="filter-label">Weight</label>
-          <select id="bulk-weight" class="filter-select">
+          <label style="display:block; font-size:0.75rem; font-weight:600; opacity:0.75; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.04em;">Weight</label>
+          <select id="bulk-weight" style="width:100%; padding:7px 10px; border-radius:6px; border:none; background:#fff; color:#333; font-size:0.88rem;">
             <option value="">— No change —</option>
             <option>Light</option>
             <option>Medium</option>
@@ -1977,8 +1981,8 @@
           </select>
         </div>
         <div>
-          <label class="filter-label">Packed by</label>
-          <select id="bulk-packed-by" class="filter-select">
+          <label style="display:block; font-size:0.75rem; font-weight:600; opacity:0.75; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.04em;">Packed by</label>
+          <select id="bulk-packed-by" style="width:100%; padding:7px 10px; border-radius:6px; border:none; background:#fff; color:#333; font-size:0.88rem;">
             <option value="">— No change —</option>
             <option>Dani</option>
             <option>Ken</option>
@@ -1989,15 +1993,15 @@
           </select>
         </div>
         <div>
-          <label class="filter-label">Box type</label>
-          <select id="bulk-type" class="filter-select">
+          <label style="display:block; font-size:0.75rem; font-weight:600; opacity:0.75; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.04em;">Box type</label>
+          <select id="bulk-type" style="width:100%; padding:7px 10px; border-radius:6px; border:none; background:#fff; color:#333; font-size:0.88rem;">
             <option value="">— No change —</option>
           </select>
         </div>
       </div>
       <div style="display:flex; gap:8px;">
-        <button class="btn-save" onclick="applyBulkEdit()">Apply to selected</button>
-        <button class="btn-cancel" onclick="togglePackingSelectMode(false)">Cancel</button>
+        <button class="btn-save" onclick="applyBulkEdit()" style="background:#fff; color:#2d4a2d; border:none;">Apply to selected</button>
+        <button class="btn-cancel" onclick="togglePackingSelectMode(false)" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3);">Cancel</button>
       </div>
     </div>
     <div class="task-panel">
