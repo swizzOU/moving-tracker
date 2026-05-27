@@ -2164,6 +2164,24 @@
       <select id="bx-type"></select>
       <button type="button" class="add-btn secondary" onclick="addBoxType()">+ Add type</button>
     </div>
+    <label for="bx-destination">Destination room</label>
+    <select id="bx-destination">
+      <option value="">— Select —</option>
+      <optgroup label="Ground Floor">
+        <option>Living Room</option>
+        <option>Kitchen</option>
+        <option>Utility</option>
+        <option>Conservatory</option>
+        <option>Shower Room</option>
+        <option>Bedroom 4</option>
+      </optgroup>
+      <optgroup label="First Floor">
+        <option>Bathroom</option>
+        <option>Bedroom 1</option>
+        <option>Bedroom 2</option>
+        <option>Bedroom 3</option>
+      </optgroup>
+    </select>
     <label for="bx-weight">Weight</label>
     <select id="bx-weight">
       <option value="">— Select —</option>
@@ -2388,6 +2406,7 @@ function migrateBoxes(input) {
     packedBy: PEOPLE_OPTIONS.includes(b.packedBy) ? b.packedBy : 'Dani',
     type: String(b.type || '').trim(),
     weight: String(b.weight || '').trim(),
+    destination: String(b.destination || '').trim(),
     description: String(b.description || '').trim()
   })).filter((b) => b.code);
 }
@@ -3600,7 +3619,7 @@ function renderPacking() {
   }
 
   let visible = boxes.filter((b) => {
-    const matchesSearch = !search || [b.code, b.room, b.packedBy, b.type, b.weight, b.description].join(' ').toLowerCase().includes(search);
+    const matchesSearch = !search || [b.code, b.room, b.packedBy, b.type, b.weight, b.destination, b.description].join(' ').toLowerCase().includes(search);
     const matchesRoom = roomFilter === 'all' || b.room === roomFilter;
     const matchesPerson = personFilter === 'all' || b.packedBy === personFilter;
     return matchesSearch && matchesRoom && matchesPerson;
@@ -3630,7 +3649,7 @@ function renderPacking() {
         <div class="budget-item-desc">${b.code}${b.room ? ' - ' + b.room : ''}</div>
         <span class="budget-status-pill budget-status-paid">${b.packedBy}</span>
       </div>
-      ${(b.type || b.weight) ? `<div class="budget-item-meta">${[b.type, b.weight].filter(Boolean).join(' · ')}</div>` : ''}
+      ${(b.type || b.weight || b.destination) ? `<div class="budget-item-meta">${[b.type, b.destination, b.weight].filter(Boolean).join(' · ')}</div>` : ''}
       ${b.description ? `<div class="budget-item-meta">${b.description}</div>` : ''}
       <div class="furn-actions" style="margin-top:10px;">
         <button class="furn-action-btn" onclick="openEditBox(${b.id})">Edit</button>
@@ -3671,6 +3690,7 @@ function openAddBox() {
   document.getElementById('bx-room').value = '';
   document.getElementById('bx-packed-by').value = 'Dani';
   renderBoxTypeOptions('Cardboard box');
+  document.getElementById('bx-destination').value = '';
   document.getElementById('bx-weight').value = '';
   document.getElementById('bx-description').value = '';
   document.getElementById('modal-box').classList.add('open');
@@ -3688,6 +3708,7 @@ function openEditBox(id) {
   document.getElementById('bx-room').value = box.room;
   document.getElementById('bx-packed-by').value = PEOPLE_OPTIONS.includes(box.packedBy) ? box.packedBy : 'Dani';
   renderBoxTypeOptions(box.type || 'Cardboard box');
+  document.getElementById('bx-destination').value = box.destination || '';
   document.getElementById('bx-weight').value = box.weight || '';
   document.getElementById('bx-description').value = box.description;
   document.getElementById('modal-box').classList.add('open');
@@ -3699,6 +3720,7 @@ function saveBox() {
   const room = document.getElementById('bx-room').value.trim();
   const packedBy = document.getElementById('bx-packed-by').value;
   const type = document.getElementById('bx-type').value;
+  const destination = document.getElementById('bx-destination').value;
   const weight = document.getElementById('bx-weight').value;
   const description = document.getElementById('bx-description').value.trim();
 
@@ -3710,6 +3732,7 @@ function saveBox() {
     room,
     packedBy: PEOPLE_OPTIONS.includes(packedBy) ? packedBy : 'Dani',
     type,
+    destination,
     weight,
     description
   };
