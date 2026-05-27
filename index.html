@@ -1924,7 +1924,7 @@
         <div class="filter-group">
           <label for="packing-sort" class="filter-label">Sort by</label>
           <select id="packing-sort" class="filter-select" onchange="renderPacking()">
-            <option value="code-asc">Box code A–Z</option>
+            <option value="code-asc">Code / Name A–Z</option>
             <option value="room-asc">Room A–Z</option>
             <option value="person-asc">Packed by A–Z</option>
             <option value="trip-asc">Trip date (earliest)</option>
@@ -1999,7 +1999,7 @@
           </select>
         </div>
         <div>
-          <label class="filter-label">Box type</label>
+          <label class="filter-label">Type</label>
           <select id="bulk-type" class="filter-select">
             <option value="">— No change —</option>
           </select>
@@ -2267,8 +2267,8 @@
 <div class="modal-overlay" id="modal-box">
   <div class="modal">
     <h3 id="modal-box-title">Add Box</h3>
-    <label for="bx-code">Box code</label>
-    <input type="text" id="bx-code" placeholder="e.g. 001" />
+    <label for="bx-code">Code / Name</label>
+    <input type="text" id="bx-code" placeholder="e.g. LR01 or Sofa" />
     <label for="bx-room">Room</label>
     <input type="text" id="bx-room" placeholder="e.g. Living Room" list="bx-room-list" autocomplete="off" />
     <datalist id="bx-room-list"></datalist>
@@ -2281,7 +2281,7 @@
       <option>Caroline</option>
       <option>Dani/Ken</option>
     </select>
-    <label for="bx-type">Box type</label>
+    <label for="bx-type">Type</label>
     <div class="inline-row">
       <select id="bx-type"></select>
       <button type="button" class="add-btn secondary" onclick="addBoxType()">+ Add type</button>
@@ -2319,6 +2319,8 @@
     <input type="date" id="bx-trip-date" />
     <label for="bx-description">Description</label>
     <textarea id="bx-description" rows="3" placeholder="e.g. Coffee table books and notebooks" style="resize:vertical;"></textarea>
+    <label for="bx-notes">Notes (optional)</label>
+    <input type="text" id="bx-notes" placeholder="e.g. Wrap in blankets, fragile" />
     <div class="modal-btns">
       <button class="btn-delete secondary hidden" id="btn-delete-box" onclick="deleteBox(editingBoxId)">Delete</button>
       <button class="btn-cancel" onclick="closeModal('modal-box')">Cancel</button>
@@ -2536,7 +2538,8 @@ function migrateBoxes(input) {
     destination: String(b.destination || '').trim(),
     carriedBy: String(b.carriedBy || '').trim(),
     tripDate: String(b.tripDate || '').trim(),
-    description: String(b.description || '').trim()
+    description: String(b.description || '').trim(),
+    notes: String(b.notes || '').trim()
   })).filter((b) => b.code);
 }
 
@@ -3773,6 +3776,7 @@ function renderPacking() {
       </div>
       ${(b.type || b.weight || b.destination) ? `<div class="budget-item-meta">${[b.type, b.destination, b.weight ? `<strong style="color:${b.weight === 'Very Heavy' ? '#c0392b' : b.weight === 'Heavy' ? '#e67e22' : 'inherit'}">${b.weight}</strong>` : null].filter(Boolean).join(' · ')}</div>` : ''}
       ${b.description ? `<div class="budget-item-meta">${b.description}</div>` : ''}
+      ${b.notes ? `<div class="budget-item-notes">${b.notes}</div>` : ''}
       ${(b.carriedBy || b.tripDate) ? `<div class="budget-item-meta" style="color:var(--accent);">🚚 ${[b.carriedBy, b.tripDate ? new Date(b.tripDate + 'T00:00:00').toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}) : null].filter(Boolean).join(' · ')}</div>` : ''}
       <div class="furn-actions" style="margin-top:10px;">
         <input type="checkbox" class="packing-select-cb" data-id="${b.id}" style="display:none;" onchange="updateBulkBar()">
@@ -3886,6 +3890,7 @@ function openAddBox() {
   document.getElementById('bx-carried-by').value = '';
   document.getElementById('bx-trip-date').value = '';
   document.getElementById('bx-description').value = '';
+  document.getElementById('bx-notes').value = '';
   document.getElementById('modal-box').classList.add('open');
 }
 
@@ -3906,6 +3911,7 @@ function openEditBox(id) {
   document.getElementById('bx-carried-by').value = box.carriedBy || '';
   document.getElementById('bx-trip-date').value = box.tripDate || '';
   document.getElementById('bx-description').value = box.description;
+  document.getElementById('bx-notes').value = box.notes || '';
   document.getElementById('modal-box').classList.add('open');
 }
 
@@ -3920,6 +3926,7 @@ function saveBox() {
   const carriedBy = document.getElementById('bx-carried-by').value.trim();
   const tripDate = document.getElementById('bx-trip-date').value;
   const description = document.getElementById('bx-description').value.trim();
+  const notes = document.getElementById('bx-notes').value.trim();
 
   if (!code) return;
 
@@ -3933,7 +3940,8 @@ function saveBox() {
     weight,
     carriedBy,
     tripDate,
-    description
+    description,
+    notes
   };
 
   if (editingBoxId) {
@@ -3967,7 +3975,7 @@ function getFilteredBoxes() {
   const sort = document.getElementById('packing-sort')?.value || 'code-asc';
 
   let visible = boxes.filter((b) => {
-    const matchesSearch = !search || [b.code, b.room, b.packedBy, b.type, b.weight, b.destination, b.carriedBy, b.tripDate, b.description].join(' ').toLowerCase().includes(search);
+    const matchesSearch = !search || [b.code, b.room, b.packedBy, b.type, b.weight, b.destination, b.carriedBy, b.tripDate, b.description, b.notes].join(' ').toLowerCase().includes(search);
     const matchesRoom = roomFilter === 'all' || b.room === roomFilter;
     const matchesPerson = personFilter === 'all' || b.packedBy === personFilter;
     const matchesWeight = weightFilter === 'all' || b.weight === weightFilter;
@@ -3999,11 +4007,11 @@ function exportPackingCsv() {
   };
 
   const rows = [
-    ['Box Code', 'Room (Origin)', 'Destination', 'Packed By', 'Box Type', 'Weight', 'Carried By', 'Trip Date', 'Description'],
+    ['Code / Name', 'Room (Origin)', 'Destination', 'Packed By', 'Type', 'Weight', 'Carried By', 'Trip Date', 'Description', 'Notes'],
     ...visible.map((b) => [
       b.code, b.room, b.destination, b.packedBy, b.type, b.weight, b.carriedBy,
       b.tripDate ? new Date(b.tripDate + 'T00:00:00').toLocaleDateString('en-GB') : '',
-      b.description
+      b.description, b.notes || ''
     ])
   ];
 
@@ -4039,7 +4047,7 @@ function printPacking() {
     <div class="print-group">
       <h2>${room}</h2>
       <table>
-        <thead><tr><th>Code</th><th>Type</th><th>Weight</th><th>Origin</th><th>Carried by</th><th>Trip date</th><th>Description</th></tr></thead>
+        <thead><tr><th>Code / Name</th><th>Type</th><th>Weight</th><th>Origin</th><th>Carried by</th><th>Trip date</th><th>Description</th><th>Notes</th></tr></thead>
         <tbody>
           ${items.map((b) => `
             <tr>
@@ -4050,6 +4058,7 @@ function printPacking() {
               <td>${b.carriedBy || ''}</td>
               <td>${fmt(b.tripDate)}</td>
               <td>${b.description || ''}</td>
+              <td>${b.notes || ''}</td>
             </tr>
           `).join('')}
         </tbody>
