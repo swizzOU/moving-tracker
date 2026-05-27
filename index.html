@@ -1861,7 +1861,7 @@
         <button class="add-btn secondary" id="packing-select-toggle" onclick="togglePackingSelectMode()">Select</button>
       </div>
     </div>
-    <div class="task-panel">
+    <div class="task-panel" id="packing-filter-panel">
       <div class="filter-bar">
         <div class="filter-group" style="flex:1; min-width:180px;">
           <label for="packing-search" class="filter-label">Search</label>
@@ -3785,6 +3785,7 @@ function togglePackingSelectMode(force) {
     btn.textContent = 'Cancel';
     btn.classList.add('active');
     bulkBar.classList.remove('hidden');
+    document.getElementById('packing-filter-panel').classList.add('hidden');
     cbs.forEach((cb) => { cb.style.display = 'inline-block'; cb.checked = false; });
     // Populate bulk type select with current box types
     const bulkType = document.getElementById('bulk-type');
@@ -3796,6 +3797,7 @@ function togglePackingSelectMode(force) {
     btn.textContent = 'Select';
     btn.classList.remove('active');
     bulkBar.classList.add('hidden');
+    document.getElementById('packing-filter-panel').classList.remove('hidden');
     cbs.forEach((cb) => { cb.style.display = 'none'; cb.checked = false; });
     document.getElementById('packing-select-all').checked = false;
   }
