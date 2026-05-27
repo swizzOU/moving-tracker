@@ -2159,6 +2159,16 @@
       <option>Caroline</option>
       <option>Dani/Ken</option>
     </select>
+    <label for="bx-type">Box type</label>
+    <input type="text" id="bx-type" placeholder="e.g. Cardboard box, clothes bag, bin bag…" />
+    <label for="bx-weight">Weight</label>
+    <select id="bx-weight">
+      <option value="">— Select —</option>
+      <option>Light</option>
+      <option>Medium</option>
+      <option>Heavy</option>
+      <option>Very Heavy</option>
+    </select>
     <label for="bx-description">Description</label>
     <textarea id="bx-description" rows="3" placeholder="e.g. Coffee table books and notebooks" style="resize:vertical;"></textarea>
     <div class="modal-btns">
@@ -2373,6 +2383,8 @@ function migrateBoxes(input) {
     code: String(b.code || '').trim(),
     room: String(b.room || '').trim(),
     packedBy: PEOPLE_OPTIONS.includes(b.packedBy) ? b.packedBy : 'Dani',
+    type: String(b.type || '').trim(),
+    weight: String(b.weight || '').trim(),
     description: String(b.description || '').trim()
   })).filter((b) => b.code);
 }
@@ -3579,7 +3591,7 @@ function renderPacking() {
   }
 
   let visible = boxes.filter((b) => {
-    const matchesSearch = !search || [b.code, b.room, b.packedBy, b.description].join(' ').toLowerCase().includes(search);
+    const matchesSearch = !search || [b.code, b.room, b.packedBy, b.type, b.weight, b.description].join(' ').toLowerCase().includes(search);
     const matchesRoom = roomFilter === 'all' || b.room === roomFilter;
     const matchesPerson = personFilter === 'all' || b.packedBy === personFilter;
     return matchesSearch && matchesRoom && matchesPerson;
@@ -3609,6 +3621,7 @@ function renderPacking() {
         <div class="budget-item-desc">${b.code}${b.room ? ' - ' + b.room : ''}</div>
         <span class="budget-status-pill budget-status-paid">${b.packedBy}</span>
       </div>
+      ${(b.type || b.weight) ? `<div class="budget-item-meta">${[b.type, b.weight].filter(Boolean).join(' · ')}</div>` : ''}
       ${b.description ? `<div class="budget-item-meta">${b.description}</div>` : ''}
       <div class="furn-actions" style="margin-top:10px;">
         <button class="furn-action-btn" onclick="openEditBox(${b.id})">Edit</button>
@@ -3629,6 +3642,8 @@ function openAddBox() {
   document.getElementById('bx-code').value = '';
   document.getElementById('bx-room').value = '';
   document.getElementById('bx-packed-by').value = 'Dani';
+  document.getElementById('bx-type').value = '';
+  document.getElementById('bx-weight').value = '';
   document.getElementById('bx-description').value = '';
   document.getElementById('modal-box').classList.add('open');
 }
@@ -3644,6 +3659,8 @@ function openEditBox(id) {
   document.getElementById('bx-code').value = box.code;
   document.getElementById('bx-room').value = box.room;
   document.getElementById('bx-packed-by').value = PEOPLE_OPTIONS.includes(box.packedBy) ? box.packedBy : 'Dani';
+  document.getElementById('bx-type').value = box.type || '';
+  document.getElementById('bx-weight').value = box.weight || '';
   document.getElementById('bx-description').value = box.description;
   document.getElementById('modal-box').classList.add('open');
 }
@@ -3653,6 +3670,8 @@ function saveBox() {
   const code = document.getElementById('bx-code').value.trim();
   const room = document.getElementById('bx-room').value.trim();
   const packedBy = document.getElementById('bx-packed-by').value;
+  const type = document.getElementById('bx-type').value.trim();
+  const weight = document.getElementById('bx-weight').value;
   const description = document.getElementById('bx-description').value.trim();
 
   if (!code) return;
@@ -3662,6 +3681,8 @@ function saveBox() {
     code,
     room,
     packedBy: PEOPLE_OPTIONS.includes(packedBy) ? packedBy : 'Dani',
+    type,
+    weight,
     description
   };
 
