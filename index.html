@@ -1915,6 +1915,12 @@
           </select>
         </div>
         <div class="filter-group">
+          <label for="packing-filter-carrier" class="filter-label">Carried by</label>
+          <select id="packing-filter-carrier" class="filter-select" onchange="renderPacking()">
+            <option value="all">All</option>
+          </select>
+        </div>
+        <div class="filter-group">
           <label for="packing-filter-trip" class="filter-label">Trip date</label>
           <input type="date" id="packing-filter-trip" class="filter-select" onchange="renderPacking()">
         </div>
@@ -3726,10 +3732,16 @@ function renderPacking() {
   const listEl = document.getElementById('packing-list');
   if (!listEl) return;
 
-  // Populate carriedBy datalist
+  // Populate carriedBy datalist and filter dropdown
   const allCarriers = [...new Set(boxes.map((b) => b.carriedBy).filter(Boolean))].sort();
   const carrierListEl = document.getElementById('bx-carried-by-list');
   if (carrierListEl) carrierListEl.innerHTML = allCarriers.map((c) => `<option value="${c}">`).join('');
+  const carrierFilterEl = document.getElementById('packing-filter-carrier');
+  if (carrierFilterEl) {
+    const current = carrierFilterEl.value;
+    carrierFilterEl.innerHTML = '<option value="all">All</option>' +
+      allCarriers.map((c) => `<option value="${c}"${c === current ? ' selected' : ''}>${c}</option>`).join('');
+  }
 
   // Populate room datalist and filter dropdown
   const allRooms = [...new Set(boxes.map((b) => b.room).filter(Boolean))].sort();
@@ -3953,6 +3965,7 @@ function getFilteredBoxes() {
   const personFilter = document.getElementById('packing-filter-person')?.value || 'all';
   const weightFilter = document.getElementById('packing-filter-weight')?.value || 'all';
   const destinationFilter = document.getElementById('packing-filter-destination')?.value || 'all';
+  const carrierFilter = document.getElementById('packing-filter-carrier')?.value || 'all';
   const tripFilter = document.getElementById('packing-filter-trip')?.value || '';
   const sort = document.getElementById('packing-sort')?.value || 'code-asc';
 
@@ -3962,8 +3975,9 @@ function getFilteredBoxes() {
     const matchesPerson = personFilter === 'all' || b.packedBy === personFilter;
     const matchesWeight = weightFilter === 'all' || b.weight === weightFilter;
     const matchesDestination = destinationFilter === 'all' || b.destination === destinationFilter;
+    const matchesCarrier = carrierFilter === 'all' || b.carriedBy === carrierFilter;
     const matchesTrip = !tripFilter || b.tripDate === tripFilter;
-    return matchesSearch && matchesRoom && matchesPerson && matchesWeight && matchesDestination && matchesTrip;
+    return matchesSearch && matchesRoom && matchesPerson && matchesWeight && matchesDestination && matchesCarrier && matchesTrip;
   });
 
   return visible.sort((a, b) => {
