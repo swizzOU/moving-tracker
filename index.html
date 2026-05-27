@@ -2160,7 +2160,10 @@
       <option>Dani/Ken</option>
     </select>
     <label for="bx-type">Box type</label>
-    <input type="text" id="bx-type" placeholder="e.g. Cardboard box, clothes bag, bin bag…" />
+    <div class="inline-row">
+      <select id="bx-type"></select>
+      <button type="button" class="add-btn secondary" onclick="addBoxType()">+ Add type</button>
+    </div>
     <label for="bx-weight">Weight</label>
     <select id="bx-weight">
       <option value="">— Select —</option>
@@ -2477,7 +2480,8 @@ const STORAGE_KEYS = {
   budgetEntries: 'move_budget_entries',
   budgetCategories: 'move_budget_categories',
   savings: 'move_savings_goals',
-  boxes: 'move_packing_boxes'
+  boxes: 'move_packing_boxes',
+  boxTypes: 'move_packing_box_types'
 };
 
 
@@ -2560,6 +2564,8 @@ let editingSavingId = null;
 let contributingToGoalId = null;
 let editingContributionId = null;
 let boxes = migrateBoxes(readStoredJson(STORAGE_KEYS.boxes, []));
+const DEFAULT_BOX_TYPES = ['Cardboard box', 'Clothes bag', 'Suitcase', 'Bin bag', 'Crate', 'Other'];
+let boxTypes = [...new Set([...DEFAULT_BOX_TYPES, ...readStoredJson(STORAGE_KEYS.boxTypes, []), ...boxes.map((b) => b.type).filter(Boolean)])];
 let editingBoxId = null;
 
 let currentBudgetCategoryFilter = 'all';
@@ -2580,7 +2586,8 @@ function exportStatePayload() {
     budgetEntries,
     budgetCategories,
     savings,
-    boxes
+    boxes,
+    boxTypes
   };
 }
 
@@ -2598,6 +2605,7 @@ function persistLocalState() {
   localStorage.setItem(STORAGE_KEYS.budgetCategories, JSON.stringify(budgetCategories));
   localStorage.setItem(STORAGE_KEYS.savings, JSON.stringify(savings));
   localStorage.setItem(STORAGE_KEYS.boxes, JSON.stringify(boxes));
+  localStorage.setItem(STORAGE_KEYS.boxTypes, JSON.stringify(boxTypes));
 }
 
 function refreshAuthControls() {
@@ -2687,6 +2695,7 @@ function applyPayload(payload) {
   budgetEntries = migrateBudgetEntries(payload.budgetEntries || []);
   savings = migrateSavings(payload.savings || []);
   boxes = migrateBoxes(payload.boxes || []);
+  boxTypes = [...new Set([...DEFAULT_BOX_TYPES, ...(Array.isArray(payload.boxTypes) ? payload.boxTypes : []), ...boxes.map((b) => b.type).filter(Boolean)])];
   budgetCategories = Array.isArray(payload.budgetCategories) ? payload.budgetCategories : [];
   budgetCategories = [...new Set([...
     DEFAULT_BUDGET_CATEGORIES,
@@ -3633,6 +3642,25 @@ function renderPacking() {
   applyActionLockToInteractiveElements();
 }
 
+function renderBoxTypeOptions(selected = 'Cardboard box') {
+  const select = document.getElementById('bx-type');
+  if (!selected || !boxTypes.includes(selected)) selected = boxTypes[0];
+  select.innerHTML = boxTypes.map((t) => `<option value="${t}"${t === selected ? ' selected' : ''}>${t}</option>`).join('');
+}
+
+function addBoxType() {
+  if (!ensureCanEdit()) return;
+  const newType = prompt('New box type name:');
+  if (!newType) return;
+  const normalized = newType.trim();
+  if (!normalized) return;
+  if (!boxTypes.some((t) => t.toLowerCase() === normalized.toLowerCase())) {
+    boxTypes.push(normalized);
+  }
+  renderBoxTypeOptions(normalized);
+  save();
+}
+
 function openAddBox() {
   if (!ensureCanEdit()) return;
   editingBoxId = null;
@@ -3642,7 +3670,7 @@ function openAddBox() {
   document.getElementById('bx-code').value = '';
   document.getElementById('bx-room').value = '';
   document.getElementById('bx-packed-by').value = 'Dani';
-  document.getElementById('bx-type').value = '';
+  renderBoxTypeOptions('Cardboard box');
   document.getElementById('bx-weight').value = '';
   document.getElementById('bx-description').value = '';
   document.getElementById('modal-box').classList.add('open');
@@ -3659,7 +3687,7 @@ function openEditBox(id) {
   document.getElementById('bx-code').value = box.code;
   document.getElementById('bx-room').value = box.room;
   document.getElementById('bx-packed-by').value = PEOPLE_OPTIONS.includes(box.packedBy) ? box.packedBy : 'Dani';
-  document.getElementById('bx-type').value = box.type || '';
+  renderBoxTypeOptions(box.type || 'Cardboard box');
   document.getElementById('bx-weight').value = box.weight || '';
   document.getElementById('bx-description').value = box.description;
   document.getElementById('modal-box').classList.add('open');
@@ -3670,7 +3698,7 @@ function saveBox() {
   const code = document.getElementById('bx-code').value.trim();
   const room = document.getElementById('bx-room').value.trim();
   const packedBy = document.getElementById('bx-packed-by').value;
-  const type = document.getElementById('bx-type').value.trim();
+  const type = document.getElementById('bx-type').value;
   const weight = document.getElementById('bx-weight').value;
   const description = document.getElementById('bx-description').value.trim();
 
