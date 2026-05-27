@@ -3606,7 +3606,7 @@ function renderPacking() {
   listEl.innerHTML = visible.map((b) => `
     <div class="budget-item">
       <div class="budget-item-head">
-        <div class="budget-item-desc">${b.code}${b.room ? ' — ' + b.room : ''}</div>
+        <div class="budget-item-desc">${b.code}${b.room ? ' - ' + b.room : ''}</div>
         <span class="budget-status-pill budget-status-paid">${b.packedBy}</span>
       </div>
       ${b.description ? `<div class="budget-item-meta">${b.description}</div>` : ''}
