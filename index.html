@@ -1746,9 +1746,10 @@
     <div class="task-panel">
       <div class="budget-topbar">
         <div class="budget-stats">
-          <div class="stat"><span id="budget-total">£0.00</span>Running total</div>
           <div class="stat"><span id="budget-count">0</span>Entries</div>
           <div class="stat"><span id="budget-unpaid">£0.00</span>Unpaid</div>
+          <div class="stat"><span id="budget-paid">£0.00</span>Paid</div>
+          <div class="stat"><span id="budget-total">£0.00</span>Running total</div>
         </div>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
           <button class="add-btn secondary" onclick="exportBudgetCsv()">Export CSV</button>
@@ -1766,6 +1767,17 @@
             <option value="all">All</option>
             <option value="paid">Paid</option>
             <option value="unpaid">Unpaid</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="budget-sort" class="filter-label">Sort by</label>
+          <select id="budget-sort" class="filter-select" onchange="updateBudgetFilters()">
+            <option value="date-desc">Date (newest first)</option>
+            <option value="date-asc">Date (oldest first)</option>
+            <option value="amount-desc">Amount (high to low)</option>
+            <option value="amount-asc">Amount (low to high)</option>
+            <option value="category-asc">Category A–Z</option>
+            <option value="person-asc">Person A–Z</option>
           </select>
         </div>
       </div>
@@ -2048,6 +2060,8 @@
     <input type="text" id="b-description" placeholder="e.g. Solicitor invoice" />
     <label for="b-amount">Amount (£)</label>
     <input type="number" id="b-amount" min="0" step="0.01" placeholder="0.00" />
+    <label for="b-date">Date (optional)</label>
+    <input type="date" id="b-date" />
     <label for="b-notes">Notes (optional)</label>
     <input type="text" id="b-notes" placeholder="Optional detail..." />
     <label for="b-category">Category</label>
@@ -2281,6 +2295,7 @@ function migrateBudgetEntries(inputEntries) {
       id: typeof entry.id === 'number' ? entry.id : Date.now() + index,
       description: String(entry.description || '').trim(),
       notes: String(entry.notes || '').trim(),
+      date: String(entry.date || '').trim(),
       amount: Number(entry.amount) || 0,
       category: String(entry.category || 'Other').trim() || 'Other',
       paidBy: PEOPLE_OPTIONS.includes(entry.paidBy) ? entry.paidBy : 'Dani/Ken',
@@ -2444,6 +2459,7 @@ let contributingToGoalId = null;
 let editingContributionId = null;
 let currentBudgetCategoryFilter = 'all';
 let currentBudgetPaidFilter = 'all';
+let currentBudgetSort = 'date-desc';
 
 function exportStatePayload() {
   return {
@@ -3093,6 +3109,7 @@ function renderBudgetFilterOptions() {
 function updateBudgetFilters() {
   currentBudgetCategoryFilter = document.getElementById('budget-filter-category').value;
   currentBudgetPaidFilter = document.getElementById('budget-filter-paid').value;
+  currentBudgetSort = document.getElementById('budget-sort').value;
   renderBudget();
 }
 
@@ -3102,7 +3119,16 @@ function renderBudget() {
   const listEl = document.getElementById('budget-list');
   const breakdownEl = document.getElementById('budget-breakdown');
 
-  const orderedEntries = [...budgetEntries].sort((a, b) => b.id - a.id);
+  const orderedEntries = [...budgetEntries].sort((a, b) => {
+    switch (currentBudgetSort) {
+      case 'date-asc':  return (a.date || '') > (b.date || '') ? 1 : -1;
+      case 'amount-desc': return Number(b.amount) - Number(a.amount);
+      case 'amount-asc':  return Number(a.amount) - Number(b.amount);
+      case 'category-asc': return (a.category || '').localeCompare(b.category || '');
+      case 'person-asc':   return (a.paidBy || '').localeCompare(b.paidBy || '');
+      default: return (b.date || '') > (a.date || '') ? 1 : (b.date || '') < (a.date || '') ? -1 : b.id - a.id;
+    }
+  });
   const visibleEntries = orderedEntries.filter((entry) => {
     const categoryMatch = currentBudgetCategoryFilter === 'all' || entry.category === currentBudgetCategoryFilter;
     const paidMatch = currentBudgetPaidFilter === 'all'
@@ -3116,10 +3142,12 @@ function renderBudget() {
   const unpaidTotal = visibleEntries
     .filter((entry) => entry.isPaid === false)
     .reduce((sum, entry) => sum + Number(entry.amount || 0), 0);
+  const paidTotal = total - unpaidTotal;
 
-  document.getElementById('budget-total').textContent = formatCurrency(total);
   document.getElementById('budget-count').textContent = count;
   document.getElementById('budget-unpaid').textContent = formatCurrency(unpaidTotal);
+  document.getElementById('budget-paid').textContent = formatCurrency(paidTotal);
+  document.getElementById('budget-total').textContent = formatCurrency(total);
 
   if (!budgetEntries.length) {
     listEl.innerHTML = '<div class="budget-empty">No expenses yet. Add your first one to start tracking.</div>';
@@ -3142,7 +3170,7 @@ function renderBudget() {
           <span class="budget-status-pill ${entry.isPaid === false ? 'budget-status-unpaid' : 'budget-status-paid'}">${entry.isPaid === false ? 'Unpaid' : 'Paid'}</span>
         </div>
       </div>
-      <div class="budget-item-meta">${entry.category} | Paid by: ${entry.paidBy}</div>
+      <div class="budget-item-meta">${entry.category} | Paid by: ${entry.paidBy}${entry.date ? ' | ' + new Date(entry.date + 'T00:00:00').toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}) : ''}</div>
       ${entry.notes ? `<div class="budget-item-notes">${entry.notes}</div>` : ''}
       <div class="furn-actions" style="margin-top:10px;">
         <button class="furn-action-btn" onclick="openEditBudget(${entry.id})">Edit</button>
@@ -3179,6 +3207,7 @@ function openAddBudget() {
   document.getElementById('btn-save-budget').textContent = 'Add Expense';
   document.getElementById('btn-delete-budget').classList.add('hidden');
   document.getElementById('b-description').value = '';
+  document.getElementById('b-date').value = '';
   document.getElementById('b-notes').value = '';
   document.getElementById('b-amount').value = '';
   renderBudgetCategoryOptions('Other');
@@ -3196,6 +3225,7 @@ function openEditBudget(entryId) {
   document.getElementById('btn-save-budget').textContent = 'Save Changes';
   document.getElementById('btn-delete-budget').classList.remove('hidden');
   document.getElementById('b-description').value = entry.description;
+  document.getElementById('b-date').value = entry.date || '';
   document.getElementById('b-notes').value = entry.notes || '';
   document.getElementById('b-amount').value = Number(entry.amount).toFixed(2);
   renderBudgetCategoryOptions(entry.category);
@@ -3261,6 +3291,7 @@ function exportBudgetCsv() {
 function saveBudget() {
   if (!ensureCanEdit()) return;
   const description = document.getElementById('b-description').value.trim();
+  const date = document.getElementById('b-date').value.trim();
   const notes = document.getElementById('b-notes').value.trim();
   const amount = Number(document.getElementById('b-amount').value);
   const category = document.getElementById('b-category').value;
@@ -3272,6 +3303,7 @@ function saveBudget() {
   const expense = {
     id: editingBudgetId || Date.now(),
     description,
+    date,
     notes,
     amount: Number(amount.toFixed(2)),
     category,
