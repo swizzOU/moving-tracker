@@ -1655,6 +1655,7 @@
   <button class="tab" id="tab-btn-savings" onclick="showTab('savings')">💰 Savings</button>
   <button class="tab" onclick="showTab('calendar')">📅 Calendar</button>
   <button class="tab" onclick="showTab('files')">📁 Files</button>
+  <button class="tab" onclick="showTab('packing')">📦 Packing</button>
 </div>
 
 <div class="main">
@@ -1841,6 +1842,55 @@
   <div id="tab-calendar" class="hidden">
     <button class="add-btn" onclick="openAddEvent()">+ Add Event</button>
     <div id="calendar-container"></div>
+  </div>
+
+  <!-- PACKING TAB -->
+  <div id="tab-packing" class="hidden">
+    <div class="task-panel">
+      <div class="budget-stats">
+        <div class="stat"><span id="packing-count">0</span>Boxes packed</div>
+        <div class="stat"><span id="packing-rooms">0</span>Rooms</div>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
+        <button class="add-btn" onclick="openAddBox()">+ Add Box</button>
+      </div>
+    </div>
+    <div class="task-panel">
+      <div class="filter-bar">
+        <div class="filter-group" style="flex:1; min-width:180px;">
+          <label for="packing-search" class="filter-label">Search</label>
+          <input type="text" id="packing-search" class="filter-select" placeholder="Search boxes…" oninput="renderPacking()">
+        </div>
+        <div class="filter-group">
+          <label for="packing-filter-room" class="filter-label">Room</label>
+          <select id="packing-filter-room" class="filter-select" onchange="renderPacking()">
+            <option value="all">All</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="packing-filter-person" class="filter-label">Packed by</label>
+          <select id="packing-filter-person" class="filter-select" onchange="renderPacking()">
+            <option value="all">All</option>
+            <option>Dani</option>
+            <option>Ken</option>
+            <option>Mum</option>
+            <option>Dad</option>
+            <option>Caroline</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="packing-sort" class="filter-label">Sort by</label>
+          <select id="packing-sort" class="filter-select" onchange="renderPacking()">
+            <option value="code-asc">Box code A–Z</option>
+            <option value="room-asc">Room A–Z</option>
+            <option value="person-asc">Packed by A–Z</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="task-panel">
+      <div id="packing-list" class="budget-list"></div>
+    </div>
   </div>
 
 </div>
@@ -2091,6 +2141,34 @@
   </div>
 </div>
 
+<!-- ADD BOX MODAL -->
+<div class="modal-overlay" id="modal-box">
+  <div class="modal">
+    <h3 id="modal-box-title">Add Box</h3>
+    <label for="bx-code">Box code</label>
+    <input type="text" id="bx-code" placeholder="e.g. 001" />
+    <label for="bx-room">Room</label>
+    <input type="text" id="bx-room" placeholder="e.g. Living Room" list="bx-room-list" autocomplete="off" />
+    <datalist id="bx-room-list"></datalist>
+    <label for="bx-packed-by">Packed by</label>
+    <select id="bx-packed-by">
+      <option>Dani</option>
+      <option>Ken</option>
+      <option>Mum</option>
+      <option>Dad</option>
+      <option>Caroline</option>
+      <option>Dani/Ken</option>
+    </select>
+    <label for="bx-description">Description</label>
+    <textarea id="bx-description" rows="3" placeholder="e.g. Coffee table books and notebooks" style="resize:vertical;"></textarea>
+    <div class="modal-btns">
+      <button class="btn-delete secondary hidden" id="btn-delete-box" onclick="deleteBox(editingBoxId)">Delete</button>
+      <button class="btn-cancel" onclick="closeModal('modal-box')">Cancel</button>
+      <button class="btn-save" id="btn-save-box" onclick="saveBox()">Add Box</button>
+    </div>
+  </div>
+</div>
+
   <!-- ADD SAVING GOAL MODAL -->
   <div class="modal-overlay" id="modal-saving">
     <div class="modal">
@@ -2288,6 +2366,17 @@ function migrateTasks(inputTasks) {
   }));
 }
 
+function migrateBoxes(input) {
+  if (!Array.isArray(input)) return [];
+  return input.map((b, i) => ({
+    id: typeof b.id === 'number' ? b.id : Date.now() + i,
+    code: String(b.code || '').trim(),
+    room: String(b.room || '').trim(),
+    packedBy: PEOPLE_OPTIONS.includes(b.packedBy) ? b.packedBy : 'Dani',
+    description: String(b.description || '').trim()
+  })).filter((b) => b.code);
+}
+
 function migrateBudgetEntries(inputEntries) {
   if (!Array.isArray(inputEntries)) return [];
   return inputEntries
@@ -2375,7 +2464,8 @@ const STORAGE_KEYS = {
   events: 'move_events',
   budgetEntries: 'move_budget_entries',
   budgetCategories: 'move_budget_categories',
-  savings: 'move_savings_goals'
+  savings: 'move_savings_goals',
+  boxes: 'move_packing_boxes'
 };
 
 
@@ -2457,6 +2547,9 @@ let editingBudgetId = null;
 let editingSavingId = null;
 let contributingToGoalId = null;
 let editingContributionId = null;
+let boxes = migrateBoxes(readStoredJson(STORAGE_KEYS.boxes, []));
+let editingBoxId = null;
+
 let currentBudgetCategoryFilter = 'all';
 let currentBudgetPaidFilter = 'all';
 let currentBudgetSort = 'date-desc';
@@ -2474,7 +2567,8 @@ function exportStatePayload() {
     events,
     budgetEntries,
     budgetCategories,
-    savings
+    savings,
+    boxes
   };
 }
 
@@ -2491,6 +2585,7 @@ function persistLocalState() {
   localStorage.setItem(STORAGE_KEYS.budgetEntries, JSON.stringify(budgetEntries));
   localStorage.setItem(STORAGE_KEYS.budgetCategories, JSON.stringify(budgetCategories));
   localStorage.setItem(STORAGE_KEYS.savings, JSON.stringify(savings));
+  localStorage.setItem(STORAGE_KEYS.boxes, JSON.stringify(boxes));
 }
 
 function refreshAuthControls() {
@@ -2579,6 +2674,7 @@ function applyPayload(payload) {
   events = migrateEvents(payload.events || []);
   budgetEntries = migrateBudgetEntries(payload.budgetEntries || []);
   savings = migrateSavings(payload.savings || []);
+  boxes = migrateBoxes(payload.boxes || []);
   budgetCategories = Array.isArray(payload.budgetCategories) ? payload.budgetCategories : [];
   budgetCategories = [...new Set([...
     DEFAULT_BUDGET_CATEGORIES,
@@ -2595,6 +2691,7 @@ function applyPayload(payload) {
   renderContacts();
   renderBudget();
   renderSavings();
+  renderPacking();
   updateStats();
   if (calendar) {
     renderCalendar();
@@ -3461,6 +3558,135 @@ function renderGoalChart(projection, target) {
 }
 
 
+function renderPacking() {
+  const search = (document.getElementById('packing-search')?.value || '').toLowerCase();
+  const roomFilter = document.getElementById('packing-filter-room')?.value || 'all';
+  const personFilter = document.getElementById('packing-filter-person')?.value || 'all';
+  const sort = document.getElementById('packing-sort')?.value || 'code-asc';
+
+  const listEl = document.getElementById('packing-list');
+  if (!listEl) return;
+
+  // Populate room datalist and filter dropdown
+  const allRooms = [...new Set(boxes.map((b) => b.room).filter(Boolean))].sort();
+  const roomListEl = document.getElementById('bx-room-list');
+  if (roomListEl) roomListEl.innerHTML = allRooms.map((r) => `<option value="${r}">`).join('');
+  const roomFilterEl = document.getElementById('packing-filter-room');
+  if (roomFilterEl) {
+    const current = roomFilterEl.value;
+    roomFilterEl.innerHTML = '<option value="all">All</option>' +
+      allRooms.map((r) => `<option value="${r}"${r === current ? ' selected' : ''}>${r}</option>`).join('');
+  }
+
+  let visible = boxes.filter((b) => {
+    const matchesSearch = !search || [b.code, b.room, b.packedBy, b.description].join(' ').toLowerCase().includes(search);
+    const matchesRoom = roomFilter === 'all' || b.room === roomFilter;
+    const matchesPerson = personFilter === 'all' || b.packedBy === personFilter;
+    return matchesSearch && matchesRoom && matchesPerson;
+  });
+
+  visible = visible.sort((a, b) => {
+    if (sort === 'room-asc') return (a.room || '').localeCompare(b.room || '');
+    if (sort === 'person-asc') return (a.packedBy || '').localeCompare(b.packedBy || '');
+    return (a.code || '').localeCompare(b.code || '', undefined, { numeric: true });
+  });
+
+  document.getElementById('packing-count').textContent = boxes.length;
+  document.getElementById('packing-rooms').textContent = new Set(boxes.map((b) => b.room).filter(Boolean)).size;
+
+  if (!boxes.length) {
+    listEl.innerHTML = '<div class="budget-empty">No boxes yet. Add your first one to start tracking.</div>';
+    return;
+  }
+  if (!visible.length) {
+    listEl.innerHTML = '<div class="budget-empty">No boxes match the current filters.</div>';
+    return;
+  }
+
+  listEl.innerHTML = visible.map((b) => `
+    <div class="budget-item">
+      <div class="budget-item-head">
+        <div class="budget-item-desc">${b.code}${b.room ? ' — ' + b.room : ''}</div>
+        <span class="budget-status-pill budget-status-paid">${b.packedBy}</span>
+      </div>
+      ${b.description ? `<div class="budget-item-meta">${b.description}</div>` : ''}
+      <div class="furn-actions" style="margin-top:10px;">
+        <button class="furn-action-btn" onclick="openEditBox(${b.id})">Edit</button>
+        <button class="furn-action-btn delete" onclick="deleteBox(${b.id})">Delete</button>
+      </div>
+    </div>
+  `).join('');
+
+  applyActionLockToInteractiveElements();
+}
+
+function openAddBox() {
+  if (!ensureCanEdit()) return;
+  editingBoxId = null;
+  document.getElementById('modal-box-title').textContent = 'Add Box';
+  document.getElementById('btn-save-box').textContent = 'Add Box';
+  document.getElementById('btn-delete-box').classList.add('hidden');
+  document.getElementById('bx-code').value = '';
+  document.getElementById('bx-room').value = '';
+  document.getElementById('bx-packed-by').value = 'Dani';
+  document.getElementById('bx-description').value = '';
+  document.getElementById('modal-box').classList.add('open');
+}
+
+function openEditBox(id) {
+  if (!ensureCanEdit()) return;
+  const box = boxes.find((b) => b.id === id);
+  if (!box) return;
+  editingBoxId = id;
+  document.getElementById('modal-box-title').textContent = 'Edit Box';
+  document.getElementById('btn-save-box').textContent = 'Save Changes';
+  document.getElementById('btn-delete-box').classList.remove('hidden');
+  document.getElementById('bx-code').value = box.code;
+  document.getElementById('bx-room').value = box.room;
+  document.getElementById('bx-packed-by').value = PEOPLE_OPTIONS.includes(box.packedBy) ? box.packedBy : 'Dani';
+  document.getElementById('bx-description').value = box.description;
+  document.getElementById('modal-box').classList.add('open');
+}
+
+function saveBox() {
+  if (!ensureCanEdit()) return;
+  const code = document.getElementById('bx-code').value.trim();
+  const room = document.getElementById('bx-room').value.trim();
+  const packedBy = document.getElementById('bx-packed-by').value;
+  const description = document.getElementById('bx-description').value.trim();
+
+  if (!code) return;
+
+  const box = {
+    id: editingBoxId || Date.now(),
+    code,
+    room,
+    packedBy: PEOPLE_OPTIONS.includes(packedBy) ? packedBy : 'Dani',
+    description
+  };
+
+  if (editingBoxId) {
+    boxes = boxes.map((b) => b.id === editingBoxId ? box : b);
+  } else {
+    boxes = [...boxes, box];
+  }
+
+  closeModal('modal-box');
+  persistLocalState();
+  renderPacking();
+  syncToCloud();
+}
+
+function deleteBox(id) {
+  if (!ensureCanEdit()) return;
+  if (!confirm('Delete this box entry?')) return;
+  boxes = boxes.filter((b) => b.id !== id);
+  closeModal('modal-box');
+  persistLocalState();
+  renderPacking();
+  syncToCloud();
+}
+
 function renderSavings() {
   const stats = computeDashboardStats();
   const el = (id) => document.getElementById(id);
@@ -3811,7 +4037,7 @@ function renderTaskCategoryOptions(selectedCategory = '') {
 }
 
 function showTab(t) {
-  const tabs = ['tasks','furniture','contacts','budget','savings','calendar','files'];
+  const tabs = ['tasks','furniture','contacts','budget','savings','calendar','files','packing'];
   tabs.forEach(x => {
     const panel = document.getElementById('tab-'+x);
     const isActive = x === t;
@@ -4931,6 +5157,7 @@ renderFurniture();
 renderContacts();
 renderBudget();
 renderSavings();
+renderPacking();
 updateStats();
 showTab('tasks');
 save();
