@@ -1856,6 +1856,8 @@
       </div>
       <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
         <button class="add-btn" onclick="openAddBox()">+ Add Box</button>
+        <button class="add-btn secondary" onclick="exportPackingCsv()">Export CSV</button>
+        <button class="add-btn secondary" onclick="printPacking()">Print</button>
         <button class="add-btn secondary" id="packing-select-toggle" onclick="togglePackingSelectMode()">Select</button>
       </div>
     </div>
@@ -3717,14 +3719,6 @@ function renderGoalChart(projection, target) {
 
 
 function renderPacking() {
-  const search = (document.getElementById('packing-search')?.value || '').toLowerCase();
-  const roomFilter = document.getElementById('packing-filter-room')?.value || 'all';
-  const personFilter = document.getElementById('packing-filter-person')?.value || 'all';
-  const weightFilter = document.getElementById('packing-filter-weight')?.value || 'all';
-  const destinationFilter = document.getElementById('packing-filter-destination')?.value || 'all';
-  const tripFilter = document.getElementById('packing-filter-trip')?.value || '';
-  const sort = document.getElementById('packing-sort')?.value || 'code-asc';
-
   const listEl = document.getElementById('packing-list');
   if (!listEl) return;
 
@@ -3744,23 +3738,7 @@ function renderPacking() {
       allRooms.map((r) => `<option value="${r}"${r === current ? ' selected' : ''}>${r}</option>`).join('');
   }
 
-  let visible = boxes.filter((b) => {
-    const matchesSearch = !search || [b.code, b.room, b.packedBy, b.type, b.weight, b.destination, b.carriedBy, b.tripDate, b.description].join(' ').toLowerCase().includes(search);
-    const matchesRoom = roomFilter === 'all' || b.room === roomFilter;
-    const matchesPerson = personFilter === 'all' || b.packedBy === personFilter;
-    const matchesWeight = weightFilter === 'all' || b.weight === weightFilter;
-    const matchesDestination = destinationFilter === 'all' || b.destination === destinationFilter;
-    const matchesTrip = !tripFilter || b.tripDate === tripFilter;
-    return matchesSearch && matchesRoom && matchesPerson && matchesWeight && matchesDestination && matchesTrip;
-  });
-
-  visible = visible.sort((a, b) => {
-    if (sort === 'room-asc') return (a.room || '').localeCompare(b.room || '');
-    if (sort === 'person-asc') return (a.packedBy || '').localeCompare(b.packedBy || '');
-    if (sort === 'trip-asc') return (a.tripDate || '').localeCompare(b.tripDate || '');
-    if (sort === 'trip-desc') return (b.tripDate || '').localeCompare(a.tripDate || '');
-    return (a.code || '').localeCompare(b.code || '', undefined, { numeric: true });
-  });
+  const visible = getFilteredBoxes();
 
   document.getElementById('packing-count').textContent = boxes.length;
   document.getElementById('packing-rooms').textContent = new Set(boxes.map((b) => b.room).filter(Boolean)).size;
@@ -3961,6 +3939,138 @@ function deleteBox(id) {
   closeModal('modal-box');
   save();
   renderPacking();
+}
+
+function getFilteredBoxes() {
+  const search = (document.getElementById('packing-search')?.value || '').toLowerCase();
+  const roomFilter = document.getElementById('packing-filter-room')?.value || 'all';
+  const personFilter = document.getElementById('packing-filter-person')?.value || 'all';
+  const weightFilter = document.getElementById('packing-filter-weight')?.value || 'all';
+  const destinationFilter = document.getElementById('packing-filter-destination')?.value || 'all';
+  const tripFilter = document.getElementById('packing-filter-trip')?.value || '';
+  const sort = document.getElementById('packing-sort')?.value || 'code-asc';
+
+  let visible = boxes.filter((b) => {
+    const matchesSearch = !search || [b.code, b.room, b.packedBy, b.type, b.weight, b.destination, b.carriedBy, b.tripDate, b.description].join(' ').toLowerCase().includes(search);
+    const matchesRoom = roomFilter === 'all' || b.room === roomFilter;
+    const matchesPerson = personFilter === 'all' || b.packedBy === personFilter;
+    const matchesWeight = weightFilter === 'all' || b.weight === weightFilter;
+    const matchesDestination = destinationFilter === 'all' || b.destination === destinationFilter;
+    const matchesTrip = !tripFilter || b.tripDate === tripFilter;
+    return matchesSearch && matchesRoom && matchesPerson && matchesWeight && matchesDestination && matchesTrip;
+  });
+
+  return visible.sort((a, b) => {
+    if (sort === 'room-asc') return (a.room || '').localeCompare(b.room || '');
+    if (sort === 'person-asc') return (a.packedBy || '').localeCompare(b.packedBy || '');
+    if (sort === 'trip-asc') return (a.tripDate || '').localeCompare(b.tripDate || '');
+    if (sort === 'trip-desc') return (b.tripDate || '').localeCompare(a.tripDate || '');
+    return (a.code || '').localeCompare(b.code || '', undefined, { numeric: true });
+  });
+}
+
+function exportPackingCsv() {
+  const visible = getFilteredBoxes();
+  if (!visible.length) { alert('No boxes to export.'); return; }
+
+  const escapeCsv = (value) => {
+    const text = String(value ?? '');
+    return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  };
+
+  const rows = [
+    ['Box Code', 'Room (Origin)', 'Destination', 'Packed By', 'Box Type', 'Weight', 'Carried By', 'Trip Date', 'Description'],
+    ...visible.map((b) => [
+      b.code, b.room, b.destination, b.packedBy, b.type, b.weight, b.carriedBy,
+      b.tripDate ? new Date(b.tripDate + 'T00:00:00').toLocaleDateString('en-GB') : '',
+      b.description
+    ])
+  ];
+
+  const csvContent = rows.map((row) => row.map(escapeCsv).join(',')).join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `packing-list-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function printPacking() {
+  const visible = getFilteredBoxes();
+  if (!visible.length) { alert('No boxes to print.'); return; }
+
+  const fmt = (dateStr) => dateStr
+    ? new Date(dateStr + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    : '';
+
+  // Group by destination room
+  const groups = visible.reduce((acc, b) => {
+    const key = b.destination || 'No destination set';
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(b);
+    return acc;
+  }, {});
+
+  const groupHtml = Object.entries(groups).map(([room, items]) => `
+    <div class="print-group">
+      <h2>${room}</h2>
+      <table>
+        <thead><tr><th>Code</th><th>Type</th><th>Weight</th><th>Origin</th><th>Carried by</th><th>Trip date</th><th>Description</th></tr></thead>
+        <tbody>
+          ${items.map((b) => `
+            <tr>
+              <td><strong>${b.code}</strong></td>
+              <td>${b.type || ''}</td>
+              <td class="${b.weight === 'Very Heavy' ? 'very-heavy' : b.weight === 'Heavy' ? 'heavy' : ''}">${b.weight || ''}</td>
+              <td>${b.room || ''}</td>
+              <td>${b.carriedBy || ''}</td>
+              <td>${fmt(b.tripDate)}</td>
+              <td>${b.description || ''}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `).join('');
+
+  const filterSummary = (() => {
+    const parts = [];
+    const search = document.getElementById('packing-search')?.value;
+    const dest = document.getElementById('packing-filter-destination')?.value;
+    const trip = document.getElementById('packing-filter-trip')?.value;
+    const weight = document.getElementById('packing-filter-weight')?.value;
+    if (search) parts.push(`Search: "${search}"`);
+    if (dest && dest !== 'all') parts.push(`Destination: ${dest}`);
+    if (trip) parts.push(`Trip: ${fmt(trip)}`);
+    if (weight && weight !== 'all') parts.push(`Weight: ${weight}`);
+    return parts.length ? `<p class="filter-note">Filters: ${parts.join(' · ')}</p>` : '';
+  })();
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>Packing List</title><style>
+    body { font-family: Georgia, serif; padding: 24px; color: #333; }
+    h1 { font-size: 1.6rem; margin-bottom: 4px; }
+    .filter-note { color: #888; font-size: 0.85rem; margin-bottom: 24px; }
+    .print-group { margin-bottom: 32px; page-break-inside: avoid; }
+    h2 { font-size: 1.15rem; background: #f0ede6; padding: 6px 10px; border-radius: 4px; margin-bottom: 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th { text-align: left; border-bottom: 2px solid #ccc; padding: 5px 8px; background: #fafaf8; }
+    td { padding: 5px 8px; border-bottom: 1px solid #e8e5de; vertical-align: top; }
+    .heavy { color: #e67e22; font-weight: bold; }
+    .very-heavy { color: #c0392b; font-weight: bold; }
+    @media print { body { padding: 0; } }
+  </style></head><body>
+    <h1>📦 Packing List</h1>
+    <p style="color:#888;font-size:0.85rem;">Printed ${new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })} · ${visible.length} box${visible.length !== 1 ? 'es' : ''}</p>
+    ${filterSummary}
+    ${groupHtml}
+    <script>window.onload = () => window.print();<\/script>
+  </body></html>`);
+  win.document.close();
 }
 
 function renderSavings() {
