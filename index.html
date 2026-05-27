@@ -3672,9 +3672,8 @@ function saveBox() {
   }
 
   closeModal('modal-box');
-  persistLocalState();
+  save();
   renderPacking();
-  syncToCloud();
 }
 
 function deleteBox(id) {
@@ -3682,9 +3681,8 @@ function deleteBox(id) {
   if (!confirm('Delete this box entry?')) return;
   boxes = boxes.filter((b) => b.id !== id);
   closeModal('modal-box');
-  persistLocalState();
+  save();
   renderPacking();
-  syncToCloud();
 }
 
 function renderSavings() {
