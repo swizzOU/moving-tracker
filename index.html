@@ -1856,6 +1856,7 @@
       </div>
       <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
         <button class="add-btn" onclick="openAddBox()">+ Add Box</button>
+        <button class="add-btn secondary" id="packing-select-toggle" onclick="togglePackingSelectMode()">Select</button>
       </div>
     </div>
     <div class="task-panel">
@@ -1912,13 +1913,89 @@
           </select>
         </div>
         <div class="filter-group">
+          <label for="packing-filter-trip" class="filter-label">Trip date</label>
+          <input type="date" id="packing-filter-trip" class="filter-select" onchange="renderPacking()">
+        </div>
+        <div class="filter-group">
           <label for="packing-sort" class="filter-label">Sort by</label>
           <select id="packing-sort" class="filter-select" onchange="renderPacking()">
             <option value="code-asc">Box code A–Z</option>
             <option value="room-asc">Room A–Z</option>
             <option value="person-asc">Packed by A–Z</option>
+            <option value="trip-asc">Trip date (earliest)</option>
+            <option value="trip-desc">Trip date (latest)</option>
           </select>
         </div>
+      </div>
+    </div>
+    <div id="packing-bulk-bar" class="task-panel hidden" style="background:var(--panel-bg); border:2px solid var(--accent); border-radius:10px; padding:14px 16px;">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+        <strong id="packing-bulk-count" style="color:var(--accent);">0 selected</strong>
+        <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer;">
+          <input type="checkbox" id="packing-select-all" onchange="toggleSelectAll(this.checked)"> Select all
+        </label>
+      </div>
+      <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap:10px; margin-bottom:12px;">
+        <div>
+          <label class="filter-label">Destination</label>
+          <select id="bulk-destination" class="filter-select">
+            <option value="">— No change —</option>
+            <optgroup label="Ground Floor">
+              <option>Living Room</option>
+              <option>Kitchen</option>
+              <option>Utility</option>
+              <option>Conservatory</option>
+              <option>Shower Room</option>
+              <option>Bedroom 4 (Office)</option>
+            </optgroup>
+            <optgroup label="First Floor">
+              <option>Bathroom</option>
+              <option>Bedroom 1 (Master)</option>
+              <option>Bedroom 2 (Spare)</option>
+              <option>Bedroom 3 (Craft Room)</option>
+            </optgroup>
+          </select>
+        </div>
+        <div>
+          <label class="filter-label">Carried by</label>
+          <input type="text" id="bulk-carried-by" class="filter-select" placeholder="— No change —" list="bx-carried-by-list">
+        </div>
+        <div>
+          <label class="filter-label">Trip date</label>
+          <input type="date" id="bulk-trip-date" class="filter-select">
+        </div>
+        <div>
+          <label class="filter-label">Weight</label>
+          <select id="bulk-weight" class="filter-select">
+            <option value="">— No change —</option>
+            <option>Light</option>
+            <option>Medium</option>
+            <option>Heavy</option>
+            <option>Very Heavy</option>
+          </select>
+        </div>
+        <div>
+          <label class="filter-label">Packed by</label>
+          <select id="bulk-packed-by" class="filter-select">
+            <option value="">— No change —</option>
+            <option>Dani</option>
+            <option>Ken</option>
+            <option>Mum</option>
+            <option>Dad</option>
+            <option>Caroline</option>
+            <option>Dani/Ken</option>
+          </select>
+        </div>
+        <div>
+          <label class="filter-label">Box type</label>
+          <select id="bulk-type" class="filter-select">
+            <option value="">— No change —</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn-save" onclick="applyBulkEdit()">Apply to selected</button>
+        <button class="btn-cancel" onclick="togglePackingSelectMode(false)">Cancel</button>
       </div>
     </div>
     <div class="task-panel">
@@ -2223,6 +2300,11 @@
       <option>Heavy</option>
       <option>Very Heavy</option>
     </select>
+    <label for="bx-carried-by">Carried by (move day)</label>
+    <input type="text" id="bx-carried-by" placeholder="e.g. Ken, Removal team…" list="bx-carried-by-list" autocomplete="off" />
+    <datalist id="bx-carried-by-list"></datalist>
+    <label for="bx-trip-date">Trip date</label>
+    <input type="date" id="bx-trip-date" />
     <label for="bx-description">Description</label>
     <textarea id="bx-description" rows="3" placeholder="e.g. Coffee table books and notebooks" style="resize:vertical;"></textarea>
     <div class="modal-btns">
@@ -2440,6 +2522,8 @@ function migrateBoxes(input) {
     type: String(b.type || '').trim(),
     weight: String(b.weight || '').trim(),
     destination: String(b.destination || '').trim(),
+    carriedBy: String(b.carriedBy || '').trim(),
+    tripDate: String(b.tripDate || '').trim(),
     description: String(b.description || '').trim()
   })).filter((b) => b.code);
 }
@@ -2619,6 +2703,7 @@ let boxes = migrateBoxes(readStoredJson(STORAGE_KEYS.boxes, []));
 const DEFAULT_BOX_TYPES = ['Cardboard box', 'Clothes bag', 'Suitcase', 'Bin bag', 'Crate', 'Other'];
 let boxTypes = [...new Set([...DEFAULT_BOX_TYPES, ...readStoredJson(STORAGE_KEYS.boxTypes, []), ...boxes.map((b) => b.type).filter(Boolean)])];
 let editingBoxId = null;
+let packingSelectMode = false;
 
 let currentBudgetCategoryFilter = 'all';
 let currentBudgetPaidFilter = 'all';
@@ -3637,10 +3722,16 @@ function renderPacking() {
   const personFilter = document.getElementById('packing-filter-person')?.value || 'all';
   const weightFilter = document.getElementById('packing-filter-weight')?.value || 'all';
   const destinationFilter = document.getElementById('packing-filter-destination')?.value || 'all';
+  const tripFilter = document.getElementById('packing-filter-trip')?.value || '';
   const sort = document.getElementById('packing-sort')?.value || 'code-asc';
 
   const listEl = document.getElementById('packing-list');
   if (!listEl) return;
+
+  // Populate carriedBy datalist
+  const allCarriers = [...new Set(boxes.map((b) => b.carriedBy).filter(Boolean))].sort();
+  const carrierListEl = document.getElementById('bx-carried-by-list');
+  if (carrierListEl) carrierListEl.innerHTML = allCarriers.map((c) => `<option value="${c}">`).join('');
 
   // Populate room datalist and filter dropdown
   const allRooms = [...new Set(boxes.map((b) => b.room).filter(Boolean))].sort();
@@ -3654,17 +3745,20 @@ function renderPacking() {
   }
 
   let visible = boxes.filter((b) => {
-    const matchesSearch = !search || [b.code, b.room, b.packedBy, b.type, b.weight, b.destination, b.description].join(' ').toLowerCase().includes(search);
+    const matchesSearch = !search || [b.code, b.room, b.packedBy, b.type, b.weight, b.destination, b.carriedBy, b.tripDate, b.description].join(' ').toLowerCase().includes(search);
     const matchesRoom = roomFilter === 'all' || b.room === roomFilter;
     const matchesPerson = personFilter === 'all' || b.packedBy === personFilter;
     const matchesWeight = weightFilter === 'all' || b.weight === weightFilter;
     const matchesDestination = destinationFilter === 'all' || b.destination === destinationFilter;
-    return matchesSearch && matchesRoom && matchesPerson && matchesWeight && matchesDestination;
+    const matchesTrip = !tripFilter || b.tripDate === tripFilter;
+    return matchesSearch && matchesRoom && matchesPerson && matchesWeight && matchesDestination && matchesTrip;
   });
 
   visible = visible.sort((a, b) => {
     if (sort === 'room-asc') return (a.room || '').localeCompare(b.room || '');
     if (sort === 'person-asc') return (a.packedBy || '').localeCompare(b.packedBy || '');
+    if (sort === 'trip-asc') return (a.tripDate || '').localeCompare(b.tripDate || '');
+    if (sort === 'trip-desc') return (b.tripDate || '').localeCompare(a.tripDate || '');
     return (a.code || '').localeCompare(b.code || '', undefined, { numeric: true });
   });
 
@@ -3688,7 +3782,9 @@ function renderPacking() {
       </div>
       ${(b.type || b.weight || b.destination) ? `<div class="budget-item-meta">${[b.type, b.destination, b.weight ? `<strong style="color:${b.weight === 'Very Heavy' ? '#c0392b' : b.weight === 'Heavy' ? '#e67e22' : 'inherit'}">${b.weight}</strong>` : null].filter(Boolean).join(' · ')}</div>` : ''}
       ${b.description ? `<div class="budget-item-meta">${b.description}</div>` : ''}
+      ${(b.carriedBy || b.tripDate) ? `<div class="budget-item-meta" style="color:var(--accent);">🚚 ${[b.carriedBy, b.tripDate ? new Date(b.tripDate + 'T00:00:00').toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}) : null].filter(Boolean).join(' · ')}</div>` : ''}
       <div class="furn-actions" style="margin-top:10px;">
+        <input type="checkbox" class="packing-select-cb" data-id="${b.id}" style="display:none;" onchange="updateBulkBar()">
         <button class="furn-action-btn" onclick="openEditBox(${b.id})">Edit</button>
         <button class="furn-action-btn delete" onclick="deleteBox(${b.id})">Delete</button>
       </div>
@@ -3696,6 +3792,71 @@ function renderPacking() {
   `).join('');
 
   applyActionLockToInteractiveElements();
+}
+
+function togglePackingSelectMode(force) {
+  packingSelectMode = typeof force === 'boolean' ? force : !packingSelectMode;
+  const btn = document.getElementById('packing-select-toggle');
+  const bulkBar = document.getElementById('packing-bulk-bar');
+  const cbs = document.querySelectorAll('.packing-select-cb');
+  if (packingSelectMode) {
+    btn.textContent = 'Cancel';
+    btn.classList.add('active');
+    bulkBar.classList.remove('hidden');
+    cbs.forEach((cb) => { cb.style.display = 'inline-block'; cb.checked = false; });
+    // Populate bulk type select with current box types
+    const bulkType = document.getElementById('bulk-type');
+    bulkType.innerHTML = '<option value="">— No change —</option>' +
+      boxTypes.map((t) => `<option value="${t}">${t}</option>`).join('');
+    updateBulkBar();
+  } else {
+    packingSelectMode = false;
+    btn.textContent = 'Select';
+    btn.classList.remove('active');
+    bulkBar.classList.add('hidden');
+    cbs.forEach((cb) => { cb.style.display = 'none'; cb.checked = false; });
+    document.getElementById('packing-select-all').checked = false;
+  }
+}
+
+function updateBulkBar() {
+  const selected = document.querySelectorAll('.packing-select-cb:checked');
+  document.getElementById('packing-bulk-count').textContent = `${selected.length} selected`;
+}
+
+function toggleSelectAll(checked) {
+  document.querySelectorAll('.packing-select-cb').forEach((cb) => { cb.checked = checked; });
+  updateBulkBar();
+}
+
+function applyBulkEdit() {
+  if (!ensureCanEdit()) return;
+  const selectedIds = [...document.querySelectorAll('.packing-select-cb:checked')].map((cb) => Number(cb.dataset.id));
+  if (!selectedIds.length) { alert('No boxes selected.'); return; }
+
+  const destination = document.getElementById('bulk-destination').value;
+  const carriedBy = document.getElementById('bulk-carried-by').value.trim();
+  const tripDate = document.getElementById('bulk-trip-date').value;
+  const weight = document.getElementById('bulk-weight').value;
+  const packedBy = document.getElementById('bulk-packed-by').value;
+  const type = document.getElementById('bulk-type').value;
+
+  boxes = boxes.map((b) => {
+    if (!selectedIds.includes(b.id)) return b;
+    return {
+      ...b,
+      ...(destination ? { destination } : {}),
+      ...(carriedBy ? { carriedBy } : {}),
+      ...(tripDate ? { tripDate } : {}),
+      ...(weight ? { weight } : {}),
+      ...(packedBy ? { packedBy } : {}),
+      ...(type ? { type } : {})
+    };
+  });
+
+  save();
+  togglePackingSelectMode(false);
+  renderPacking();
 }
 
 function renderBoxTypeOptions(selected = 'Cardboard box') {
@@ -3729,6 +3890,8 @@ function openAddBox() {
   renderBoxTypeOptions('Cardboard box');
   document.getElementById('bx-destination').value = '';
   document.getElementById('bx-weight').value = '';
+  document.getElementById('bx-carried-by').value = '';
+  document.getElementById('bx-trip-date').value = '';
   document.getElementById('bx-description').value = '';
   document.getElementById('modal-box').classList.add('open');
 }
@@ -3747,6 +3910,8 @@ function openEditBox(id) {
   renderBoxTypeOptions(box.type || 'Cardboard box');
   document.getElementById('bx-destination').value = box.destination || '';
   document.getElementById('bx-weight').value = box.weight || '';
+  document.getElementById('bx-carried-by').value = box.carriedBy || '';
+  document.getElementById('bx-trip-date').value = box.tripDate || '';
   document.getElementById('bx-description').value = box.description;
   document.getElementById('modal-box').classList.add('open');
 }
@@ -3759,6 +3924,8 @@ function saveBox() {
   const type = document.getElementById('bx-type').value;
   const destination = document.getElementById('bx-destination').value;
   const weight = document.getElementById('bx-weight').value;
+  const carriedBy = document.getElementById('bx-carried-by').value.trim();
+  const tripDate = document.getElementById('bx-trip-date').value;
   const description = document.getElementById('bx-description').value.trim();
 
   if (!code) return;
@@ -3771,6 +3938,8 @@ function saveBox() {
     type,
     destination,
     weight,
+    carriedBy,
+    tripDate,
     description
   };
 
