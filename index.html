@@ -1933,6 +1933,8 @@
             <option value="person-asc">Packed by A–Z</option>
             <option value="trip-asc">Trip date (earliest)</option>
             <option value="trip-desc">Trip date (latest)</option>
+            <option value="weight-asc">Weight (light to heavy)</option>
+            <option value="weight-desc">Weight (heavy to light)</option>
           </select>
         </div>
       </div>
@@ -1941,7 +1943,7 @@
       <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
         <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
           <span style="font-size:1rem; font-weight:600; letter-spacing:0.01em;">✏️ Bulk edit boxes</span>
-          <span id="packing-bulk-count" style="background:var(--accent); color:#fff; border-radius:20px; padding:2px 12px; font-size:0.85rem;">0 selected</span>
+          <span id="packing-bulk-count" style="background:var(--sage-dark); color:#fff; border-radius:20px; padding:2px 12px; font-size:0.85rem;">0 selected</span>
           <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer;">
             <input type="checkbox" id="packing-select-all" onchange="toggleSelectAll(this.checked)"> Select all visible
           </label>
@@ -3987,6 +3989,9 @@ function getFilteredBoxes() {
     if (sort === 'person-asc') return (a.packedBy || '').localeCompare(b.packedBy || '');
     if (sort === 'trip-asc') return (a.tripDate || '').localeCompare(b.tripDate || '');
     if (sort === 'trip-desc') return (b.tripDate || '').localeCompare(a.tripDate || '');
+    const weightOrder = { 'Light': 1, 'Medium': 2, 'Heavy': 3, 'Very Heavy': 4 };
+    if (sort === 'weight-asc') return (weightOrder[a.weight] || 0) - (weightOrder[b.weight] || 0);
+    if (sort === 'weight-desc') return (weightOrder[b.weight] || 0) - (weightOrder[a.weight] || 0);
     return (a.code || '').localeCompare(b.code || '', undefined, { numeric: true });
   });
 }
