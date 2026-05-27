@@ -1846,6 +1846,9 @@
 
   <!-- PACKING TAB -->
   <div id="tab-packing" class="hidden">
+    <div class="task-panel" style="text-align:center;">
+      <img src="floorplan.png" alt="Floor plan" style="max-width:100%; height:auto; border-radius:8px; border:1px solid var(--border);">
+    </div>
     <div class="task-panel">
       <div class="budget-stats">
         <div class="stat"><span id="packing-count">0</span>Boxes packed</div>
@@ -1876,6 +1879,36 @@
             <option>Mum</option>
             <option>Dad</option>
             <option>Caroline</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="packing-filter-weight" class="filter-label">Weight</label>
+          <select id="packing-filter-weight" class="filter-select" onchange="renderPacking()">
+            <option value="all">All</option>
+            <option>Light</option>
+            <option>Medium</option>
+            <option>Heavy</option>
+            <option>Very Heavy</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="packing-filter-destination" class="filter-label">Destination</label>
+          <select id="packing-filter-destination" class="filter-select" onchange="renderPacking()">
+            <option value="all">All</option>
+            <optgroup label="Ground Floor">
+              <option>Living Room</option>
+              <option>Kitchen</option>
+              <option>Utility</option>
+              <option>Conservatory</option>
+              <option>Shower Room</option>
+              <option>Bedroom 4 (Office)</option>
+            </optgroup>
+            <optgroup label="First Floor">
+              <option>Bathroom</option>
+              <option>Bedroom 1 (Master)</option>
+              <option>Bedroom 2 (Spare)</option>
+              <option>Bedroom 3 (Craft Room)</option>
+            </optgroup>
           </select>
         </div>
         <div class="filter-group">
@@ -3602,6 +3635,8 @@ function renderPacking() {
   const search = (document.getElementById('packing-search')?.value || '').toLowerCase();
   const roomFilter = document.getElementById('packing-filter-room')?.value || 'all';
   const personFilter = document.getElementById('packing-filter-person')?.value || 'all';
+  const weightFilter = document.getElementById('packing-filter-weight')?.value || 'all';
+  const destinationFilter = document.getElementById('packing-filter-destination')?.value || 'all';
   const sort = document.getElementById('packing-sort')?.value || 'code-asc';
 
   const listEl = document.getElementById('packing-list');
@@ -3622,7 +3657,9 @@ function renderPacking() {
     const matchesSearch = !search || [b.code, b.room, b.packedBy, b.type, b.weight, b.destination, b.description].join(' ').toLowerCase().includes(search);
     const matchesRoom = roomFilter === 'all' || b.room === roomFilter;
     const matchesPerson = personFilter === 'all' || b.packedBy === personFilter;
-    return matchesSearch && matchesRoom && matchesPerson;
+    const matchesWeight = weightFilter === 'all' || b.weight === weightFilter;
+    const matchesDestination = destinationFilter === 'all' || b.destination === destinationFilter;
+    return matchesSearch && matchesRoom && matchesPerson && matchesWeight && matchesDestination;
   });
 
   visible = visible.sort((a, b) => {
@@ -3649,7 +3686,7 @@ function renderPacking() {
         <div class="budget-item-desc">${b.code}${b.room ? ' - ' + b.room : ''}</div>
         <span class="budget-status-pill budget-status-paid">${b.packedBy}</span>
       </div>
-      ${(b.type || b.weight || b.destination) ? `<div class="budget-item-meta">${[b.type, b.destination, b.weight].filter(Boolean).join(' · ')}</div>` : ''}
+      ${(b.type || b.weight || b.destination) ? `<div class="budget-item-meta">${[b.type, b.destination, b.weight ? `<strong style="color:${b.weight === 'Very Heavy' ? '#c0392b' : b.weight === 'Heavy' ? '#e67e22' : 'inherit'}">${b.weight}</strong>` : null].filter(Boolean).join(' · ')}</div>` : ''}
       ${b.description ? `<div class="budget-item-meta">${b.description}</div>` : ''}
       <div class="furn-actions" style="margin-top:10px;">
         <button class="furn-action-btn" onclick="openEditBox(${b.id})">Edit</button>
