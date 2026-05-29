@@ -1684,6 +1684,170 @@
     padding: 30px 0;
     text-align: center;
   }
+
+/* ── To Pack Tab ──────────────────────────────────────────── */
+.topack-room-section { margin-bottom: 18px; }
+.topack-room-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 10px 14px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 6px;
+  user-select: none;
+}
+.topack-room-header:hover { background: var(--sage-light); }
+.topack-room-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  flex: 1;
+}
+.topack-room-count {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+.topack-room-chevron {
+  font-size: 0.75rem;
+  color: var(--muted);
+  transition: transform 0.2s;
+}
+.topack-room-chevron.open { transform: rotate(90deg); }
+.topack-room-body { display: none; padding: 0 2px; }
+.topack-room-body.open { display: block; }
+.topack-item {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 6px;
+  overflow: hidden;
+}
+.topack-item-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+.topack-item-row:hover { background: var(--panel-bg); }
+.topack-item-check {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  transition: background 0.15s, border-color 0.15s;
+}
+.topack-item-check.done {
+  background: var(--sage);
+  border-color: var(--sage);
+  color: var(--white);
+}
+.topack-item-name {
+  flex: 1;
+  font-size: 0.92rem;
+  font-weight: 500;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.topack-item.done-item .topack-item-name {
+  text-decoration: line-through;
+  color: var(--muted);
+  opacity: 0.7;
+}
+.topack-item-badges {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  align-items: center;
+}
+.topack-badge {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--sage-light);
+  color: var(--sage-dark);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.topack-badge.status-done { background: #d1e8d0; color: #2d6a2a; }
+.topack-badge.status-inprogress { background: #fff3cd; color: #856404; }
+.topack-item-expand {
+  display: none;
+  padding: 12px 14px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--panel-bg);
+  gap: 10px;
+  flex-direction: column;
+}
+.topack-item-expand.open { display: flex; }
+.topack-expand-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.topack-expand-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 120px;
+  flex: 1;
+}
+.topack-expand-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+.topack-expand-select,
+.topack-expand-input {
+  padding: 5px 8px;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  background: var(--white);
+  color: var(--text);
+}
+.topack-expand-select:focus,
+.topack-expand-input:focus { outline: none; border-color: var(--sage); }
+.topack-expand-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.topack-quick-add {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  margin-bottom: 2px;
+  padding: 0 2px;
+}
+.topack-quick-input {
+  flex: 1;
+  padding: 7px 11px;
+  border: 1.5px dashed var(--border);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  background: var(--white);
+  color: var(--text);
+}
+.topack-quick-input:focus {
+  outline: none;
+  border-color: var(--sage);
+  border-style: solid;
+}
+.topack-quick-input::placeholder { color: var(--muted); }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
