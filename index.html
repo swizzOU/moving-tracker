@@ -1600,6 +1600,64 @@
     font-family: inherit;
   }
   .file-tag:hover { background: #bfd9bb; }
+
+  /* Packing filter/sort icon toolbar */
+  .packing-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .packing-toolbar-search {
+    flex: 1;
+    padding: 7px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-family: inherit;
+    background: var(--white);
+    color: var(--text);
+    min-width: 0;
+  }
+  .packing-toolbar-search:focus { outline: none; border-color: var(--sage); }
+  .packing-icon-btn {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: var(--white);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .packing-icon-btn:hover { border-color: var(--sage); background: var(--sage-light); }
+  .packing-icon-btn.active { border-color: var(--sage-dark); background: var(--sage-light); }
+  .packing-icon-btn .active-dot {
+    display: none;
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--sage-dark);
+  }
+  .packing-icon-btn.has-active .active-dot { display: block; }
+  .packing-collapsible {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.2s ease, margin-bottom 0.2s ease;
+    margin-bottom: 0;
+  }
+  .packing-collapsible.open {
+    max-height: 500px;
+    margin-bottom: 10px;
+  }
   .file-tag.active {
     background: var(--sage-dark);
     color: var(--white);
@@ -1867,80 +1925,93 @@
       </div>
     </div>
     <div class="task-panel" id="packing-filter-panel">
-      <div class="filter-bar">
-        <div class="filter-group" style="flex:1; min-width:180px;">
-          <label for="packing-search" class="filter-label">Search</label>
-          <input type="text" id="packing-search" class="filter-select" placeholder="Search boxes…" oninput="renderPacking()">
+      <div class="packing-toolbar">
+        <input type="text" id="packing-search" class="packing-toolbar-search" placeholder="Search boxes…" oninput="renderPacking()">
+        <button class="packing-icon-btn" id="packing-filter-btn" onclick="togglePackingPanel('filter')" title="Filters">
+          <span>⚙️</span>
+          <span class="active-dot"></span>
+        </button>
+        <button class="packing-icon-btn" id="packing-sort-btn" onclick="togglePackingPanel('sort')" title="Sort">
+          <span>↕️</span>
+          <span class="active-dot"></span>
+        </button>
+      </div>
+      <div class="packing-collapsible" id="packing-filters-panel">
+        <div class="filter-bar" style="padding-top:4px;">
+          <div class="filter-group">
+            <label for="packing-filter-room" class="filter-label">Room</label>
+            <select id="packing-filter-room" class="filter-select" onchange="renderPacking(); updatePackingIconStates()">
+              <option value="all">All</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label for="packing-filter-person" class="filter-label">Packed by</label>
+            <select id="packing-filter-person" class="filter-select" onchange="renderPacking(); updatePackingIconStates()">
+              <option value="all">All</option>
+              <option>Dani</option>
+              <option>Ken</option>
+              <option>Mum</option>
+              <option>Dad</option>
+              <option>Caroline</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label for="packing-filter-weight" class="filter-label">Weight</label>
+            <select id="packing-filter-weight" class="filter-select" onchange="renderPacking(); updatePackingIconStates()">
+              <option value="all">All</option>
+              <option>Light</option>
+              <option>Medium</option>
+              <option>Heavy</option>
+              <option>Very Heavy</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label for="packing-filter-destination" class="filter-label">Destination</label>
+            <select id="packing-filter-destination" class="filter-select" onchange="renderPacking(); updatePackingIconStates()">
+              <option value="all">All</option>
+              <optgroup label="Ground Floor">
+                <option>Living Room</option>
+                <option>Kitchen</option>
+                <option>Utility</option>
+                <option>Conservatory</option>
+                <option>Shower Room</option>
+                <option>Bedroom 4 (Office)</option>
+                <option>Garden Room</option>
+              </optgroup>
+              <optgroup label="First Floor">
+                <option>Bathroom</option>
+                <option>Bedroom 1 (Master)</option>
+                <option>Bedroom 2 (Spare)</option>
+                <option>Bedroom 3 (Craft Room)</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label for="packing-filter-carrier" class="filter-label">Carried by</label>
+            <select id="packing-filter-carrier" class="filter-select" onchange="renderPacking(); updatePackingIconStates()">
+              <option value="all">All</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label for="packing-filter-trip" class="filter-label">Trip date</label>
+            <input type="date" id="packing-filter-trip" class="filter-select" onchange="renderPacking(); updatePackingIconStates()">
+          </div>
         </div>
-        <div class="filter-group">
-          <label for="packing-filter-room" class="filter-label">Room</label>
-          <select id="packing-filter-room" class="filter-select" onchange="renderPacking()">
-            <option value="all">All</option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <label for="packing-filter-person" class="filter-label">Packed by</label>
-          <select id="packing-filter-person" class="filter-select" onchange="renderPacking()">
-            <option value="all">All</option>
-            <option>Dani</option>
-            <option>Ken</option>
-            <option>Mum</option>
-            <option>Dad</option>
-            <option>Caroline</option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <label for="packing-filter-weight" class="filter-label">Weight</label>
-          <select id="packing-filter-weight" class="filter-select" onchange="renderPacking()">
-            <option value="all">All</option>
-            <option>Light</option>
-            <option>Medium</option>
-            <option>Heavy</option>
-            <option>Very Heavy</option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <label for="packing-filter-destination" class="filter-label">Destination</label>
-          <select id="packing-filter-destination" class="filter-select" onchange="renderPacking()">
-            <option value="all">All</option>
-            <optgroup label="Ground Floor">
-              <option>Living Room</option>
-              <option>Kitchen</option>
-              <option>Utility</option>
-              <option>Conservatory</option>
-              <option>Shower Room</option>
-              <option>Bedroom 4 (Office)</option>
-              <option>Garden Room</option>
-            </optgroup>
-            <optgroup label="First Floor">
-              <option>Bathroom</option>
-              <option>Bedroom 1 (Master)</option>
-              <option>Bedroom 2 (Spare)</option>
-              <option>Bedroom 3 (Craft Room)</option>
-            </optgroup>
-          </select>
-        </div>
-        <div class="filter-group">
-          <label for="packing-filter-carrier" class="filter-label">Carried by</label>
-          <select id="packing-filter-carrier" class="filter-select" onchange="renderPacking()">
-            <option value="all">All</option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <label for="packing-filter-trip" class="filter-label">Trip date</label>
-          <input type="date" id="packing-filter-trip" class="filter-select" onchange="renderPacking()">
-        </div>
-        <div class="filter-group">
-          <label for="packing-sort" class="filter-label">Sort by</label>
-          <select id="packing-sort" class="filter-select" onchange="renderPacking()">
-            <option value="code-asc">Code / Name A–Z</option>
-            <option value="room-asc">Room A–Z</option>
-            <option value="person-asc">Packed by A–Z</option>
-            <option value="trip-asc">Trip date (earliest)</option>
-            <option value="trip-desc">Trip date (latest)</option>
-            <option value="weight-asc">Weight (light to heavy)</option>
-            <option value="weight-desc">Weight (heavy to light)</option>
-          </select>
+      </div>
+      <div class="packing-collapsible" id="packing-sort-panel">
+        <div class="filter-bar" style="padding-top:4px;">
+          <div class="filter-group">
+            <label for="packing-sort" class="filter-label">Sort by</label>
+            <select id="packing-sort" class="filter-select" onchange="renderPacking(); updatePackingIconStates()">
+              <option value="code-asc">Code / Name A–Z</option>
+              <option value="room-asc">Room A–Z</option>
+              <option value="person-asc">Packed by A–Z</option>
+              <option value="trip-asc">Trip date (earliest)</option>
+              <option value="trip-desc">Trip date (latest)</option>
+              <option value="weight-asc">Weight (light to heavy)</option>
+              <option value="weight-desc">Weight (heavy to light)</option>
+            </select>
+          </div>
         </div>
       </div>
     </div>
@@ -3950,6 +4021,42 @@ function deleteBox(id) {
   closeModal('modal-box');
   save();
   renderPacking();
+}
+
+function togglePackingPanel(which) {
+  const filterPanel = document.getElementById('packing-filters-panel');
+  const sortPanel = document.getElementById('packing-sort-panel');
+  const filterBtn = document.getElementById('packing-filter-btn');
+  const sortBtn = document.getElementById('packing-sort-btn');
+  if (which === 'filter') {
+    const opening = !filterPanel.classList.contains('open');
+    filterPanel.classList.toggle('open', opening);
+    filterBtn.classList.toggle('active', opening);
+    sortPanel.classList.remove('open');
+    sortBtn.classList.remove('active');
+  } else {
+    const opening = !sortPanel.classList.contains('open');
+    sortPanel.classList.toggle('open', opening);
+    sortBtn.classList.toggle('active', opening);
+    filterPanel.classList.remove('open');
+    filterBtn.classList.remove('active');
+  }
+}
+
+function updatePackingIconStates() {
+  const filterBtn = document.getElementById('packing-filter-btn');
+  const sortBtn = document.getElementById('packing-sort-btn');
+  if (!filterBtn || !sortBtn) return;
+  const filterActive = [
+    document.getElementById('packing-filter-room')?.value,
+    document.getElementById('packing-filter-person')?.value,
+    document.getElementById('packing-filter-weight')?.value,
+    document.getElementById('packing-filter-destination')?.value,
+    document.getElementById('packing-filter-carrier')?.value,
+  ].some((v) => v && v !== 'all') || !!document.getElementById('packing-filter-trip')?.value;
+  const sortActive = (document.getElementById('packing-sort')?.value || 'code-asc') !== 'code-asc';
+  filterBtn.classList.toggle('has-active', filterActive);
+  sortBtn.classList.toggle('has-active', sortActive);
 }
 
 function getFilteredBoxes() {
