@@ -2262,6 +2262,67 @@
 
   <!-- TO PACK TAB -->
   <div id="tab-topack" class="hidden">
+    <div class="task-panel" id="topack-toolbar-panel">
+      <div class="packing-toolbar">
+        <input type="text" id="topack-search" class="packing-toolbar-search" placeholder="Search items…" oninput="renderToPackTab()">
+        <button class="packing-icon-btn" id="topack-filter-btn" onclick="toggleToPackPanel('filter')" title="Filters">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          <span class="active-dot"></span>
+        </button>
+        <button class="packing-icon-btn" id="topack-sort-btn" onclick="toggleToPackPanel('sort')" title="Sort">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10V20M8 10L4 14M8 10L12 14M16 14V4M16 14L12 10M16 14L20 10"/></svg>
+          <span class="active-dot"></span>
+        </button>
+      </div>
+      <div class="packing-collapsible" id="topack-filters-panel">
+        <div class="filter-bar" style="padding-top:4px;">
+          <div class="filter-group">
+            <label class="filter-label">Who</label>
+            <select id="topack-filter-who" class="filter-select" onchange="renderToPackTab(); updateToPackIconStates()">
+              <option value="all">All</option>
+              <option>Dani</option>
+              <option>Ken</option>
+              <option>Dani &amp; Ken</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label">When</label>
+            <select id="topack-filter-when" class="filter-select" onchange="renderToPackTab(); updateToPackIconStates()">
+              <option value="all">All</option>
+              <option>Anytime</option>
+              <option>Moving Date Confirmed</option>
+              <option>Week Of</option>
+              <option>Day Before</option>
+              <option>Night Before</option>
+              <option>Moving Day</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label">Status</label>
+            <select id="topack-filter-status" class="filter-select" onchange="renderToPackTab(); updateToPackIconStates()">
+              <option value="all">All</option>
+              <option>Not Started</option>
+              <option>In Progress</option>
+              <option>Done</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="packing-collapsible" id="topack-sort-panel">
+        <div class="filter-bar" style="padding-top:4px;">
+          <div class="filter-group">
+            <label class="filter-label">Sort by</label>
+            <select id="topack-sort" class="filter-select" onchange="renderToPackTab(); updateToPackIconStates()">
+              <option value="room-asc">Room (default)</option>
+              <option value="name-asc">Name A–Z</option>
+              <option value="who-asc">Who A–Z</option>
+              <option value="status-asc">Status</option>
+              <option value="when-asc">When</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
     <div id="topack-panel" class="task-panel"></div>
   </div>
 
@@ -3320,6 +3381,65 @@ function toPackStatusBadgeClass(status) {
   return 'topack-badge';
 }
 
+function toggleToPackPanel(which) {
+  const filterPanel = document.getElementById('topack-filters-panel');
+  const sortPanel = document.getElementById('topack-sort-panel');
+  const filterBtn = document.getElementById('topack-filter-btn');
+  const sortBtn = document.getElementById('topack-sort-btn');
+  if (which === 'filter') {
+    const opening = !filterPanel.classList.contains('open');
+    filterPanel.classList.toggle('open', opening);
+    filterBtn.classList.toggle('active', opening);
+    sortPanel.classList.remove('open');
+    sortBtn.classList.remove('active');
+  } else {
+    const opening = !sortPanel.classList.contains('open');
+    sortPanel.classList.toggle('open', opening);
+    sortBtn.classList.toggle('active', opening);
+    filterPanel.classList.remove('open');
+    filterBtn.classList.remove('active');
+  }
+}
+
+function updateToPackIconStates() {
+  const filterBtn = document.getElementById('topack-filter-btn');
+  const sortBtn = document.getElementById('topack-sort-btn');
+  if (!filterBtn || !sortBtn) return;
+  const filterActive = [
+    document.getElementById('topack-filter-who')?.value,
+    document.getElementById('topack-filter-when')?.value,
+    document.getElementById('topack-filter-status')?.value,
+  ].some((v) => v && v !== 'all');
+  const sortActive = (document.getElementById('topack-sort')?.value || 'room-asc') !== 'room-asc';
+  filterBtn.classList.toggle('has-active', filterActive);
+  sortBtn.classList.toggle('has-active', sortActive);
+}
+
+function getToPackFiltered(roomItems) {
+  const search = (document.getElementById('topack-search')?.value || '').toLowerCase().trim();
+  const whoFilter = document.getElementById('topack-filter-who')?.value || 'all';
+  const whenFilter = document.getElementById('topack-filter-when')?.value || 'all';
+  const statusFilter = document.getElementById('topack-filter-status')?.value || 'all';
+  const sort = document.getElementById('topack-sort')?.value || 'room-asc';
+
+  let items = roomItems.filter((i) => {
+    if (whoFilter !== 'all' && i.who !== whoFilter) return false;
+    if (whenFilter !== 'all' && i.when !== whenFilter) return false;
+    if (statusFilter !== 'all' && i.status !== statusFilter) return false;
+    if (search && ![i.task, i.who, i.when, i.status, i.notes].join(' ').toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  const whenOrder = { 'Anytime': 0, 'Moving Date Confirmed': 1, 'Week Of': 2, 'Day Before': 3, 'Night Before': 4, 'Moving Day': 5 };
+  const statusOrder = { 'Not Started': 0, 'In Progress': 1, 'Done': 2 };
+  if (sort === 'name-asc') items.sort((a, b) => a.task.localeCompare(b.task));
+  else if (sort === 'who-asc') items.sort((a, b) => a.who.localeCompare(b.who));
+  else if (sort === 'status-asc') items.sort((a, b) => (statusOrder[a.status] ?? 0) - (statusOrder[b.status] ?? 0));
+  else if (sort === 'when-asc') items.sort((a, b) => (whenOrder[a.when] ?? 0) - (whenOrder[b.when] ?? 0));
+
+  return items;
+}
+
 function renderToPackTab() {
   const panel = document.getElementById('topack-panel');
   if (!panel) return;
@@ -3332,8 +3452,9 @@ function renderToPackTab() {
     panel.appendChild(floorLabel);
 
     rooms.forEach((room) => {
-      const items = toPackItems.filter((i) => i.room === room);
-      const doneCount = items.filter((i) => i.status === 'Done').length;
+      const allRoomItems = toPackItems.filter((i) => i.room === room);
+      const items = getToPackFiltered(allRoomItems);
+      const doneCount = allRoomItems.filter((i) => i.status === 'Done').length;
       const isOpen = !toPackCollapsed[room];
 
       const section = document.createElement('div');
@@ -3344,7 +3465,7 @@ function renderToPackTab() {
       header.innerHTML = `
         <span class="topack-room-chevron${isOpen ? ' open' : ''}">&#9658;</span>
         <span class="topack-room-title">${escapeHtml(room)}</span>
-        <span class="topack-room-count">${doneCount}/${items.length} done</span>`;
+        <span class="topack-room-count">${doneCount}/${allRoomItems.length} done</span>`;
       header.addEventListener('click', () => {
         toPackCollapsed[room] = isOpen;
         renderToPackTab();
@@ -4960,8 +5081,9 @@ function showTab(t) {
     panel.classList.toggle('hidden', !isActive);
     panel.style.display = isActive ? '' : 'none';
   });
-  document.querySelectorAll('.tab').forEach((btn, i) => {
-    btn.classList.toggle('active', tabs[i] === t);
+  document.querySelectorAll('.tab').forEach((btn) => {
+    const match = btn.getAttribute('onclick')?.match(/showTab\('(\w+)'\)/);
+    btn.classList.toggle('active', match ? match[1] === t : false);
   });
 
   // Initialize calendar when switching to calendar tab
