@@ -2713,7 +2713,8 @@ const STORAGE_KEYS = {
   budgetCategories: 'move_budget_categories',
   savings: 'move_savings_goals',
   boxes: 'move_packing_boxes',
-  boxTypes: 'move_packing_box_types'
+  boxTypes: 'move_packing_box_types',
+  toPackItems: 'move_to_pack_items'
 };
 
 
@@ -2796,6 +2797,7 @@ let editingSavingId = null;
 let contributingToGoalId = null;
 let editingContributionId = null;
 let boxes = migrateBoxes(readStoredJson(STORAGE_KEYS.boxes, []));
+let toPackItems = readStoredJson(STORAGE_KEYS.toPackItems, []);
 const DEFAULT_BOX_TYPES = ['Cardboard box', 'Clothes bag', 'Suitcase', 'Bin bag', 'Crate', 'Other'];
 let boxTypes = [...new Set([...DEFAULT_BOX_TYPES, ...readStoredJson(STORAGE_KEYS.boxTypes, []), ...boxes.map((b) => b.type).filter(Boolean)])];
 let editingBoxId = null;
@@ -2820,7 +2822,8 @@ function exportStatePayload() {
     budgetCategories,
     savings,
     boxes,
-    boxTypes
+    boxTypes,
+    toPackItems
   };
 }
 
@@ -2839,6 +2842,7 @@ function persistLocalState() {
   localStorage.setItem(STORAGE_KEYS.savings, JSON.stringify(savings));
   localStorage.setItem(STORAGE_KEYS.boxes, JSON.stringify(boxes));
   localStorage.setItem(STORAGE_KEYS.boxTypes, JSON.stringify(boxTypes));
+  localStorage.setItem(STORAGE_KEYS.toPackItems, JSON.stringify(toPackItems));
 }
 
 function refreshAuthControls() {
@@ -2929,6 +2933,7 @@ function applyPayload(payload) {
   savings = migrateSavings(payload.savings || []);
   boxes = migrateBoxes(payload.boxes || []);
   boxTypes = [...new Set([...DEFAULT_BOX_TYPES, ...(Array.isArray(payload.boxTypes) ? payload.boxTypes : []), ...boxes.map((b) => b.type).filter(Boolean)])];
+  toPackItems = Array.isArray(payload.toPackItems) ? payload.toPackItems : [];
   budgetCategories = Array.isArray(payload.budgetCategories) ? payload.budgetCategories : [];
   budgetCategories = [...new Set([...
     DEFAULT_BUDGET_CATEGORIES,
