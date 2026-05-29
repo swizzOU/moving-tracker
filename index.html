@@ -1716,6 +1716,7 @@
   <button class="tab" onclick="showTab('calendar')">📅 Calendar</button>
   <button class="tab" onclick="showTab('files')">📁 Files</button>
   <button class="tab" onclick="showTab('packing')">📦 Packing</button>
+  <button class="tab" onclick="showTab('topack')">📋 To Pack</button>
 </div>
 
 <div class="main">
@@ -2093,6 +2094,11 @@
     <div class="task-panel">
       <div id="packing-list" class="budget-list"></div>
     </div>
+  </div>
+
+  <!-- TO PACK TAB -->
+  <div id="tab-topack" class="hidden">
+    <div id="topack-panel" class="task-panel"></div>
   </div>
 
 </div>
@@ -4553,7 +4559,7 @@ function renderTaskCategoryOptions(selectedCategory = '') {
 
 function showTab(t) {
   localStorage.setItem('move_active_tab', t);
-  const tabs = ['tasks','furniture','contacts','budget','savings','calendar','files','packing'];
+  const tabs = ['tasks','furniture','contacts','budget','savings','calendar','files','packing','topack'];
   tabs.forEach(x => {
     const panel = document.getElementById('tab-'+x);
     const isActive = x === t;
@@ -4578,6 +4584,8 @@ function showTab(t) {
   if (t === 'files') {
     refreshFilesTab();
   }
+
+  if (t === 'topack') renderToPackTab();
 }
 
 function updateTaskFilters() {
