@@ -1505,13 +1505,30 @@
     margin-bottom: 16px;
     flex-wrap: wrap;
   }
-  .files-tag-filter {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
+  .files-search-input {
     flex: 1;
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-family: inherit;
+    background: var(--white);
+    color: var(--text);
+    min-width: 0;
   }
+  .files-search-input:focus { outline: none; border-color: var(--sage); }
+  .files-type-select {
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-family: inherit;
+    background: var(--white);
+    color: var(--text);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .files-type-select:focus { outline: none; border-color: var(--sage); }
   .files-upload-label { cursor: pointer; display: inline-block; }
   .files-uploading {
     margin-bottom: 12px;
@@ -1587,21 +1604,6 @@
     background: var(--sage-dark);
     color: var(--white);
   }
-  .file-tag-filter-chip {
-    font-size: 0.78rem;
-    padding: 3px 10px;
-    border-radius: 999px;
-    background: var(--sage-dark);
-    color: var(--white);
-    font-weight: 500;
-    cursor: pointer;
-    border: none;
-    font-family: inherit;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-  .file-tag-filter-chip:hover { background: var(--sage); }
   .file-card-actions { display: flex; gap: 8px; flex-shrink: 0; margin-top: 2px; }
   .file-btn {
     font-size: 0.8rem;
@@ -1827,7 +1829,14 @@
     <div class="files-panel">
       <div id="files-auth-notice" class="files-auth-notice hidden">Sign in to upload and manage files.</div>
       <div id="files-toolbar" class="files-toolbar hidden">
-        <div id="files-tag-filter" class="files-tag-filter"></div>
+        <input type="search" id="files-search" class="files-search-input" placeholder="Search by name or tag…" oninput="renderFilesView()">
+        <select id="files-type-filter" class="files-type-select" onchange="renderFilesView()">
+          <option value="all">All types</option>
+          <option value="image">Image</option>
+          <option value="pdf">PDF</option>
+          <option value="document">Document</option>
+          <option value="other">Other</option>
+        </select>
         <label class="add-btn files-upload-label">
           + Upload File
           <input type="file" id="files-input" multiple accept="*/*" style="display:none" onchange="handleFileUpload(event)">
@@ -3054,7 +3063,6 @@ function save() {
 // ── Files Tab ────────────────────────────────────────────────────────────────
 
 const filesState = {
-  activeTag: null,
   editingFilePath: null,
 };
 
@@ -3095,33 +3103,12 @@ function parseTags(meta) {
   return raw.split(',').map((t) => t.trim()).filter(Boolean);
 }
 
-function setActiveTag(tag) {
-  filesState.activeTag = filesState.activeTag === tag ? null : tag;
-  renderFilesView().catch((err) => console.error('renderFilesView failed', err));
-}
-
-function renderTagFilterBar(allTags) {
-  const bar = document.getElementById('files-tag-filter');
-  if (!bar) return;
-  bar.innerHTML = '';
-  if (allTags.length === 0) return;
-
-  const label = document.createElement('span');
-  label.style.cssText = 'font-size:0.78rem;color:var(--muted);font-weight:500;white-space:nowrap;';
-  label.textContent = 'Filter:';
-  bar.appendChild(label);
-
-  allTags.forEach((tag) => {
-    const chip = document.createElement('button');
-    chip.className = 'file-tag-filter-chip';
-    if (filesState.activeTag !== tag) {
-      chip.style.background = 'var(--sage-light)';
-      chip.style.color = 'var(--sage-dark)';
-    }
-    chip.textContent = filesState.activeTag === tag ? `${tag} ✕` : tag;
-    chip.addEventListener('click', () => setActiveTag(tag));
-    bar.appendChild(chip);
-  });
+function getFileType(name) {
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  if (['jpg','jpeg','png','gif','webp','heic','svg','bmp','tiff'].includes(ext)) return 'image';
+  if (ext === 'pdf') return 'pdf';
+  if (['doc','docx','xls','xlsx','csv','ppt','pptx','odt','ods','odp','txt','rtf'].includes(ext)) return 'document';
+  return 'other';
 }
 
 function openTagModal(fullPath, currentTags, fileName) {
@@ -3147,9 +3134,6 @@ async function saveFileTags() {
   } catch (err) {
     alert(`Failed to save tags: ${err.message}`);
     return;
-  }
-  if (filesState.activeTag && !tags.includes(filesState.activeTag)) {
-    filesState.activeTag = null;
   }
   await renderFilesView();
 }
@@ -3255,14 +3239,18 @@ async function renderFilesView() {
     const items = await Promise.all(metaPromises);
     items.sort((a, b) => new Date(b.meta.timeCreated) - new Date(a.meta.timeCreated));
 
-    const allTagsSet = new Set();
-    items.forEach(({ meta }) => parseTags(meta).forEach((t) => allTagsSet.add(t)));
-    const allTags = Array.from(allTagsSet).sort();
-    renderTagFilterBar(allTags);
+    const query = (document.getElementById('files-search')?.value || '').toLowerCase().trim();
+    const typeFilter = document.getElementById('files-type-filter')?.value || 'all';
 
-    const filtered = filesState.activeTag
-      ? items.filter(({ meta }) => parseTags(meta).includes(filesState.activeTag))
-      : items;
+    const filtered = items.filter(({ meta }) => {
+      if (typeFilter !== 'all' && getFileType(meta.name) !== typeFilter) return false;
+      if (query) {
+        const nameMatch = meta.name.toLowerCase().includes(query);
+        const tagMatch = parseTags(meta).some((t) => t.toLowerCase().includes(query));
+        if (!nameMatch && !tagMatch) return false;
+      }
+      return true;
+    });
 
     view.innerHTML = '';
 
@@ -3271,7 +3259,7 @@ async function renderFilesView() {
       empty.className = 'files-empty';
       empty.textContent = items.length === 0
         ? 'No files uploaded yet.'
-        : `No files tagged "${filesState.activeTag}".`;
+        : 'No files match your search.';
       view.appendChild(empty);
       return;
     }
@@ -3300,9 +3288,8 @@ async function renderFilesView() {
       const tagsEl = card.querySelector('.file-card-tags');
       tags.forEach((tag) => {
         const chip = document.createElement('button');
-        chip.className = `file-tag${filesState.activeTag === tag ? ' active' : ''}`;
+        chip.className = 'file-tag';
         chip.textContent = tag;
-        chip.addEventListener('click', () => setActiveTag(tag));
         tagsEl.appendChild(chip);
       });
 
