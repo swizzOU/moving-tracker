@@ -672,26 +672,99 @@
   }
 
   /* Furniture tab */
-  .furniture-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 14px;
-  }
-  .furn-card {
+  .furn-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
     background: var(--white);
-    border: 1.5px solid var(--border);
+    border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 16px;
-    transition: box-shadow 0.15s;
+    padding: 14px 18px;
+    margin-bottom: 14px;
   }
-  .furn-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.07); }
-  .furn-card.confirmed { border-left: 4px solid var(--sage); }
-  .furn-card.unconfirmed { border-left: 4px solid var(--warm); }
-  .furn-room { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 5px; }
-  .furn-name { font-family: 'Lora', serif; font-size: 1rem; font-weight: 600; color: var(--sage-dark); margin-bottom: 6px; }
-  .furn-notes { font-size: 0.8rem; color: var(--muted); font-style: italic; margin-bottom: 10px; }
-  .furn-footer { display: flex; justify-content: space-between; align-items: center; }
-  .furn-price { font-size: 0.85rem; font-weight: 600; color: var(--warm); }
+  .furn-total { font-size: 1.1rem; font-weight: 700; color: var(--sage-dark); }
+  .furn-total-sub { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+  .furn-show-excluded-btn {
+    font-size: 0.8rem;
+    padding: 5px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    background: var(--white);
+    color: var(--muted);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .furn-show-excluded-btn:hover { border-color: var(--sage); color: var(--sage-dark); }
+  .furniture-list { display: flex; flex-direction: column; gap: 6px; }
+  .furn-item {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .furn-item:hover { border-color: var(--sage-light); }
+  .furn-item.excluded { opacity: 0.45; }
+  .furn-item-main { flex: 1; min-width: 0; }
+  .furn-item-name {
+    font-size: 0.92rem;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .furn-item.excluded .furn-item-name { text-decoration: line-through; color: var(--muted); }
+  .furn-item-sub { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+  .furn-item-price {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--warm);
+    white-space: nowrap;
+    min-width: 52px;
+    text-align: right;
+  }
+  .furn-item.excluded .furn-item-price { color: var(--muted); }
+  .furn-inspect {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .furn-tick {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    cursor: pointer;
+  }
+  .furn-tick input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--sage-dark); cursor: pointer; }
+  .furn-tick-label { font-size: 0.6rem; color: var(--muted); text-align: center; white-space: nowrap; line-height: 1.2; }
+  .furn-excluded-badge {
+    font-size: 0.68rem;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #f5e6e6;
+    color: #a03030;
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .furn-item-edit {
+    font-size: 0.78rem;
+    padding: 4px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    background: var(--white);
+    cursor: pointer;
+    font-family: inherit;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .furn-item-edit:hover { border-color: var(--sage); color: var(--sage-dark); }
   .furn-confirm { font-size: 0.72rem; padding: 3px 10px; border-radius: 10px; }
   .confirmed-pill { background: var(--green); color: #3A6A3A; }
   .unconfirmed-pill { background: var(--warm-light); color: #8A3A1A; }
@@ -1956,9 +2029,17 @@
 
   <!-- FURNITURE TAB -->
   <div id="tab-furniture" class="hidden">
-    <button class="add-btn" onclick="openAddFurniture()">+ Add item from sellers</button>
-    <div id="furniture-container" class="furniture-grid"></div>
-    <p style="color:var(--muted); font-size:0.82rem; font-style:italic; margin-top:12px;">💡 Tip: Get everything agreed in writing before completion day.</p>
+    <div class="furn-summary">
+      <div>
+        <div class="furn-total" id="furn-total-display">£0</div>
+        <div class="furn-total-sub" id="furn-inspect-sub"></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <button class="furn-show-excluded-btn" id="furn-toggle-excluded" onclick="toggleFurnExcluded()">Show excluded items</button>
+        <button class="add-btn" onclick="openAddFurniture()">+ Add item</button>
+      </div>
+    </div>
+    <div id="furniture-container" class="furniture-list"></div>
   </div>
 
   <!-- CONTACTS TAB -->
@@ -2493,19 +2574,20 @@
 <div class="modal-overlay" id="modal-furn">
   <div class="modal">
     <h3 id="modal-furn-title">Add Furniture / Item from Sellers</h3>
-    <label>Room</label>
-    <input type="text" id="f-room" placeholder="e.g. Living Room, Kitchen..." />
     <label>Item Name</label>
     <input type="text" id="f-name" placeholder="e.g. Corner sofa" />
+    <label>Room / Location</label>
+    <input type="text" id="f-room" placeholder="e.g. Living Room, Kitchen..." />
+    <label>Agreed Price (£)</label>
+    <input type="number" id="f-price" placeholder="e.g. 200" min="0" step="0.01" />
     <label>Notes</label>
-    <input type="text" id="f-notes" placeholder="Colour, size, condition..." />
-    <label>Agreed Price (£) — leave blank if included</label>
-    <input type="text" id="f-price" placeholder="e.g. 200 or Included" />
-    <label>Confirmed in writing?</label>
-    <select id="f-confirmed">
-      <option value="no">No — needs confirming</option>
-      <option value="yes">Yes — confirmed</option>
-    </select>
+    <input type="text" id="f-notes" placeholder="Colour, size, condition notes..." />
+    <label>Inspection notes</label>
+    <input type="text" id="f-inspect-notes" placeholder="Any issues found on viewing..." />
+    <label style="display:flex;align-items:center;gap:8px;flex-direction:row;font-weight:400;">
+      <input type="checkbox" id="f-excluded" style="width:16px;height:16px;margin:0;">
+      Excluded from deal (crossed off list)
+    </label>
     <div class="modal-btns">
       <button class="btn-delete secondary hidden" id="btn-delete-furn" onclick="deleteFurniture(editingFurnitureIndex)">Delete</button>
       <button class="btn-cancel" onclick="closeModal('modal-furn')">Cancel</button>
@@ -2784,7 +2866,48 @@ const DEFAULT_TASKS = [
   {cat:"New Property",task:"Set up internet router once broadband live",notes:"",who:"Ken",when:"After move",status:"Not Started",done:false},
 ];
 
-const DEFAULT_FURNITURE = [];
+const DEFAULT_FURNITURE = [
+  {name:"Oak framed mirror",room:"Hallway",price:100,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Console Table",room:"Hallway",price:150,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Welcome mat",room:"Hallway",price:20,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Coat rack",room:"Hallway",price:50,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Pendant light fitting",room:"Hallway",price:80,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Stair runner",room:"Hallway",price:200,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Sofa (3-seater)",room:"Living Room",price:600,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Armchair",room:"Living Room",price:250,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Coffee table",room:"Living Room",price:150,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"TV unit",room:"Living Room",price:200,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Bookshelf",room:"Living Room",price:100,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Floor lamp",room:"Living Room",price:80,notes:"",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Dining table",room:"Dining Room",price:400,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Dining chairs x6",room:"Dining Room",price:300,notes:"",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Sideboard",room:"Dining Room",price:250,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Pendant light fitting",room:"Dining Room",price:120,notes:"",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Kitchen island stools x2",room:"Kitchen",price:150,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Fridge freezer",room:"Kitchen",price:500,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Dishwasher",room:"Kitchen",price:300,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Washing machine",room:"Kitchen",price:350,notes:"",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Tumble dryer",room:"Kitchen",price:300,notes:"",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Microwave",room:"Kitchen",price:80,notes:"",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Bed frame (king)",room:"Master Bedroom",price:600,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Mattress (king)",room:"Master Bedroom",price:800,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Wardrobe (fitted)",room:"Master Bedroom",price:0,notes:"Fitted — included in sale",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Bedside tables x2",room:"Master Bedroom",price:150,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Chest of drawers",room:"Master Bedroom",price:200,notes:"",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Dressing table",room:"Master Bedroom",price:150,notes:"",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Dressing table mirror",room:"Master Bedroom",price:80,notes:"",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Bedroom curtains",room:"Master Bedroom",price:120,notes:"",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Bed frame (double)",room:"Bedroom 2",price:400,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Mattress (double)",room:"Bedroom 2",price:400,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Wardrobe",room:"Bedroom 2",price:200,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Chest of drawers",room:"Bedroom 2",price:120,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Bedside table",room:"Bedroom 2",price:60,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Desk chair",room:"Office",price:150,notes:"DAMAGED",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Garden table + chairs",room:"Garden",price:400,notes:"",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Garden parasol",room:"Garden",price:80,notes:"",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Garden planters",room:"Garden",price:60,notes:"",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  {name:"Garden shed contents",room:"Garden",price:0,notes:"To be agreed",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+];
 
 const DEFAULT_CONTACTS = [
   {role:"Solicitor (buyers)",name:"",phone:"",email:"",notes:""},
@@ -2979,7 +3102,19 @@ Object.assign(ICONS, BASE_ICONS, customTaskCategoryIcons);
 let deletedDefaultTaskCategories = readStoredJson(STORAGE_KEYS.taskDeletedDefaults, []);
 let collapsedTaskCategories = readStoredJson(STORAGE_KEYS.taskCollapsed, {});
 let taskSectionOrder = readStoredJson(STORAGE_KEYS.taskSectionOrder, []);
-let furniture = readStoredJson(STORAGE_KEYS.furniture, DEFAULT_FURNITURE);
+function migrateFurniture(items) {
+  return items.map(f => ({
+    name: f.name || '',
+    room: f.room || '',
+    price: typeof f.price === 'number' ? f.price : (parseFloat(String(f.price).replace(/[^0-9.]/g,'')) || 0),
+    notes: f.notes || '',
+    excluded: !!f.excluded,
+    inspect: f.inspect || {present:false,asDescribed:false,goodCondition:false},
+    inspectNotes: f.inspectNotes || '',
+  }));
+}
+let furniture = migrateFurniture(readStoredJson(STORAGE_KEYS.furniture, DEFAULT_FURNITURE));
+let furnShowExcluded = false;
 let contacts = readStoredJson(STORAGE_KEYS.contacts, DEFAULT_CONTACTS);
 let events = migrateEvents(readStoredJson(STORAGE_KEYS.events, DEFAULT_EVENTS));
 let budgetEntries = migrateBudgetEntries(readStoredJson(STORAGE_KEYS.budgetEntries, DEFAULT_BUDGET_ENTRIES));
@@ -5346,31 +5481,78 @@ function updateStats() {
   document.getElementById('main-progress').style.width = pct + '%';
 }
 
+function toggleFurnExcluded() {
+  furnShowExcluded = !furnShowExcluded;
+  const btn = document.getElementById('furn-toggle-excluded');
+  if (btn) btn.textContent = furnShowExcluded ? 'Hide excluded items' : 'Show excluded items';
+  renderFurniture();
+}
+
 function renderFurniture() {
   const container = document.getElementById('furniture-container');
-  if (!furniture.length) {
-    container.innerHTML = '<p style="color:var(--muted); font-style:italic;">No items added yet. Add things the sellers are leaving behind.</p>';
+
+  const included = furniture.filter(f => !f.excluded);
+  const excluded = furniture.filter(f => f.excluded);
+  const total = included.reduce((s, f) => s + (f.price || 0), 0);
+  const uninspected = included.filter(f => !f.inspect.present || !f.inspect.asDescribed || !f.inspect.goodCondition).length;
+
+  const totalEl = document.getElementById('furn-total-display');
+  const subEl = document.getElementById('furn-inspect-sub');
+  if (totalEl) totalEl.textContent = '£' + total.toLocaleString();
+  if (subEl) subEl.textContent = uninspected > 0 ? uninspected + ' item' + (uninspected !== 1 ? 's' : '') + ' not fully inspected' : 'All items inspected';
+
+  const visible = furnShowExcluded ? [...included, ...excluded] : included;
+
+  if (!visible.length) {
+    container.innerHTML = '<p style="color:var(--muted); font-style:italic;">No items added yet.</p>';
+    applyActionLockToInteractiveElements();
     return;
   }
-  container.innerHTML = furniture.map((f,i) => `
-    <div class="furn-card ${f.confirmed === 'yes' ? 'confirmed' : 'unconfirmed'}">
-      <div class="furn-room">${f.room}</div>
-      <div class="furn-name">${f.name}</div>
-      ${f.notes ? `<div class="furn-notes">${f.notes}</div>` : ''}
-      <div class="furn-footer">
-        <span class="furn-price">${f.price ? (f.price.startsWith('£') ? f.price : '£' + f.price) : 'Included'}</span>
-        <span class="furn-confirm ${f.confirmed === 'yes' ? 'confirmed-pill' : 'unconfirmed-pill'}">
-          ${f.confirmed === 'yes' ? '✓ Confirmed' : '⚠ Needs confirming'}
-        </span>
+
+  container.innerHTML = visible.map((f) => {
+    const i = furniture.indexOf(f);
+    const inspAll = f.inspect.present && f.inspect.asDescribed && f.inspect.goodCondition;
+    return `
+    <div class="furn-item${f.excluded ? ' excluded' : ''}">
+      <div class="furn-item-main">
+        <div>
+          <div class="furn-item-name">${escapeHtml(f.name)}${f.excluded ? ' <span class="furn-excluded-badge">excluded</span>' : ''}</div>
+          <div class="furn-item-sub">${escapeHtml(f.room)}${f.notes ? ' · ' + escapeHtml(f.notes) : ''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="furn-item-price">${f.price ? '£' + f.price.toLocaleString() : 'Included'}</div>
+          <button class="furn-item-edit" onclick="openEditFurniture(${i})">Edit</button>
+        </div>
       </div>
-      <div class="furn-actions" style="margin-top:10px;">
-        <button class="furn-action-btn" onclick="openEditFurniture(${i})">Edit</button>
-        <button class="furn-action-btn delete" onclick="deleteFurniture(${i})">Delete</button>
+      ${f.excluded ? '' : `
+      <div class="furn-inspect">
+        <label class="furn-tick">
+          <input type="checkbox" ${f.inspect.present ? 'checked' : ''} onchange="furnToggleInspect(${i},'present',this.checked)">
+          <span class="furn-tick-label">Present</span>
+        </label>
+        <label class="furn-tick">
+          <input type="checkbox" ${f.inspect.asDescribed ? 'checked' : ''} onchange="furnToggleInspect(${i},'asDescribed',this.checked)">
+          <span class="furn-tick-label">As described</span>
+        </label>
+        <label class="furn-tick">
+          <input type="checkbox" ${f.inspect.goodCondition ? 'checked' : ''} onchange="furnToggleInspect(${i},'goodCondition',this.checked)">
+          <span class="furn-tick-label">Good condition</span>
+        </label>
       </div>
-    </div>
-  `).join('');
+      ${f.inspectNotes ? `<div class="furn-item-sub" style="margin-top:4px;font-style:italic;">${escapeHtml(f.inspectNotes)}</div>` : ''}
+      `}
+    </div>`;
+  }).join('');
 
   applyActionLockToInteractiveElements();
+}
+
+function furnToggleInspect(index, field, value) {
+  if (!ensureCanEdit()) return;
+  if (!furniture[index]) return;
+  furniture[index].inspect[field] = value;
+  save();
+  renderFurniture();
 }
 
 let editingContactIndex = null;
@@ -5567,8 +5749,8 @@ function openAddFurniture() {
   document.getElementById('modal-furn-title').textContent = 'Add Furniture / Item from Sellers';
   document.getElementById('btn-save-furn').textContent = 'Add Item';
   document.getElementById('btn-delete-furn').classList.add('hidden');
-  ['f-room','f-name','f-notes','f-price'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('f-confirmed').value = 'no';
+  ['f-room','f-name','f-notes','f-price','f-inspect-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-excluded').checked = false;
   document.getElementById('modal-furn').classList.add('open');
 }
 
@@ -5584,7 +5766,8 @@ function openEditFurniture(index) {
   document.getElementById('f-name').value = item.name || '';
   document.getElementById('f-notes').value = item.notes || '';
   document.getElementById('f-price').value = item.price || '';
-  document.getElementById('f-confirmed').value = item.confirmed || 'no';
+  document.getElementById('f-inspect-notes').value = item.inspectNotes || '';
+  document.getElementById('f-excluded').checked = !!item.excluded;
   document.getElementById('modal-furn').classList.add('open');
 }
 
@@ -5652,12 +5835,15 @@ function saveTask() {
 
 function saveFurniture() {
   if (!ensureCanEdit()) return;
+  const existing = editingFurnitureIndex !== null ? furniture[editingFurnitureIndex] : null;
   const f = {
     room: document.getElementById('f-room').value,
     name: document.getElementById('f-name').value,
     notes: document.getElementById('f-notes').value,
-    price: document.getElementById('f-price').value,
-    confirmed: document.getElementById('f-confirmed').value,
+    price: parseFloat(document.getElementById('f-price').value) || 0,
+    excluded: document.getElementById('f-excluded').checked,
+    inspect: existing ? existing.inspect : {present:false,asDescribed:false,goodCondition:false},
+    inspectNotes: document.getElementById('f-inspect-notes').value,
   };
   if (!f.name.trim()) return;
   if (editingFurnitureIndex !== null) {
