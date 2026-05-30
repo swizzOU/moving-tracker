@@ -3113,7 +3113,7 @@ function migrateFurniture(items) {
     inspectNotes: f.inspectNotes || '',
   }));
 }
-let furniture = migrateFurniture(readStoredJson(STORAGE_KEYS.furniture, DEFAULT_FURNITURE));
+let furniture = migrateFurniture((function() { const d = readStoredJson(STORAGE_KEYS.furniture, null); return (d && d.length) ? d : DEFAULT_FURNITURE; })());
 let furnShowExcluded = false;
 let contacts = readStoredJson(STORAGE_KEYS.contacts, DEFAULT_CONTACTS);
 let events = migrateEvents(readStoredJson(STORAGE_KEYS.events, DEFAULT_EVENTS));
