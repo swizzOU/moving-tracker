@@ -3286,7 +3286,7 @@ function applyPayload(payload) {
     ? payload.collapsedTaskCategories
     : {};
   taskSectionOrder = Array.isArray(payload.taskSectionOrder) ? payload.taskSectionOrder : [];
-  furniture = Array.isArray(payload.furniture) ? payload.furniture : [];
+  furniture = migrateFurniture((Array.isArray(payload.furniture) && payload.furniture.length) ? payload.furniture : DEFAULT_FURNITURE);
   contacts = Array.isArray(payload.contacts) ? payload.contacts : [];
   events = migrateEvents(payload.events || []);
   budgetEntries = migrateBudgetEntries(payload.budgetEntries || []);
