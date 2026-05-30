@@ -6913,6 +6913,20 @@ function shoppingId() {
   return (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2));
 }
 
+function safeHref(u) {
+  try {
+    const p = new URL(u, location.href);
+    return (p.protocol === 'https:' || p.protocol === 'http:' || p.protocol === 'mailto:') ? p.href : '#';
+  } catch { return '#'; }
+}
+
+function safeSrc(u) {
+  try {
+    const p = new URL(u, location.href);
+    return (p.protocol === 'https:' || p.protocol === 'http:') ? p.href : '';
+  } catch { return ''; }
+}
+
 function saveShoppingList() {
   persistLocalState();
   scheduleSave();
@@ -7016,13 +7030,13 @@ function renderShoppingOptionCard(itemId, opt) {
         onchange="updateShoppingLink('${itemId}','${opt.id}','${link.id}','price',+this.value||0)">
       <button class="shopping-link-fav-btn ${link.favourite ? 'fav' : ''}" title="Mark as favourite"
         onclick="toggleShoppingLinkFav('${itemId}','${opt.id}','${link.id}')">⭐</button>
-      ${link.url ? `<a class="shopping-link-open-btn" href="${escapeHtml(link.url)}" target="_blank" rel="noopener">Open ↗</a>` : ''}
+      ${link.url ? `<a class="shopping-link-open-btn" href="${escapeHtml(safeHref(link.url))}" target="_blank" rel="noopener">Open ↗</a>` : ''}
       <button class="btn-sm-danger" style="padding:3px 8px" onclick="deleteShoppingLink('${itemId}','${opt.id}','${link.id}')">✕</button>
     </div>`).join('');
 
   const imagesHtml = (opt.images || []).map((img) => `
     <div class="shopping-image-thumb" title="${escapeHtml(img.caption || '')}">
-      <img src="${escapeHtml(img.src)}" alt="${escapeHtml(img.caption || 'image')}" onerror="this.parentElement.style.display='none'">
+      <img src="${escapeHtml(safeSrc(img.src))}" alt="${escapeHtml(img.caption || 'image')}" onerror="this.parentElement.style.display='none'">
       <button class="thumb-del" onclick="deleteShoppingImage('${itemId}','${opt.id}','${img.id}')">✕</button>
     </div>`).join('');
 
@@ -7218,10 +7232,12 @@ function addShoppingImageUrl(itemId, optId) {
   const input = document.getElementById(`imgurl-${optId}`);
   const url = input?.value?.trim();
   if (!url) return;
+  const safe = safeSrc(url);
+  if (!safe) { alert('Only http:// and https:// image URLs are supported.'); return; }
   const item = shoppingList.find((i) => i.id === itemId);
   const opt = item?.options.find((o) => o.id === optId);
   if (!opt) return;
-  opt.images.push({ id: shoppingId(), type: 'url', src: url, storagePath: '', caption: '' });
+  opt.images.push({ id: shoppingId(), type: 'url', src: safe, storagePath: '', caption: '' });
   saveShoppingList();
   renderShoppingList();
 }
