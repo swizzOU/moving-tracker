@@ -748,7 +748,7 @@
     cursor: pointer;
   }
   .furn-tick input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--sage-dark); cursor: pointer; margin: 0; }
-  .furn-tick-label { font-size: 0.62rem; color: var(--muted); text-align: center; white-space: nowrap; line-height: 1; }
+  .furn-tick-label { font-size: 0.65rem; color: var(--muted); text-align: center; white-space: nowrap; line-height: 1; }
   .furn-excluded-badge {
     font-size: 0.68rem;
     padding: 2px 7px;
@@ -770,6 +770,44 @@
     white-space: nowrap;
   }
   .furn-item-edit:hover { border-color: var(--sage); color: var(--sage-dark); }
+
+  @media (max-width: 600px) {
+    .furn-item {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+    .furn-item-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .furn-item-name {
+      white-space: normal;
+      flex: 1;
+      min-width: 0;
+    }
+    .furn-item-controls {
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .furn-item-price {
+      display: none;
+    }
+    .furn-item-price-mobile {
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--warm);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .furn-item.excluded .furn-item-price-mobile { color: var(--muted); }
+    .furn-inspect { gap: 12px; }
+    .furn-tick-label { font-size: 0.7rem; }
+  }
+  .furn-item-price-mobile { display: none; }
   .furn-confirm { font-size: 0.72rem; padding: 3px 10px; border-radius: 10px; }
   .confirmed-pill { background: var(--green); color: #3A6A3A; }
   .unconfirmed-pill { background: var(--warm-light); color: #8A3A1A; }
@@ -5516,15 +5554,19 @@ function renderFurniture() {
 
   container.innerHTML = visible.map((f) => {
     const i = furniture.indexOf(f);
+    const priceText = f.price ? '£' + f.price.toLocaleString() : 'Included';
     return `
     <div class="furn-item${f.excluded ? ' excluded' : ''}">
       <div class="furn-item-info">
-        <div class="furn-item-name">${escapeHtml(f.name)}${f.excluded ? ' <span class="furn-excluded-badge">excluded</span>' : ''}</div>
-        <div class="furn-item-sub">${escapeHtml(f.room)}${f.notes ? ' · ' + escapeHtml(f.notes) : ''}</div>
-        ${f.inspectNotes ? `<div class="furn-item-sub" style="font-style:italic;">${escapeHtml(f.inspectNotes)}</div>` : ''}
+        <div>
+          <div class="furn-item-name">${escapeHtml(f.name)}${f.excluded ? ' <span class="furn-excluded-badge">excluded</span>' : ''}</div>
+          <div class="furn-item-sub">${escapeHtml(f.room)}${f.notes ? ' · ' + escapeHtml(f.notes) : ''}</div>
+          ${f.inspectNotes ? `<div class="furn-item-sub" style="font-style:italic;">${escapeHtml(f.inspectNotes)}</div>` : ''}
+        </div>
+        <div class="furn-item-price-mobile">${priceText}</div>
       </div>
       <div class="furn-item-controls">
-        <div class="furn-item-price">${f.price ? '£' + f.price.toLocaleString() : 'Included'}</div>
+        <div class="furn-item-price">${priceText}</div>
         ${f.excluded ? '' : `
         <div class="furn-inspect">
           <label class="furn-tick">
