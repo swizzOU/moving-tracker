@@ -2013,6 +2013,7 @@
   <button class="tab" onclick="showTab('calendar')">📅 Calendar</button>
   <button class="tab" onclick="showTab('budget')">💷 Budget</button>
   <button class="tab" id="tab-btn-savings" onclick="showTab('savings')">💰 Savings</button>
+  <button class="tab" onclick="showTab('shopping')">🛒 Shopping List</button>
 </div>
 
 <div class="main">
@@ -2465,6 +2466,24 @@
       </div>
     </div>
     <div id="topack-panel" class="task-panel"></div>
+  </div>
+
+  <!-- SHOPPING LIST TAB -->
+  <div id="tab-shopping" class="hidden">
+    <div class="shopping-toolbar">
+      <div class="shopping-filter-group">
+        <label class="shopping-filter-label">Filter reactions:</label>
+        <select id="shopping-filter-reaction" class="filter-select" onchange="renderShoppingList()">
+          <option value="all">All options</option>
+          <option value="love">❤️ Love (either)</option>
+          <option value="dislike">👎 Disliked by both</option>
+          <option value="dani-love">Dani loves</option>
+          <option value="ken-love">Ken loves</option>
+        </select>
+      </div>
+      <button class="add-btn" onclick="addShoppingItem()">+ Add item type</button>
+    </div>
+    <div id="shopping-list-container"></div>
   </div>
 
 </div>
