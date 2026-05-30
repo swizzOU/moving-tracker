@@ -7203,6 +7203,10 @@ function updateShoppingLink(itemId, optId, linkId, field, value) {
   const opt = item?.options.find((o) => o.id === optId);
   const link = opt?.links.find((l) => l.id === linkId);
   if (!link) return;
+  if (field === 'url' && value && safeHref(value) === '#') {
+    alert('Only http:// and https:// URLs are allowed.');
+    return;
+  }
   link[field] = value;
   saveShoppingList();
 }
@@ -7251,7 +7255,7 @@ async function uploadShoppingImage(itemId, optId, fileInput) {
     return;
   }
   const storage = getStorage();
-  const path = `shopping-images/${shoppingId()}-${file.name}`;
+  const path = `shopping-images/${shoppingId()}-${encodeURIComponent(file.name)}`;
   const ref = storage.ref(path);
   try {
     await ref.put(file);
