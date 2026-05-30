@@ -3137,7 +3137,8 @@ const STORAGE_KEYS = {
   savings: 'move_savings_goals',
   boxes: 'move_packing_boxes',
   boxTypes: 'move_packing_box_types',
-  toPackItems: 'move_to_pack_items'
+  toPackItems: 'move_to_pack_items',
+  shoppingList: 'move_shopping_list'
 };
 
 
@@ -3242,6 +3243,7 @@ let contributingToGoalId = null;
 let editingContributionId = null;
 let boxes = migrateBoxes(readStoredJson(STORAGE_KEYS.boxes, []));
 let toPackItems = readStoredJson(STORAGE_KEYS.toPackItems, []);
+let shoppingList = readStoredJson(STORAGE_KEYS.shoppingList, []);
 const DEFAULT_BOX_TYPES = ['Cardboard box', 'Clothes bag', 'Suitcase', 'Bin bag', 'Crate', 'Other'];
 let boxTypes = [...new Set([...DEFAULT_BOX_TYPES, ...readStoredJson(STORAGE_KEYS.boxTypes, []), ...boxes.map((b) => b.type).filter(Boolean)])];
 let editingBoxId = null;
@@ -3267,7 +3269,8 @@ function exportStatePayload() {
     savings,
     boxes,
     boxTypes,
-    toPackItems
+    toPackItems,
+    shoppingList
   };
 }
 
@@ -3287,6 +3290,7 @@ function persistLocalState() {
   localStorage.setItem(STORAGE_KEYS.boxes, JSON.stringify(boxes));
   localStorage.setItem(STORAGE_KEYS.boxTypes, JSON.stringify(boxTypes));
   localStorage.setItem(STORAGE_KEYS.toPackItems, JSON.stringify(toPackItems));
+  localStorage.setItem(STORAGE_KEYS.shoppingList, JSON.stringify(shoppingList));
 }
 
 function refreshAuthControls() {
@@ -3378,6 +3382,7 @@ function applyPayload(payload) {
   boxes = migrateBoxes(payload.boxes || []);
   boxTypes = [...new Set([...DEFAULT_BOX_TYPES, ...(Array.isArray(payload.boxTypes) ? payload.boxTypes : []), ...boxes.map((b) => b.type).filter(Boolean)])];
   toPackItems = Array.isArray(payload.toPackItems) ? payload.toPackItems : [];
+  shoppingList = Array.isArray(payload.shoppingList) ? payload.shoppingList : [];
   budgetCategories = Array.isArray(payload.budgetCategories) ? payload.budgetCategories : [];
   budgetCategories = [...new Set([...
     DEFAULT_BUDGET_CATEGORIES,
@@ -5293,7 +5298,7 @@ function renderTaskCategoryOptions(selectedCategory = '') {
 
 function showTab(t) {
   localStorage.setItem('move_active_tab', t);
-  const tabs = ['tasks','furniture','contacts','budget','savings','calendar','files','packing','topack'];
+  const tabs = ['tasks','furniture','contacts','budget','savings','calendar','files','packing','topack','shopping'];
   tabs.forEach(x => {
     const panel = document.getElementById('tab-'+x);
     const isActive = x === t;
