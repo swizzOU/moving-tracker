@@ -686,6 +686,7 @@
   }
   .furn-total { font-size: 1.1rem; font-weight: 700; color: var(--sage-dark); }
   .furn-total-sub { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+  .furn-summary-flags { font-size: 0.78rem; color: #b84c00; margin-top: 2px; font-weight: 500; }
   .furn-show-excluded-btn {
     font-size: 0.8rem;
     padding: 5px 12px;
@@ -697,15 +698,40 @@
     font-family: inherit;
   }
   .furn-show-excluded-btn:hover { border-color: var(--sage); color: var(--sage-dark); }
-  .furniture-list { display: flex; flex-direction: column; gap: 6px; }
+
+  /* Room groups */
+  .furn-room-section { margin-bottom: 8px; }
+  .furn-room-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    padding: 10px 14px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 6px;
+    user-select: none;
+  }
+  .furn-room-header:hover { background: var(--sage-light); }
+  .furn-room-chevron { font-size: 0.75rem; color: var(--muted); transition: transform 0.2s; }
+  .furn-room-chevron.open { transform: rotate(90deg); }
+  .furn-room-title { font-weight: 600; font-size: 0.95rem; flex: 1; }
+  .furn-room-meta { font-size: 0.78rem; color: var(--muted); font-weight: 500; white-space: nowrap; }
+  .furn-room-body { display: none; padding: 0 2px; }
+  .furn-room-body.open { display: block; }
+
+  /* Item cards */
+  .furniture-list { display: flex; flex-direction: column; gap: 0; }
   .furn-item {
     background: var(--white);
     border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 12px 16px;
+    padding: 11px 14px;
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
+    margin-bottom: 6px;
   }
   .furn-item:hover { border-color: var(--sage-light); }
   .furn-item.excluded { opacity: 0.5; }
@@ -714,16 +740,26 @@
     font-size: 0.92rem;
     font-weight: 500;
     color: var(--text);
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
   }
   .furn-item.excluded .furn-item-name { text-decoration: line-through; color: var(--muted); }
   .furn-item-sub { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+  .furn-excluded-badge {
+    font-size: 0.68rem;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #f5e6e6;
+    color: #a03030;
+    font-weight: 500;
+    white-space: nowrap;
+    margin-left: 6px;
+  }
   .furn-item-controls {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 10px;
     flex-shrink: 0;
   }
   .furn-item-price {
@@ -735,29 +771,22 @@
     text-align: right;
   }
   .furn-item.excluded .furn-item-price { color: var(--muted); }
-  .furn-inspect {
-    display: flex;
-    gap: 16px;
-    align-items: center;
-  }
-  .furn-tick {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
+  .furn-status-select {
+    font-size: 0.78rem;
+    padding: 5px 8px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    background: var(--white);
+    color: var(--text);
     cursor: pointer;
+    font-family: inherit;
+    max-width: 140px;
   }
-  .furn-tick input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--sage-dark); cursor: pointer; margin: 0; }
-  .furn-tick-label { font-size: 0.65rem; color: var(--muted); text-align: center; white-space: nowrap; line-height: 1; }
-  .furn-excluded-badge {
-    font-size: 0.68rem;
-    padding: 2px 7px;
-    border-radius: 999px;
-    background: #f5e6e6;
-    color: #a03030;
-    font-weight: 500;
-    white-space: nowrap;
-  }
+  .furn-status-select.status-good { border-color: #7aaa7a; color: #2d6a2d; background: #f0f7f0; }
+  .furn-status-select.status-present { border-color: #7aaa7a; color: #2d6a2d; background: #f0f7f0; }
+  .furn-status-select.status-poor { border-color: #d4882a; color: #7a4200; background: #fdf4e7; }
+  .furn-status-select.status-damaged { border-color: #c0392b; color: #7a1a10; background: #fdf0ef; }
+  .furn-status-select.status-missing { border-color: #c0392b; color: #7a1a10; background: #fdf0ef; }
   .furn-item-edit {
     font-size: 0.78rem;
     padding: 5px 11px;
@@ -775,7 +804,7 @@
     .furn-item {
       flex-direction: column;
       align-items: stretch;
-      gap: 10px;
+      gap: 8px;
     }
     .furn-item-info {
       display: flex;
@@ -792,22 +821,9 @@
       justify-content: space-between;
       gap: 8px;
     }
-    .furn-item-price {
-      display: none;
-    }
-    .furn-item-price-mobile {
-      display: block;
-      font-size: 0.88rem;
-      font-weight: 600;
-      color: var(--warm);
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-    .furn-item.excluded .furn-item-price-mobile { color: var(--muted); }
-    .furn-inspect { gap: 12px; }
-    .furn-tick-label { font-size: 0.7rem; }
+    .furn-status-select { max-width: none; flex: 1; }
+    .furn-item-price { min-width: auto; }
   }
-  .furn-item-price-mobile { display: none; }
   .furn-confirm { font-size: 0.72rem; padding: 3px 10px; border-radius: 10px; }
   .confirmed-pill { background: var(--green); color: #3A6A3A; }
   .unconfirmed-pill { background: var(--warm-light); color: #8A3A1A; }
@@ -2076,6 +2092,7 @@
       <div>
         <div class="furn-total" id="furn-total-display">£0</div>
         <div class="furn-total-sub" id="furn-inspect-sub"></div>
+        <div class="furn-summary-flags" id="furn-flags-sub"></div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
         <button class="furn-show-excluded-btn" id="furn-toggle-excluded" onclick="toggleFurnExcluded()">Show excluded items</button>
@@ -2910,46 +2927,61 @@ const DEFAULT_TASKS = [
 ];
 
 const DEFAULT_FURNITURE = [
-  {name:"Fridge/freezer",room:"Kitchen",price:300,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Dishwasher",room:"Kitchen",price:150,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Dining Table",room:"Dining Room",price:500,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Dining chairs + cushions",room:"Dining Room",price:90,notes:"All 6",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Blinds (all house)",room:"All rooms",price:400,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Wood for stove",room:"Living Room",price:50,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Wardrobes in big rooms",room:"Bedroom / Dressing Room",price:150,notes:"Both bedroom & dressing room",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Pool table",room:"Games Room",price:200,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Shelving",room:"Games Room",price:100,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Corner sofa",room:"Games Room",price:150,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Small wardrobe",room:"Guest Room",price:30,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Guest room bed with mattress",room:"Guest Room",price:50,notes:"",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Gold mirror",room:"Hall",price:80,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Kitchen TV 43\" and holder",room:"Kitchen",price:200,notes:"",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Both cabinets",room:"Main Bedroom",price:30,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Desk",room:"Dressing Room",price:50,notes:"",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Mirror with lights",room:"Dressing Room",price:40,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Chest of drawers",room:"Dressing Room",price:40,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Storage puff",room:"Dressing Room",price:20,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Vase large (corridor) + smaller vase (bedroom) with decor",room:"Corridor / Bedroom",price:50,notes:"Both",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Wall art above the stairs",room:"Staircase",price:40,notes:"",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Storage natural chests",room:"Small Room",price:50,notes:"All 3",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Sheesham wood table",room:"Guest Room",price:60,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Sheesham wood side table (small)",room:"Guest Room",price:40,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Decorative cushions",room:"Salon",price:30,notes:"All",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Sofa + chair set",room:"Salon",price:700,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Golden floor lamp",room:"Salon",price:70,notes:"",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Golden wall decor",room:"Salon",price:70,notes:"",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Golden small vases",room:"Salon",price:50,notes:"All 3",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Ceiling lights (chandeliers)",room:"All rooms / halls",price:30,notes:"Per room",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"2 ceramic designer vases",room:"Salon",price:100,notes:"Both",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Small shoe cabinet",room:"Hall",price:5,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Palm plants with planters",room:"Various",price:20,notes:"Per plant — 3 big + 1 small",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Main bedroom bed + mattress",room:"Main Bedroom",price:100,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Main salon TV LG OLED 65\"",room:"Salon",price:1200,notes:"",excluded:false,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Under TV cabinet",room:"Salon",price:80,notes:"DAMAGED",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Small side tables (golden frames)",room:"Salon",price:25,notes:"Per table",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Chair",room:"Guest Room",price:15,notes:"",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Artwork",room:"Guest Room",price:40,notes:"",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
-  {name:"Artwork (golden)",room:"Hall",price:40,notes:"",excluded:true,inspect:{present:false,asDescribed:false,goodCondition:false},inspectNotes:""},
+  // Kitchen
+  {name:"Fridge/freezer",room:"Kitchen",price:300,notes:"",excluded:false,status:"",inspectNotes:""},
+  {name:"Dishwasher",room:"Kitchen",price:150,notes:"",excluded:false,status:"",inspectNotes:""},
+  {name:"Kitchen TV 43\" and holder",room:"Kitchen",price:200,notes:"",excluded:true,status:"",inspectNotes:""},
+  // Dining Room
+  {name:"Dining Table",room:"Dining Room",price:500,notes:"",excluded:false,status:"",inspectNotes:""},
+  {name:"Dining chairs + cushions",room:"Dining Room",price:90,notes:"All 6",excluded:false,status:"",inspectNotes:""},
+  // Living Room
+  {name:"Wood for stove",room:"Living Room",price:50,notes:"",excluded:false,status:"",inspectNotes:""},
+  // Salon
+  {name:"Sofa + chair set",room:"Salon",price:700,notes:"",excluded:false,status:"",inspectNotes:""},
+  {name:"Main salon TV LG OLED 65\"",room:"Salon",price:1200,notes:"",excluded:false,status:"",inspectNotes:""},
+  {name:"Decorative cushions",room:"Salon",price:30,notes:"All",excluded:false,status:"",inspectNotes:""},
+  {name:"2 ceramic designer vases",room:"Salon",price:100,notes:"Both",excluded:true,status:"",inspectNotes:""},
+  {name:"Golden floor lamp",room:"Salon",price:70,notes:"",excluded:true,status:"",inspectNotes:""},
+  {name:"Golden wall decor",room:"Salon",price:70,notes:"",excluded:true,status:"",inspectNotes:""},
+  {name:"Golden small vases",room:"Salon",price:50,notes:"All 3",excluded:true,status:"",inspectNotes:""},
+  {name:"Under TV cabinet",room:"Salon",price:80,notes:"DAMAGED",excluded:true,status:"",inspectNotes:""},
+  {name:"Small side tables (golden frames)",room:"Salon",price:25,notes:"Per table",excluded:true,status:"",inspectNotes:""},
+  // Main Bedroom
+  {name:"Main bedroom bed + mattress",room:"Main Bedroom",price:100,notes:"",excluded:false,status:"",inspectNotes:""},
+  {name:"Both cabinets",room:"Main Bedroom",price:30,notes:"",excluded:false,status:"",inspectNotes:""},
+  {name:"Wardrobe",room:"Main Bedroom",price:75,notes:"Part of wardrobes deal",excluded:false,status:"",inspectNotes:""},
+  {name:"Vase (smaller, with decor)",room:"Main Bedroom",price:25,notes:"",excluded:true,status:"",inspectNotes:""},
+  // Dressing Room
+  {name:"Wardrobe",room:"Dressing Room",price:75,notes:"Part of wardrobes deal",excluded:false,status:"",inspectNotes:""},
+  {name:"Mirror with lights",room:"Dressing Room",price:40,notes:"",excluded:false,status:"",inspectNotes:""},
+  {name:"Chest of drawers",room:"Dressing Room",price:40,notes:"",excluded:false,status:"",inspectNotes:""},
+  {name:"Storage puff",room:"Dressing Room",price:20,notes:"",excluded:false,status:"",inspectNotes:""},
+  {name:"Desk",room:"Dressing Room",price:50,notes:"",excluded:true,status:"",inspectNotes:""},
+  // Guest Room
+  {name:"Small wardrobe",room:"Guest Room",price:30,notes:"",excluded:false,status:"",inspectNotes:""},
+  {name:"Sheesham wood table",room:"Guest Room",price:60,notes:"",excluded:false,status:"",inspectNotes:""},
+  {name:"Sheesham wood side table (small)",room:"Guest Room",price:40,notes:"",excluded:false,status:"",inspectNotes:""},
+  {name:"Guest room bed with mattress",room:"Guest Room",price:50,notes:"",excluded:true,status:"",inspectNotes:""},
+  {name:"Chair",room:"Guest Room",price:15,notes:"",excluded:true,status:"",inspectNotes:""},
+  {name:"Artwork",room:"Guest Room",price:40,notes:"",excluded:true,status:"",inspectNotes:""},
+  // Games Room
+  {name:"Pool table",room:"Games Room",price:200,notes:"",excluded:false,status:"",inspectNotes:""},
+  {name:"Shelving",room:"Games Room",price:100,notes:"",excluded:false,status:"",inspectNotes:""},
+  {name:"Corner sofa",room:"Games Room",price:150,notes:"",excluded:false,status:"",inspectNotes:""},
+  // Hall
+  {name:"Gold mirror",room:"Hall",price:80,notes:"",excluded:false,status:"",inspectNotes:""},
+  {name:"Small shoe cabinet",room:"Hall",price:5,notes:"",excluded:false,status:"",inspectNotes:""},
+  {name:"Artwork (golden)",room:"Hall",price:40,notes:"",excluded:true,status:"",inspectNotes:""},
+  // Corridor
+  {name:"Vase (large, with decor)",room:"Corridor",price:25,notes:"",excluded:true,status:"",inspectNotes:""},
+  // Staircase
+  {name:"Wall art above the stairs",room:"Staircase",price:40,notes:"",excluded:true,status:"",inspectNotes:""},
+  // Small Room
+  {name:"Storage natural chests",room:"Small Room",price:50,notes:"All 3",excluded:true,status:"",inspectNotes:""},
+  // All House
+  {name:"Blinds",room:"All House",price:400,notes:"All rooms",excluded:false,status:"",inspectNotes:""},
+  {name:"Ceiling lights (chandeliers)",room:"All House",price:30,notes:"Per room — all rooms & halls",excluded:false,status:"",inspectNotes:""},
+  {name:"Palm plants with planters",room:"All House",price:20,notes:"Per plant — 3 big + 1 small",excluded:false,status:"",inspectNotes:""},
 ];
 
 const DEFAULT_CONTACTS = [
@@ -3146,15 +3178,24 @@ let deletedDefaultTaskCategories = readStoredJson(STORAGE_KEYS.taskDeletedDefaul
 let collapsedTaskCategories = readStoredJson(STORAGE_KEYS.taskCollapsed, {});
 let taskSectionOrder = readStoredJson(STORAGE_KEYS.taskSectionOrder, []);
 function migrateFurniture(items) {
-  return items.map(f => ({
-    name: f.name || '',
-    room: f.room || '',
-    price: typeof f.price === 'number' ? f.price : (parseFloat(String(f.price).replace(/[^0-9.]/g,'')) || 0),
-    notes: f.notes || '',
-    excluded: !!f.excluded,
-    inspect: f.inspect || {present:false,asDescribed:false,goodCondition:false},
-    inspectNotes: f.inspectNotes || '',
-  }));
+  return items.map(f => {
+    let status = f.status || '';
+    // migrate old inspect object to status string
+    if (!status && f.inspect) {
+      if (f.inspect.goodCondition) status = 'good';
+      else if (f.inspect.present && !f.inspect.goodCondition) status = 'poor';
+      else if (f.inspect.present === false && (f.inspect.asDescribed || f.inspect.goodCondition)) status = '';
+    }
+    return {
+      name: f.name || '',
+      room: f.room || '',
+      price: typeof f.price === 'number' ? f.price : (parseFloat(String(f.price).replace(/[^0-9.]/g,'')) || 0),
+      notes: f.notes || '',
+      excluded: !!f.excluded,
+      status,
+      inspectNotes: f.inspectNotes || '',
+    };
+  });
 }
 let furniture = migrateFurniture((function() { const d = readStoredJson(STORAGE_KEYS.furniture, null); return (d && d.length) ? d : DEFAULT_FURNITURE; })());
 let furnShowExcluded = false;
@@ -5531,18 +5572,37 @@ function toggleFurnExcluded() {
   renderFurniture();
 }
 
+const FURN_ROOM_ORDER = [
+  'Kitchen','Dining Room','Living Room','Salon','Main Bedroom','Dressing Room',
+  'Guest Room','Games Room','Hall','Corridor','Staircase','Small Room','All House'
+];
+const FURN_STATUS_OPTIONS = [
+  {value:'',label:'Not checked'},
+  {value:'present',label:'Present ✓'},
+  {value:'good',label:'Good condition ✓'},
+  {value:'poor',label:'Poor condition'},
+  {value:'damaged',label:'Damaged'},
+  {value:'missing',label:'Not present'},
+];
+const FURN_ISSUE_STATUSES = new Set(['poor','damaged','missing']);
+
+let furnRoomCollapsed = {};
+
 function renderFurniture() {
   const container = document.getElementById('furniture-container');
 
   const included = furniture.filter(f => !f.excluded);
   const excluded = furniture.filter(f => f.excluded);
   const total = included.reduce((s, f) => s + (f.price || 0), 0);
-  const uninspected = included.filter(f => !f.inspect.present || !f.inspect.asDescribed || !f.inspect.goodCondition).length;
+  const inspected = included.filter(f => f.status && f.status !== '').length;
+  const issues = included.filter(f => FURN_ISSUE_STATUSES.has(f.status)).length;
 
   const totalEl = document.getElementById('furn-total-display');
   const subEl = document.getElementById('furn-inspect-sub');
+  const flagsEl = document.getElementById('furn-flags-sub');
   if (totalEl) totalEl.textContent = '£' + total.toLocaleString();
-  if (subEl) subEl.textContent = uninspected > 0 ? uninspected + ' item' + (uninspected !== 1 ? 's' : '') + ' not fully inspected' : 'All items inspected';
+  if (subEl) subEl.textContent = inspected + ' / ' + included.length + ' items inspected';
+  if (flagsEl) flagsEl.textContent = issues > 0 ? issues + ' issue' + (issues !== 1 ? 's' : '') + ' flagged' : '';
 
   const visible = furnShowExcluded ? [...included, ...excluded] : included;
 
@@ -5552,48 +5612,72 @@ function renderFurniture() {
     return;
   }
 
-  container.innerHTML = visible.map((f) => {
-    const i = furniture.indexOf(f);
-    const priceText = f.price ? '£' + f.price.toLocaleString() : 'Included';
-    return `
-    <div class="furn-item${f.excluded ? ' excluded' : ''}">
-      <div class="furn-item-info">
-        <div>
-          <div class="furn-item-name">${escapeHtml(f.name)}${f.excluded ? ' <span class="furn-excluded-badge">excluded</span>' : ''}</div>
-          <div class="furn-item-sub">${escapeHtml(f.room)}${f.notes ? ' · ' + escapeHtml(f.notes) : ''}</div>
-          ${f.inspectNotes ? `<div class="furn-item-sub" style="font-style:italic;">${escapeHtml(f.inspectNotes)}</div>` : ''}
+  // group by room
+  const rooms = {};
+  visible.forEach(f => {
+    const r = f.room || 'Other';
+    if (!rooms[r]) rooms[r] = [];
+    rooms[r].push(f);
+  });
+
+  const roomOrder = [...FURN_ROOM_ORDER, ...Object.keys(rooms).filter(r => !FURN_ROOM_ORDER.includes(r))];
+  const orderedRooms = roomOrder.filter(r => rooms[r]);
+
+  container.innerHTML = orderedRooms.map(room => {
+    const items = rooms[room];
+    const roomTotal = items.filter(f => !f.excluded).reduce((s, f) => s + (f.price || 0), 0);
+    const roomInspected = items.filter(f => !f.excluded && f.status).length;
+    const roomTotal2 = items.filter(f => !f.excluded).length;
+    const isOpen = furnRoomCollapsed[room] !== true;
+
+    const itemsHtml = items.map(f => {
+      const i = furniture.indexOf(f);
+      const priceText = f.price ? '£' + f.price.toLocaleString() : 'Included';
+      const statusClass = f.status ? 'status-' + f.status : '';
+      const optionsHtml = FURN_STATUS_OPTIONS.map(o =>
+        `<option value="${o.value}"${f.status === o.value ? ' selected' : ''}>${o.label}</option>`
+      ).join('');
+      return `
+      <div class="furn-item${f.excluded ? ' excluded' : ''}">
+        <div class="furn-item-info">
+          <div class="furn-item-name">${escapeHtml(f.name)}${f.excluded ? '<span class="furn-excluded-badge">excluded</span>' : ''}</div>
+          ${f.notes || f.inspectNotes ? `<div class="furn-item-sub">${f.notes ? escapeHtml(f.notes) : ''}${f.notes && f.inspectNotes ? ' · ' : ''}${f.inspectNotes ? '<em>' + escapeHtml(f.inspectNotes) + '</em>' : ''}</div>` : ''}
         </div>
-        <div class="furn-item-price-mobile">${priceText}</div>
+        <div class="furn-item-controls">
+          <div class="furn-item-price">${priceText}</div>
+          ${f.excluded ? '' : `<select class="furn-status-select ${statusClass}" onchange="furnSetStatus(${i}, this.value)">${optionsHtml}</select>`}
+          <button class="furn-item-edit" onclick="openEditFurniture(${i})">Edit</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    const metaParts = [];
+    if (roomTotal2 > 0) metaParts.push(roomInspected + '/' + roomTotal2 + ' checked');
+    if (roomTotal > 0) metaParts.push('£' + roomTotal.toLocaleString());
+
+    return `
+    <div class="furn-room-section">
+      <div class="furn-room-header" data-room="${escapeHtml(room)}" onclick="furnToggleRoom(this.dataset.room)">
+        <span class="furn-room-chevron${isOpen ? ' open' : ''}">&#9658;</span>
+        <span class="furn-room-title">${escapeHtml(room)}</span>
+        <span class="furn-room-meta">${metaParts.join(' · ')}</span>
       </div>
-      <div class="furn-item-controls">
-        <div class="furn-item-price">${priceText}</div>
-        ${f.excluded ? '' : `
-        <div class="furn-inspect">
-          <label class="furn-tick">
-            <input type="checkbox" ${f.inspect.present ? 'checked' : ''} onchange="furnToggleInspect(${i},'present',this.checked)">
-            <span class="furn-tick-label">Present</span>
-          </label>
-          <label class="furn-tick">
-            <input type="checkbox" ${f.inspect.asDescribed ? 'checked' : ''} onchange="furnToggleInspect(${i},'asDescribed',this.checked)">
-            <span class="furn-tick-label">As described</span>
-          </label>
-          <label class="furn-tick">
-            <input type="checkbox" ${f.inspect.goodCondition ? 'checked' : ''} onchange="furnToggleInspect(${i},'goodCondition',this.checked)">
-            <span class="furn-tick-label">Good condition</span>
-          </label>
-        </div>`}
-        <button class="furn-item-edit" onclick="openEditFurniture(${i})">Edit</button>
-      </div>
+      <div class="furn-room-body${isOpen ? ' open' : ''}">${itemsHtml}</div>
     </div>`;
   }).join('');
 
   applyActionLockToInteractiveElements();
 }
 
-function furnToggleInspect(index, field, value) {
+function furnToggleRoom(room) {
+  furnRoomCollapsed[room] = furnRoomCollapsed[room] !== true;
+  renderFurniture();
+}
+
+function furnSetStatus(index, value) {
   if (!ensureCanEdit()) return;
   if (!furniture[index]) return;
-  furniture[index].inspect[field] = value;
+  furniture[index].status = value;
   save();
   renderFurniture();
 }
@@ -5885,7 +5969,7 @@ function saveFurniture() {
     notes: document.getElementById('f-notes').value,
     price: parseFloat(document.getElementById('f-price').value) || 0,
     excluded: document.getElementById('f-excluded').checked,
-    inspect: existing ? existing.inspect : {present:false,asDescribed:false,goodCondition:false},
+    status: existing ? existing.status : '',
     inspectNotes: document.getElementById('f-inspect-notes').value,
   };
   if (!f.name.trim()) return;
