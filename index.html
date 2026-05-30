@@ -3784,7 +3784,7 @@ function applyPayload(payload) {
   boxes = migrateBoxes(payload.boxes || []);
   boxTypes = [...new Set([...DEFAULT_BOX_TYPES, ...(Array.isArray(payload.boxTypes) ? payload.boxTypes : []), ...boxes.map((b) => b.type).filter(Boolean)])];
   toPackItems = Array.isArray(payload.toPackItems) ? payload.toPackItems : [];
-  shoppingList = Array.isArray(payload.shoppingList) ? payload.shoppingList : [];
+  if ('shoppingList' in payload) shoppingList = Array.isArray(payload.shoppingList) ? payload.shoppingList : [];
   budgetCategories = Array.isArray(payload.budgetCategories) ? payload.budgetCategories : [];
   budgetCategories = [...new Set([...
     DEFAULT_BUDGET_CATEGORIES,
