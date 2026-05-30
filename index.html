@@ -3782,6 +3782,7 @@ function applyPayload(payload) {
   renderBudget();
   renderSavings();
   renderPacking();
+  renderShoppingList();
   updateStats();
   if (calendar) {
     renderCalendar();
@@ -6899,11 +6900,370 @@ renderBudget();
 renderSavings();
 renderPacking();
 renderToPackTab();
+renderShoppingList();
 updateStats();
 showTab(localStorage.getItem('move_active_tab') || 'tasks');
 save();
 refreshSyncStatus();
 configureCloudSync();
+
+// ── Shopping List Tab ─────────────────────────────────────────────────────────
+
+function shoppingId() {
+  return (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2));
+}
+
+function saveShoppingList() {
+  persistLocalState();
+  scheduleSave();
+}
+
+function renderShoppingList() {
+  const container = document.getElementById('shopping-list-container');
+  if (!container) return;
+  const filterReaction = document.getElementById('shopping-filter-reaction')?.value || 'all';
+
+  if (shoppingList.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:48px 0;color:var(--muted);font-size:0.95rem;">No items yet — click <strong>+ Add item type</strong> to start your shopping list.</div>`;
+    return;
+  }
+
+  container.innerHTML = shoppingList.map((item) => renderShoppingItemCard(item, filterReaction)).join('');
+}
+
+function filterOptions(options, filterReaction) {
+  if (filterReaction === 'all') return options;
+  return options.filter((opt) => {
+    if (filterReaction === 'love') return opt.reactionDani === 'love' || opt.reactionKen === 'love';
+    if (filterReaction === 'dislike') return opt.reactionDani === 'dislike' && opt.reactionKen === 'dislike';
+    if (filterReaction === 'dani-love') return opt.reactionDani === 'love';
+    if (filterReaction === 'ken-love') return opt.reactionKen === 'love';
+    return true;
+  });
+}
+
+function reactionActiveClass(reaction, value) {
+  return reaction === value ? `active-${value}` : '';
+}
+
+function renderShoppingItemCard(item, filterReaction) {
+  const visibleOptions = filterOptions(item.options || [], filterReaction);
+  const budgetLabel = (item.budgetMin || item.budgetMax)
+    ? `£${item.budgetMin || 0}–£${item.budgetMax || '?'}`
+    : 'No budget set';
+  const chevronClass = item.collapsed ? '' : 'open';
+
+  return `
+<div class="shopping-item-card" id="sitem-${item.id}">
+  <div class="shopping-item-header" onclick="toggleShoppingItem('${item.id}')">
+    <span class="shopping-item-chevron ${chevronClass}">▶</span>
+    <span class="shopping-item-name">${escapeHtml(item.name || 'Unnamed item')}</span>
+    <span class="shopping-item-budget">${budgetLabel}</span>
+    <span style="font-size:0.8rem;color:var(--muted)">${(item.options||[]).length} option${(item.options||[]).length !== 1 ? 's' : ''}</span>
+  </div>
+  ${item.collapsed ? '' : `
+  <div class="shopping-item-body">
+    <div class="shopping-item-meta">
+      <div class="shopping-meta-field" style="grid-column:1/-1">
+        <label>Budget range</label>
+        <div class="shopping-budget-row">
+          <span>£</span>
+          <input type="number" min="0" placeholder="Min" value="${item.budgetMin || ''}"
+            onchange="updateShoppingItemField('${item.id}','budgetMin', +this.value || 0)">
+          <span>to £</span>
+          <input type="number" min="0" placeholder="Max" value="${item.budgetMax || ''}"
+            onchange="updateShoppingItemField('${item.id}','budgetMax', +this.value || 0)">
+        </div>
+      </div>
+      <div class="shopping-meta-field">
+        <label>Notes — Dani</label>
+        <textarea rows="2" placeholder="Dani's thoughts…" onchange="updateShoppingItemField('${item.id}','notesDani',this.value)">${escapeHtml(item.notesDani || '')}</textarea>
+      </div>
+      <div class="shopping-meta-field">
+        <label>Notes — Ken</label>
+        <textarea rows="2" placeholder="Ken's thoughts…" onchange="updateShoppingItemField('${item.id}','notesKen',this.value)">${escapeHtml(item.notesKen || '')}</textarea>
+      </div>
+    </div>
+
+    <div class="shopping-options-section">
+      <h4>Options to consider</h4>
+      <div class="shopping-options-list">
+        ${visibleOptions.length === 0
+          ? `<div style="color:var(--muted);font-size:0.85rem;padding:8px 0">No options match the current filter.</div>`
+          : visibleOptions.map((opt) => renderShoppingOptionCard(item.id, opt)).join('')}
+      </div>
+      <button class="btn-sm" style="margin-top:10px;align-self:flex-start" onclick="addShoppingOption('${item.id}')">+ Add option</button>
+    </div>
+  </div>
+  <div class="shopping-item-actions">
+    <button class="btn-sm-danger" onclick="deleteShoppingItem('${item.id}')">Delete item type</button>
+  </div>
+  `}
+</div>`;
+}
+
+function renderShoppingOptionCard(itemId, opt) {
+  const reactions = ['love','like','neutral','dislike'];
+  const reactionLabels = { love: '❤️ Love', like: '👍 Like', neutral: '😐 Neutral', dislike: '👎 Dislike' };
+
+  const linksHtml = (opt.links || []).map((link) => `
+    <div class="shopping-link-row" id="slink-${link.id}">
+      <input class="link-url" type="url" placeholder="https://…" value="${escapeHtml(link.url || '')}"
+        onchange="updateShoppingLink('${itemId}','${opt.id}','${link.id}','url',this.value)">
+      <input class="link-label" type="text" placeholder="Label (e.g. IKEA)" value="${escapeHtml(link.label || '')}"
+        onchange="updateShoppingLink('${itemId}','${opt.id}','${link.id}','label',this.value)">
+      <input class="link-price" type="number" placeholder="£" min="0" value="${link.price || ''}"
+        onchange="updateShoppingLink('${itemId}','${opt.id}','${link.id}','price',+this.value||0)">
+      <button class="shopping-link-fav-btn ${link.favourite ? 'fav' : ''}" title="Mark as favourite"
+        onclick="toggleShoppingLinkFav('${itemId}','${opt.id}','${link.id}')">⭐</button>
+      ${link.url ? `<a class="shopping-link-open-btn" href="${escapeHtml(link.url)}" target="_blank" rel="noopener">Open ↗</a>` : ''}
+      <button class="btn-sm-danger" style="padding:3px 8px" onclick="deleteShoppingLink('${itemId}','${opt.id}','${link.id}')">✕</button>
+    </div>`).join('');
+
+  const imagesHtml = (opt.images || []).map((img) => `
+    <div class="shopping-image-thumb" title="${escapeHtml(img.caption || '')}">
+      <img src="${escapeHtml(img.src)}" alt="${escapeHtml(img.caption || 'image')}" onerror="this.parentElement.style.display='none'">
+      <button class="thumb-del" onclick="deleteShoppingImage('${itemId}','${opt.id}','${img.id}')">✕</button>
+    </div>`).join('');
+
+  return `
+<div class="shopping-option-card" id="sopt-${opt.id}">
+  <div class="shopping-option-top">
+    <input class="shopping-option-label" type="text" placeholder="Option name (e.g. IKEA KIVIK grey)"
+      value="${escapeHtml(opt.label || '')}"
+      onchange="updateShoppingOption('${itemId}','${opt.id}','label',this.value)">
+    <div class="shopping-option-fields">
+      <input type="number" placeholder="£ price" min="0" value="${opt.price || ''}"
+        title="Price"
+        onchange="updateShoppingOption('${itemId}','${opt.id}','price',+this.value||0)">
+      <input type="text" placeholder="Size (e.g. 240×90cm)" value="${escapeHtml(opt.size || '')}"
+        onchange="updateShoppingOption('${itemId}','${opt.id}','size',this.value)">
+      <textarea rows="1" placeholder="Colour / vibe notes…"
+        onchange="updateShoppingOption('${itemId}','${opt.id}','colourNotes',this.value)">${escapeHtml(opt.colourNotes || '')}</textarea>
+    </div>
+  </div>
+
+  <div class="shopping-reactions">
+    <div class="shopping-reaction-group">
+      <label>Dani:</label>
+      ${reactions.map((r) => `
+        <button class="reaction-btn ${reactionActiveClass(opt.reactionDani, r)}"
+          onclick="setShoppingReaction('${itemId}','${opt.id}','reactionDani','${r}')">
+          ${reactionLabels[r]}
+        </button>`).join('')}
+    </div>
+    <div class="shopping-reaction-group">
+      <label>Ken:</label>
+      ${reactions.map((r) => `
+        <button class="reaction-btn ${reactionActiveClass(opt.reactionKen, r)}"
+          onclick="setShoppingReaction('${itemId}','${opt.id}','reactionKen','${r}')">
+          ${reactionLabels[r]}
+        </button>`).join('')}
+    </div>
+  </div>
+
+  <div class="shopping-links-section">
+    <h5>Links</h5>
+    ${linksHtml}
+    <button class="btn-sm" style="align-self:flex-start" onclick="addShoppingLink('${itemId}','${opt.id}')">+ Add link</button>
+  </div>
+
+  <div class="shopping-images-section">
+    <h5>Images</h5>
+    <div class="shopping-image-thumbs">${imagesHtml}</div>
+    <div class="shopping-image-add-row">
+      <input type="text" placeholder="Paste image URL…" id="imgurl-${opt.id}">
+      <button class="btn-sm" onclick="addShoppingImageUrl('${itemId}','${opt.id}')">Add URL</button>
+      <label class="btn-sm" style="cursor:pointer">
+        Upload photo
+        <input type="file" accept="image/*" style="display:none" onchange="uploadShoppingImage('${itemId}','${opt.id}',this)">
+      </label>
+    </div>
+  </div>
+
+  <div class="shopping-option-actions">
+    <button class="btn-sm-danger" onclick="deleteShoppingOption('${itemId}','${opt.id}')">Remove option</button>
+  </div>
+</div>`;
+}
+
+function addShoppingItem() {
+  if (!ensureCanEdit()) return;
+  const name = prompt('Item type name (e.g. Sofa, Coffee Table):');
+  if (!name || !name.trim()) return;
+  shoppingList.push({
+    id: shoppingId(), name: name.trim(),
+    budgetMin: 0, budgetMax: 0,
+    notesDani: '', notesKen: '',
+    collapsed: false, options: []
+  });
+  saveShoppingList();
+  renderShoppingList();
+}
+
+function toggleShoppingItem(itemId) {
+  const item = shoppingList.find((i) => i.id === itemId);
+  if (!item) return;
+  item.collapsed = !item.collapsed;
+  saveShoppingList();
+  renderShoppingList();
+}
+
+function deleteShoppingItem(itemId) {
+  if (!ensureCanEdit()) return;
+  const item = shoppingList.find((i) => i.id === itemId);
+  if (!confirm(`Delete "${item?.name || 'this item'}" and all its options?`)) return;
+  shoppingList = shoppingList.filter((i) => i.id !== itemId);
+  saveShoppingList();
+  renderShoppingList();
+}
+
+function updateShoppingItemField(itemId, field, value) {
+  if (!ensureCanEdit()) return;
+  const item = shoppingList.find((i) => i.id === itemId);
+  if (!item) return;
+  item[field] = value;
+  saveShoppingList();
+  const budgetLabel = (item.budgetMin || item.budgetMax)
+    ? `£${item.budgetMin || 0}–£${item.budgetMax || '?'}`
+    : 'No budget set';
+  const pill = document.querySelector(`#sitem-${itemId} .shopping-item-budget`);
+  if (pill) pill.textContent = budgetLabel;
+}
+
+function addShoppingOption(itemId) {
+  if (!ensureCanEdit()) return;
+  const item = shoppingList.find((i) => i.id === itemId);
+  if (!item) return;
+  item.options.push({
+    id: shoppingId(), label: '', price: 0, size: '',
+    colourNotes: '', reactionDani: '', reactionKen: '',
+    links: [], images: []
+  });
+  saveShoppingList();
+  renderShoppingList();
+}
+
+function deleteShoppingOption(itemId, optId) {
+  if (!ensureCanEdit()) return;
+  const item = shoppingList.find((i) => i.id === itemId);
+  if (!item) return;
+  if (!confirm('Remove this option?')) return;
+  item.options = item.options.filter((o) => o.id !== optId);
+  saveShoppingList();
+  renderShoppingList();
+}
+
+function updateShoppingOption(itemId, optId, field, value) {
+  if (!ensureCanEdit()) return;
+  const item = shoppingList.find((i) => i.id === itemId);
+  const opt = item?.options.find((o) => o.id === optId);
+  if (!opt) return;
+  opt[field] = value;
+  saveShoppingList();
+}
+
+function setShoppingReaction(itemId, optId, who, reaction) {
+  if (!ensureCanEdit()) return;
+  const item = shoppingList.find((i) => i.id === itemId);
+  const opt = item?.options.find((o) => o.id === optId);
+  if (!opt) return;
+  opt[who] = opt[who] === reaction ? '' : reaction;
+  saveShoppingList();
+  renderShoppingList();
+}
+
+function addShoppingLink(itemId, optId) {
+  if (!ensureCanEdit()) return;
+  const item = shoppingList.find((i) => i.id === itemId);
+  const opt = item?.options.find((o) => o.id === optId);
+  if (!opt) return;
+  opt.links.push({ id: shoppingId(), url: '', label: '', price: 0, favourite: false });
+  saveShoppingList();
+  renderShoppingList();
+}
+
+function updateShoppingLink(itemId, optId, linkId, field, value) {
+  if (!ensureCanEdit()) return;
+  const item = shoppingList.find((i) => i.id === itemId);
+  const opt = item?.options.find((o) => o.id === optId);
+  const link = opt?.links.find((l) => l.id === linkId);
+  if (!link) return;
+  link[field] = value;
+  saveShoppingList();
+}
+
+function toggleShoppingLinkFav(itemId, optId, linkId) {
+  if (!ensureCanEdit()) return;
+  const item = shoppingList.find((i) => i.id === itemId);
+  const opt = item?.options.find((o) => o.id === optId);
+  if (!opt) return;
+  opt.links.forEach((l) => l.favourite = l.id === linkId ? !l.favourite : false);
+  saveShoppingList();
+  renderShoppingList();
+}
+
+function deleteShoppingLink(itemId, optId, linkId) {
+  if (!ensureCanEdit()) return;
+  const item = shoppingList.find((i) => i.id === itemId);
+  const opt = item?.options.find((o) => o.id === optId);
+  if (!opt) return;
+  opt.links = opt.links.filter((l) => l.id !== linkId);
+  saveShoppingList();
+  renderShoppingList();
+}
+
+function addShoppingImageUrl(itemId, optId) {
+  if (!ensureCanEdit()) return;
+  const input = document.getElementById(`imgurl-${optId}`);
+  const url = input?.value?.trim();
+  if (!url) return;
+  const item = shoppingList.find((i) => i.id === itemId);
+  const opt = item?.options.find((o) => o.id === optId);
+  if (!opt) return;
+  opt.images.push({ id: shoppingId(), type: 'url', src: url, storagePath: '', caption: '' });
+  saveShoppingList();
+  renderShoppingList();
+}
+
+async function uploadShoppingImage(itemId, optId, fileInput) {
+  if (!ensureCanEdit()) return;
+  const file = fileInput.files?.[0];
+  if (!file) return;
+  if (!syncRuntime.currentUser) {
+    alert('Please sign in to upload images.');
+    return;
+  }
+  const storage = getStorage();
+  const path = `shopping-images/${shoppingId()}-${file.name}`;
+  const ref = storage.ref(path);
+  try {
+    await ref.put(file);
+    const src = await ref.getDownloadURL();
+    const item = shoppingList.find((i) => i.id === itemId);
+    const opt = item?.options.find((o) => o.id === optId);
+    if (!opt) return;
+    opt.images.push({ id: shoppingId(), type: 'upload', src, storagePath: path, caption: file.name });
+    saveShoppingList();
+    renderShoppingList();
+  } catch (err) {
+    alert(`Image upload failed: ${err.message}`);
+  }
+}
+
+function deleteShoppingImage(itemId, optId, imgId) {
+  if (!ensureCanEdit()) return;
+  const item = shoppingList.find((i) => i.id === itemId);
+  const opt = item?.options.find((o) => o.id === optId);
+  if (!opt) return;
+  const img = opt.images.find((i) => i.id === imgId);
+  opt.images = opt.images.filter((i) => i.id !== imgId);
+  saveShoppingList();
+  renderShoppingList();
+  if (img?.storagePath && syncRuntime.currentUser) {
+    try { getStorage().ref(img.storagePath).delete(); } catch (_) {}
+  }
+}
 </script>
 
 <!-- FILE TAGS MODAL -->
