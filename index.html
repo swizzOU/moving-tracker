@@ -3059,6 +3059,26 @@
   </div>
 </div>
 
+<!-- ADD SHOPPING ITEM MODAL -->
+<div class="modal-overlay" id="modal-shopping-item">
+  <div class="modal">
+    <h3>Add item type</h3>
+    <label for="si-name">What are you shopping for?</label>
+    <input type="text" id="si-name" placeholder="e.g. Sofa, Coffee Table, Rug…" />
+    <label for="si-budget-min">Budget range (optional)</label>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+      <span style="font-size:0.85rem;color:var(--muted)">£</span>
+      <input type="number" id="si-budget-min" min="0" placeholder="Min" style="width:90px;" />
+      <span style="font-size:0.85rem;color:var(--muted)">to £</span>
+      <input type="number" id="si-budget-max" min="0" placeholder="Max" style="width:90px;" />
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-shopping-item')">Cancel</button>
+      <button class="btn-save" onclick="saveShoppingItem()">Add item</button>
+    </div>
+  </div>
+</div>
+
 <!-- ADD BUDGET ENTRY MODAL -->
 <div class="modal-overlay" id="modal-budget">
   <div class="modal">
@@ -6308,6 +6328,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('tags-input')?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') saveFileTags();
   });
+  document.getElementById('si-name')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') saveShoppingItem();
+  });
 });
 
 function closeModal(id) {
@@ -7102,17 +7125,28 @@ function renderShoppingOptionCard(itemId, opt) {
 }
 
 function addShoppingItem() {
+  document.getElementById('si-name').value = '';
+  document.getElementById('si-budget-min').value = '';
+  document.getElementById('si-budget-max').value = '';
+  document.getElementById('modal-shopping-item').classList.add('open');
+  setTimeout(() => document.getElementById('si-name').focus(), 50);
+}
+
+function saveShoppingItem() {
   if (!ensureCanEdit()) return;
-  const name = prompt('Item type name (e.g. Sofa, Coffee Table):');
-  if (!name || !name.trim()) return;
+  const name = document.getElementById('si-name').value.trim();
+  if (!name) { document.getElementById('si-name').focus(); return; }
+  const budgetMin = +document.getElementById('si-budget-min').value || 0;
+  const budgetMax = +document.getElementById('si-budget-max').value || 0;
   shoppingList.push({
-    id: shoppingId(), name: name.trim(),
-    budgetMin: 0, budgetMax: 0,
+    id: shoppingId(), name,
+    budgetMin, budgetMax,
     notesDani: '', notesKen: '',
     collapsed: false, options: []
   });
   saveShoppingList();
   renderShoppingList();
+  closeModal('modal-shopping-item');
 }
 
 function toggleShoppingItem(itemId) {
