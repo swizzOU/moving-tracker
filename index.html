@@ -2336,6 +2336,49 @@
   transition: all 0.15s;
 }
 .btn-sm:hover { border-color: var(--sage); color: var(--sage-dark); }
+.shopping-pins-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+.shopping-pin {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.shopping-pin.fav { border-color: var(--sage-dark); box-shadow: 0 0 0 2px var(--sage-dark) inset; }
+.pin-image { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: var(--cream-dark); display: block; }
+.pin-image-placeholder {
+  width: 100%; aspect-ratio: 1/1; background: var(--cream-dark);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); font-size: 1.6rem;
+}
+.pin-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.pin-title {
+  font-size: 0.9rem; font-weight: 600; color: var(--sage-dark);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.pin-price { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+.pin-meta { font-size: 0.78rem; color: var(--muted); }
+.pin-reactions { display: flex; flex-direction: column; gap: 4px; font-size: 0.78rem; }
+.pin-reaction-row { display: flex; align-items: center; gap: 4px; }
+.pin-reaction-row > span { color: var(--muted); width: 16px; }
+.pin-react-btn {
+  border: 1px solid var(--border); background: var(--white); border-radius: 999px;
+  padding: 1px 6px; cursor: pointer; font-size: 0.85rem; line-height: 1.4;
+}
+.pin-react-btn.active-love { background: #ffe1e6; border-color: #ffb3c0; }
+.pin-react-btn.active-like { background: #fff3d6; border-color: #ffd98a; }
+.pin-react-btn.active-neutral { background: #eee; }
+.pin-react-btn.active-dislike { background: #e8eef0; }
+.pin-actions { display: flex; gap: 6px; align-items: center; padding: 8px 12px; border-top: 1px solid var(--border); }
+.pin-actions .pin-fav { cursor: pointer; background: none; border: none; font-size: 1rem; opacity: 0.4; }
+.pin-actions .pin-fav.on { opacity: 1; }
+.pin-actions a, .pin-actions button { font-size: 0.78rem; }
+.pin-actions .spacer { flex: 1; }
 @media (max-width: 700px) {
   .shopping-item-meta { grid-template-columns: 1fr 1fr; }
   .shopping-toolbar { flex-direction: column; align-items: flex-start; }
@@ -7035,12 +7078,12 @@ function renderShoppingItemCard(item, filterReaction) {
 
     <div class="shopping-options-section">
       <h4>Options to consider</h4>
-      <div class="shopping-options-list">
+      <div class="shopping-pins-grid">
         ${visibleOptions.length === 0
           ? `<div style="color:var(--muted);font-size:0.85rem;padding:8px 0">No options match the current filter.</div>`
-          : visibleOptions.map((opt) => renderShoppingOptionCard(item.id, opt)).join('')}
+          : visibleOptions.map((opt) => renderShoppingPin(item.id, opt)).join('')}
       </div>
-      <button class="btn-sm" style="margin-top:10px;align-self:flex-start" onclick="addShoppingOption('${item.id}')">+ Add option</button>
+      <button class="btn-sm" style="margin-top:10px;align-self:flex-start" onclick="openPinModal('${item.id}')">+ Add pin</button>
     </div>
   </div>
   <div class="shopping-item-actions">
@@ -7050,87 +7093,35 @@ function renderShoppingItemCard(item, filterReaction) {
 </div>`;
 }
 
-function renderShoppingOptionCard(itemId, opt) {
+function renderShoppingPin(itemId, opt) {
   const reactions = ['love','like','neutral','dislike'];
-  const reactionLabels = { love: '❤️ Love', like: '👍 Like', neutral: '😐 Neutral', dislike: '👎 Dislike' };
+  const emoji = { love: '❤️', like: '👍', neutral: '😐', dislike: '👎' };
+  const safeImg = safeSrc(opt.image || '');
+  const imgHtml = safeImg
+    ? `<img class="pin-image" src="${escapeHtml(safeImg)}" alt="${escapeHtml(opt.title || 'image')}" onerror="this.outerHTML='<div class=\\'pin-image-placeholder\\'>🛋️</div>'">`
+    : `<div class="pin-image-placeholder">🛋️</div>`;
 
-  const linksHtml = (opt.links || []).map((link) => `
-    <div class="shopping-link-row" id="slink-${link.id}">
-      <input class="link-url" type="url" placeholder="https://…" value="${escapeHtml(link.url || '')}"
-        onchange="updateShoppingLink('${itemId}','${opt.id}','${link.id}','url',this.value)">
-      <input class="link-label" type="text" placeholder="Label (e.g. IKEA)" value="${escapeHtml(link.label || '')}"
-        onchange="updateShoppingLink('${itemId}','${opt.id}','${link.id}','label',this.value)">
-      <input class="link-price" type="number" placeholder="£" min="0" value="${link.price || ''}"
-        onchange="updateShoppingLink('${itemId}','${opt.id}','${link.id}','price',+this.value||0)">
-      <button class="shopping-link-fav-btn ${link.favourite ? 'fav' : ''}" title="Mark as favourite"
-        onclick="toggleShoppingLinkFav('${itemId}','${opt.id}','${link.id}')">⭐</button>
-      ${link.url ? `<a class="shopping-link-open-btn" href="${escapeHtml(safeHref(link.url))}" target="_blank" rel="noopener">Open ↗</a>` : ''}
-      <button class="btn-sm-danger" style="padding:3px 8px" onclick="deleteShoppingLink('${itemId}','${opt.id}','${link.id}')">✕</button>
-    </div>`).join('');
-
-  const imagesHtml = (opt.images || []).map((img) => `
-    <div class="shopping-image-thumb" title="${escapeHtml(img.caption || '')}">
-      <img src="${escapeHtml(safeSrc(img.src))}" alt="${escapeHtml(img.caption || 'image')}" onerror="this.parentElement.style.display='none'">
-      <button class="thumb-del" onclick="deleteShoppingImage('${itemId}','${opt.id}','${img.id}')">✕</button>
-    </div>`).join('');
+  const reactionRow = (who) => `
+    <div class="pin-reaction-row"><span>${who === 'reactionDani' ? 'D' : 'K'}</span>
+      ${reactions.map((r) => `<button class="pin-react-btn ${reactionActiveClass(opt[who], r)}"
+        title="${r}" onclick="setShoppingReaction('${itemId}','${opt.id}','${who}','${r}')">${emoji[r]}</button>`).join('')}
+    </div>`;
 
   return `
-<div class="shopping-option-card" id="sopt-${opt.id}">
-  <div class="shopping-option-top">
-    <input class="shopping-option-label" type="text" placeholder="Option name (e.g. IKEA KIVIK grey)"
-      value="${escapeHtml(opt.label || '')}"
-      onchange="updateShoppingOption('${itemId}','${opt.id}','label',this.value)">
-    <div class="shopping-option-fields">
-      <input type="number" placeholder="£ price" min="0" value="${opt.price || ''}"
-        title="Price"
-        onchange="updateShoppingOption('${itemId}','${opt.id}','price',+this.value||0)">
-      <input type="text" placeholder="Size (e.g. 240×90cm)" value="${escapeHtml(opt.size || '')}"
-        onchange="updateShoppingOption('${itemId}','${opt.id}','size',this.value)">
-      <textarea rows="1" placeholder="Colour / vibe notes…"
-        onchange="updateShoppingOption('${itemId}','${opt.id}','colourNotes',this.value)">${escapeHtml(opt.colourNotes || '')}</textarea>
-    </div>
+<div class="shopping-pin ${opt.favourite ? 'fav' : ''}" id="sopt-${opt.id}">
+  ${imgHtml}
+  <div class="pin-body">
+    ${opt.title ? `<div class="pin-title">${escapeHtml(opt.title)}</div>` : ''}
+    ${opt.price ? `<div class="pin-price">£${Number(opt.price).toLocaleString()}</div>` : ''}
+    ${(opt.colourNotes || opt.size) ? `<div class="pin-meta">${escapeHtml([opt.colourNotes, opt.size].filter(Boolean).join(' · '))}</div>` : ''}
+    <div class="pin-reactions">${reactionRow('reactionDani')}${reactionRow('reactionKen')}</div>
   </div>
-
-  <div class="shopping-reactions">
-    <div class="shopping-reaction-group">
-      <label>Dani:</label>
-      ${reactions.map((r) => `
-        <button class="reaction-btn ${reactionActiveClass(opt.reactionDani, r)}"
-          onclick="setShoppingReaction('${itemId}','${opt.id}','reactionDani','${r}')">
-          ${reactionLabels[r]}
-        </button>`).join('')}
-    </div>
-    <div class="shopping-reaction-group">
-      <label>Ken:</label>
-      ${reactions.map((r) => `
-        <button class="reaction-btn ${reactionActiveClass(opt.reactionKen, r)}"
-          onclick="setShoppingReaction('${itemId}','${opt.id}','reactionKen','${r}')">
-          ${reactionLabels[r]}
-        </button>`).join('')}
-    </div>
-  </div>
-
-  <div class="shopping-links-section">
-    <h5>Links</h5>
-    ${linksHtml}
-    <button class="btn-sm" style="align-self:flex-start" onclick="addShoppingLink('${itemId}','${opt.id}')">+ Add link</button>
-  </div>
-
-  <div class="shopping-images-section">
-    <h5>Images</h5>
-    <div class="shopping-image-thumbs">${imagesHtml}</div>
-    <div class="shopping-image-add-row">
-      <input type="text" placeholder="Paste image URL…" id="imgurl-${opt.id}">
-      <button class="btn-sm" onclick="addShoppingImageUrl('${itemId}','${opt.id}')">Add URL</button>
-      <label class="btn-sm" style="cursor:pointer">
-        Upload photo
-        <input type="file" accept="image/*" style="display:none" onchange="uploadShoppingImage('${itemId}','${opt.id}',this)">
-      </label>
-    </div>
-  </div>
-
-  <div class="shopping-option-actions">
-    <button class="btn-sm-danger" onclick="deleteShoppingOption('${itemId}','${opt.id}')">Remove option</button>
+  <div class="pin-actions">
+    <button class="pin-fav ${opt.favourite ? 'on' : ''}" title="Favourite" onclick="togglePinFavourite('${itemId}','${opt.id}')">⭐</button>
+    ${opt.url ? `<a href="${escapeHtml(safeHref(opt.url))}" target="_blank" rel="noopener">Open ↗</a>` : ''}
+    <span class="spacer"></span>
+    <button class="btn-sm" onclick="openPinModal('${itemId}','${opt.id}')">✎</button>
+    <button class="btn-sm-danger" onclick="deleteShoppingOption('${itemId}','${opt.id}')">✕</button>
   </div>
 </div>`;
 }
