@@ -174,17 +174,21 @@ async function safeFetch(startUrl) {
 }
 
 exports.extractProduct = onRequest({ region: 'us-central1' }, async (req, res) => {
+  logger.info('extractProduct called', { method: req.method, path: req.path });
   // CORS headers
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  logger.info('CORS headers set');
   
   if (req.method === 'OPTIONS') {
+    logger.info('OPTIONS preflight request');
     res.status(204).send('');
     return;
   }
 
   if (req.method !== 'POST') {
+    logger.warn('Invalid method', { method: req.method });
     res.status(405).json({ error: 'Method not allowed' });
     return;
   }
@@ -192,20 +196,25 @@ exports.extractProduct = onRequest({ region: 'us-central1' }, async (req, res) =
   try {
     // Validate Firebase auth token
     const authHeader = req.headers.authorization;
+    logger.info('Auth header present:', !!authHeader);
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      logger.warn('Missing or invalid auth header');
       res.status(401).json({ error: 'Unauthenticated' });
       return;
     }
     const token = authHeader.slice(7);
     await getAuth().verifyIdToken(token);
+    logger.info('Token verified');
 
     const body = req.body || {};
     const url = body.url;
     if (!url || typeof url !== 'string' || !/^https?:\/\//i.test(url)) {
+      logger.warn('Invalid URL provided', { url });
       res.status(400).json({ error: 'A valid http(s) URL is required.' });
       return;
     }
 
+    logger.info('Starting product extraction', { url });
     let html = '';
     try {
       html = await safeFetch(url);
