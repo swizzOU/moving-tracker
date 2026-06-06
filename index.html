@@ -7181,18 +7181,6 @@ function updateShoppingItemField(itemId, field, value) {
   if (pill) pill.textContent = budgetLabel;
 }
 
-function addShoppingOption(itemId) {
-  if (!ensureCanEdit()) return;
-  const item = shoppingList.find((i) => i.id === itemId);
-  if (!item) return;
-  item.options.push({
-    id: shoppingId(), label: '', price: 0, size: '',
-    colourNotes: '', reactionDani: '', reactionKen: '',
-    links: [], images: []
-  });
-  saveShoppingList();
-  renderShoppingList();
-}
 
 function deleteShoppingOption(itemId, optId) {
   if (!ensureCanEdit()) return;
@@ -7204,14 +7192,6 @@ function deleteShoppingOption(itemId, optId) {
   renderShoppingList();
 }
 
-function updateShoppingOption(itemId, optId, field, value) {
-  if (!ensureCanEdit()) return;
-  const item = shoppingList.find((i) => i.id === itemId);
-  const opt = item?.options.find((o) => o.id === optId);
-  if (!opt) return;
-  opt[field] = value;
-  saveShoppingList();
-}
 
 function setShoppingReaction(itemId, optId, who, reaction) {
   if (!ensureCanEdit()) return;
@@ -7223,104 +7203,155 @@ function setShoppingReaction(itemId, optId, who, reaction) {
   renderShoppingList();
 }
 
-function addShoppingLink(itemId, optId) {
+function openPinModal(itemId, optId) {
   if (!ensureCanEdit()) return;
   const item = shoppingList.find((i) => i.id === itemId);
-  const opt = item?.options.find((o) => o.id === optId);
-  if (!opt) return;
-  opt.links.push({ id: shoppingId(), url: '', label: '', price: 0, favourite: false });
-  saveShoppingList();
-  renderShoppingList();
+  if (!item) return;
+  const opt = optId ? item.options.find((o) => o.id === optId) : null;
+  document.getElementById('pin-modal-title').textContent = opt ? 'Edit pin' : 'Add pin';
+  document.getElementById('pin-item-id').value = itemId;
+  document.getElementById('pin-id').value = opt ? opt.id : '';
+  document.getElementById('pin-url').value = opt?.url || '';
+  document.getElementById('pin-image').value = opt?.image || '';
+  document.getElementById('pin-storage-path').value = opt?.storagePath || '';
+  document.getElementById('pin-title').value = opt?.title || '';
+  document.getElementById('pin-price').value = opt?.price || '';
+  document.getElementById('pin-colour').value = opt?.colourNotes || '';
+  document.getElementById('pin-size').value = opt?.size || '';
+  document.getElementById('pin-fetch-status').textContent = '';
+  updatePinPreview();
+  document.getElementById('modal-shopping-pin').classList.add('open');
 }
 
-function updateShoppingLink(itemId, optId, linkId, field, value) {
-  if (!ensureCanEdit()) return;
-  const item = shoppingList.find((i) => i.id === itemId);
-  const opt = item?.options.find((o) => o.id === optId);
-  const link = opt?.links.find((l) => l.id === linkId);
-  if (!link) return;
-  if (field === 'url' && value && safeHref(value) === '#') {
-    alert('Only http:// and https:// URLs are allowed.');
-    return;
+function updatePinPreview() {
+  const src = safeSrc(document.getElementById('pin-image').value.trim());
+  const img = document.getElementById('pin-image-preview');
+  if (src) { img.src = src; img.style.display = 'inline-block'; }
+  else { img.removeAttribute('src'); img.style.display = 'none'; }
+}
+
+async function fetchPinMetadata() {
+  const url = document.getElementById('pin-url').value.trim();
+  const status = document.getElementById('pin-fetch-status');
+  if (!/^https?:\/\//i.test(url)) { status.textContent = 'Enter a valid http(s) URL first.'; return; }
+  if (typeof firebase.functions !== 'function') { status.textContent = "Couldn't fetch automatically — add details manually."; return; }
+  const btn = document.getElementById('pin-fetch-btn');
+  btn.disabled = true; status.textContent = 'Fetching…';
+  try {
+    const extract = firebase.functions(syncRuntime.app).httpsCallable('extractProduct');
+    const { data } = await extract({ url });
+    if (data.image && !document.getElementById('pin-image').value) document.getElementById('pin-image').value = data.image;
+    if (data.title && !document.getElementById('pin-title').value) document.getElementById('pin-title').value = data.title;
+    if (data.price && !document.getElementById('pin-price').value) document.getElementById('pin-price').value = data.price;
+    updatePinPreview();
+    status.textContent = (data.image || data.title) ? 'Fetched — check the fields below.' : 'No details found — add them manually.';
+  } catch (err) {
+    status.textContent = "Couldn't fetch automatically — add details manually.";
+  } finally {
+    btn.disabled = false;
   }
-  link[field] = value;
-  saveShoppingList();
 }
 
-function toggleShoppingLinkFav(itemId, optId, linkId) {
-  if (!ensureCanEdit()) return;
-  const item = shoppingList.find((i) => i.id === itemId);
-  const opt = item?.options.find((o) => o.id === optId);
-  if (!opt) return;
-  opt.links.forEach((l) => l.favourite = l.id === linkId ? !l.favourite : false);
-  saveShoppingList();
-  renderShoppingList();
-}
-
-function deleteShoppingLink(itemId, optId, linkId) {
-  if (!ensureCanEdit()) return;
-  const item = shoppingList.find((i) => i.id === itemId);
-  const opt = item?.options.find((o) => o.id === optId);
-  if (!opt) return;
-  opt.links = opt.links.filter((l) => l.id !== linkId);
-  saveShoppingList();
-  renderShoppingList();
-}
-
-function addShoppingImageUrl(itemId, optId) {
-  if (!ensureCanEdit()) return;
-  const input = document.getElementById(`imgurl-${optId}`);
-  const url = input?.value?.trim();
-  if (!url) return;
-  const safe = safeSrc(url);
-  if (!safe) { alert('Only http:// and https:// image URLs are supported.'); return; }
-  const item = shoppingList.find((i) => i.id === itemId);
-  const opt = item?.options.find((o) => o.id === optId);
-  if (!opt) return;
-  opt.images.push({ id: shoppingId(), type: 'url', src: safe, storagePath: '', caption: '' });
-  saveShoppingList();
-  renderShoppingList();
-}
-
-async function uploadShoppingImage(itemId, optId, fileInput) {
+async function uploadPinImage(fileInput) {
   if (!ensureCanEdit()) return;
   const file = fileInput.files?.[0];
   if (!file) return;
-  if (!syncRuntime.currentUser) {
-    alert('Please sign in to upload images.');
-    return;
-  }
-  const storage = getStorage();
-  const path = `shopping-images/${shoppingId()}-${encodeURIComponent(file.name)}`;
-  const ref = storage.ref(path);
+  if (!syncRuntime.currentUser) { alert('Please sign in to upload images.'); return; }
+  const status = document.getElementById('pin-fetch-status');
+  status.textContent = 'Uploading…';
   try {
+    const path = `shopping-images/${shoppingId()}-${encodeURIComponent(file.name)}`;
+    const ref = getStorage().ref(path);
     await ref.put(file);
     const src = await ref.getDownloadURL();
-    const item = shoppingList.find((i) => i.id === itemId);
-    const opt = item?.options.find((o) => o.id === optId);
-    if (!opt) return;
-    opt.images.push({ id: shoppingId(), type: 'upload', src, storagePath: path, caption: file.name });
-    saveShoppingList();
-    renderShoppingList();
+    document.getElementById('pin-image').value = src;
+    document.getElementById('pin-storage-path').value = path;
+    updatePinPreview();
+    status.textContent = 'Photo uploaded.';
   } catch (err) {
-    alert(`Image upload failed: ${err.message}`);
+    status.textContent = `Upload failed: ${err.message}`;
   }
 }
 
-function deleteShoppingImage(itemId, optId, imgId) {
+function savePin() {
+  if (!ensureCanEdit()) return;
+  const itemId = document.getElementById('pin-item-id').value;
+  const optId = document.getElementById('pin-id').value;
+  const item = shoppingList.find((i) => i.id === itemId);
+  if (!item) return;
+  const fields = {
+    url: document.getElementById('pin-url').value.trim(),
+    image: safeSrc(document.getElementById('pin-image').value.trim()),
+    storagePath: document.getElementById('pin-storage-path').value,
+    title: document.getElementById('pin-title').value.trim(),
+    price: +document.getElementById('pin-price').value || 0,
+    colourNotes: document.getElementById('pin-colour').value.trim(),
+    size: document.getElementById('pin-size').value.trim(),
+  };
+  if (optId) {
+    const opt = item.options.find((o) => o.id === optId);
+    if (opt) Object.assign(opt, fields);
+  } else {
+    item.options.push({
+      id: shoppingId(), ...fields,
+      reactionDani: '', reactionKen: '', favourite: false,
+    });
+  }
+  saveShoppingList();
+  renderShoppingList();
+  closeModal('modal-shopping-pin');
+}
+
+function togglePinFavourite(itemId, optId) {
   if (!ensureCanEdit()) return;
   const item = shoppingList.find((i) => i.id === itemId);
   const opt = item?.options.find((o) => o.id === optId);
   if (!opt) return;
-  const img = opt.images.find((i) => i.id === imgId);
-  opt.images = opt.images.filter((i) => i.id !== imgId);
+  opt.favourite = !opt.favourite;
   saveShoppingList();
   renderShoppingList();
-  if (img?.storagePath && syncRuntime.currentUser) {
-    try { getStorage().ref(img.storagePath).delete(); } catch (_) {}
-  }
 }
+
+
+
+
+
 </script>
+
+<!-- SHOPPING PIN MODAL -->
+<div class="modal-overlay" id="modal-shopping-pin">
+  <div class="modal">
+    <h3 id="pin-modal-title">Add pin</h3>
+    <input type="hidden" id="pin-item-id"><input type="hidden" id="pin-id">
+    <input type="hidden" id="pin-storage-path">
+    <label>Product URL</label>
+    <div style="display:flex;gap:8px;">
+      <input type="url" id="pin-url" placeholder="https://www.dfs.co.uk/…" style="flex:1">
+      <button class="btn-sm" id="pin-fetch-btn" onclick="fetchPinMetadata()">Fetch</button>
+    </div>
+    <div id="pin-fetch-status" style="font-size:0.8rem;color:var(--muted);min-height:1.1em;margin:4px 0;"></div>
+    <div style="text-align:center;margin:8px 0;">
+      <img id="pin-image-preview" src="" alt="" style="max-width:100%;max-height:160px;border-radius:8px;display:none;">
+    </div>
+    <label>Image URL</label>
+    <input type="url" id="pin-image" placeholder="https://…/photo.jpg" onchange="updatePinPreview()">
+    <label style="cursor:pointer;display:inline-block;margin:4px 0;" class="btn-sm">
+      Upload photo<input type="file" accept="image/*" style="display:none" onchange="uploadPinImage(this)">
+    </label>
+    <label>Title</label>
+    <input type="text" id="pin-title" placeholder="e.g. DFS Ada 3-seater">
+    <label>Price (£)</label>
+    <input type="number" id="pin-price" min="0" placeholder="0">
+    <label>Colour / vibe notes</label>
+    <input type="text" id="pin-colour" placeholder="e.g. sage green velvet">
+    <label>Size</label>
+    <input type="text" id="pin-size" placeholder="e.g. 240×90cm">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-shopping-pin')">Cancel</button>
+      <button class="btn-save" onclick="savePin()">Save</button>
+    </div>
+  </div>
+</div>
 
 <!-- FILE TAGS MODAL -->
 <div class="modal-overlay" id="modal-file-tags">
