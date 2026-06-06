@@ -1,7 +1,19 @@
-const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { onRequest } = require('firebase-functions/v2/https');
+const { initializeApp } = require('firebase-admin/app');
+const { getAuth } = require('firebase-admin/auth');
 const logger = require('firebase-functions/logger');
 const dns = require('dns').promises;
 const net = require('net');
+
+initializeApp();
+
+// Custom error class for HTTP responses
+class ApiError extends Error {
+  constructor(status, message) {
+    super(message);
+    this.status = status;
+  }
+}
 
 const FETCH_TIMEOUT_MS = 8000;
 const MAX_BYTES = 2 * 1024 * 1024; // 2 MB cap on fetched HTML
@@ -89,12 +101,12 @@ function isPrivateIp(ip) {
 // Validates the URL's scheme, port, and that the host resolves only to public addresses.
 async function assertPublicUrl(rawUrl) {
   let u;
-  try { u = new URL(rawUrl); } catch { throw new HttpsError('invalid-argument', 'Invalid URL.'); }
+  try { u = new URL(rawUrl); } catch { throw new ApiError(400, 'Invalid URL.'); }
   if (u.protocol !== 'http:' && u.protocol !== 'https:') {
-    throw new HttpsError('invalid-argument', 'Only http(s) URLs are allowed.');
+    throw new ApiError(400, 'Only http(s) URLs are allowed.');
   }
   if (u.port && u.port !== '80' && u.port !== '443') {
-    throw new HttpsError('invalid-argument', 'Only default ports are allowed.');
+    throw new ApiError(400, 'Only default ports are allowed.');
   }
   const host = u.hostname;
   // Reject literal IPs that are private; otherwise resolve and check every address.
@@ -106,11 +118,11 @@ async function assertPublicUrl(rawUrl) {
       const results = await dns.lookup(host, { all: true });
       addrs = results.map((r) => r.address);
     } catch {
-      throw new HttpsError('invalid-argument', 'Could not resolve host.');
+      throw new ApiError(400, 'Could not resolve host.');
     }
   }
   if (!addrs.length || addrs.some(isPrivateIp)) {
-    throw new HttpsError('invalid-argument', 'URL host is not allowed.');
+    throw new ApiError(400, 'URL host is not allowed.');
   }
   return u;
 }
@@ -161,47 +173,79 @@ async function safeFetch(startUrl) {
   throw new Error('Too many redirects');
 }
 
-exports.extractProduct = onCall({ cors: true, region: 'us-central1' }, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError('unauthenticated', 'You must be signed in to use this feature.');
-  }
-  const url = request.data && request.data.url;
-  if (!url || typeof url !== 'string' || !/^https?:\/\//i.test(url)) {
-    throw new HttpsError('invalid-argument', 'A valid http(s) URL is required.');
+exports.extractProduct = onRequest({ region: 'us-central1' }, async (req, res) => {
+  // CORS headers
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
+  if (req.method === 'OPTIONS') {
+    res.status(204).send('');
+    return;
   }
 
-  let html = '';
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
+
   try {
-    html = await safeFetch(url);
+    // Validate Firebase auth token
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res.status(401).json({ error: 'Unauthenticated' });
+      return;
+    }
+    const token = authHeader.slice(7);
+    await getAuth().verifyIdToken(token);
+
+    const body = req.body || {};
+    const url = body.url;
+    if (!url || typeof url !== 'string' || !/^https?:\/\//i.test(url)) {
+      res.status(400).json({ error: 'A valid http(s) URL is required.' });
+      return;
+    }
+
+    let html = '';
+    try {
+      html = await safeFetch(url);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        res.status(err.status).json({ error: err.message });
+        return;
+      }
+      logger.warn('extractProduct fetch failed', { url, message: err && err.message });
+      res.status(503).json({ error: 'Could not fetch the page.' });
+      return;
+    }
+
+    const ld = parseJsonLd(html);
+
+    const image =
+      metaContent(html, metaPatterns('og:image')) ||
+      metaContent(html, metaPatterns('twitter:image')) ||
+      metaContent(html, metaPatterns('twitter:image:src')) ||
+      ld.image || '';
+
+    let title =
+      metaContent(html, metaPatterns('og:title')) ||
+      metaContent(html, metaPatterns('twitter:title')) ||
+      ld.title || '';
+    if (!title) {
+      const t = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+      if (t) title = decodeEntities(t[1].trim());
+    }
+
+    const priceRaw =
+      metaContent(html, metaPatterns('product:price:amount')) ||
+      metaContent(html, metaPatterns('og:price:amount'));
+    const price = parsePrice(priceRaw) || ld.price || 0;
+
+    const siteName = metaContent(html, metaPatterns('og:site_name'));
+
+    res.json({ image, title, price, siteName });
   } catch (err) {
-    if (err instanceof HttpsError) throw err;
-    logger.warn('extractProduct fetch failed', { url, message: err && err.message });
-    throw new HttpsError('unavailable', 'Could not fetch the page.');
+    logger.error('extractProduct error', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
-
-  const ld = parseJsonLd(html);
-
-  const image =
-    metaContent(html, metaPatterns('og:image')) ||
-    metaContent(html, metaPatterns('twitter:image')) ||
-    metaContent(html, metaPatterns('twitter:image:src')) ||
-    ld.image || '';
-
-  let title =
-    metaContent(html, metaPatterns('og:title')) ||
-    metaContent(html, metaPatterns('twitter:title')) ||
-    ld.title || '';
-  if (!title) {
-    const t = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-    if (t) title = decodeEntities(t[1].trim());
-  }
-
-  const priceRaw =
-    metaContent(html, metaPatterns('product:price:amount')) ||
-    metaContent(html, metaPatterns('og:price:amount'));
-  const price = parsePrice(priceRaw) || ld.price || 0;
-
-  const siteName = metaContent(html, metaPatterns('og:site_name'));
-
-  return { image, title, price, siteName };
 });
