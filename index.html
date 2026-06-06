@@ -2097,215 +2097,6 @@
   letter-spacing: 0.5px;
   margin-bottom: 10px;
 }
-.shopping-options-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.shopping-option-card {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px;
-  background: var(--cream);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.shopping-option-top {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.shopping-option-label {
-  flex: 1;
-  font-weight: 500;
-  font-size: 0.92rem;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  padding: 5px 10px;
-  background: var(--white);
-  font-family: 'DM Sans', sans-serif;
-  color: var(--text);
-  min-width: 120px;
-}
-.shopping-option-label:focus { outline: none; border-color: var(--sage); }
-.shopping-option-fields {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.shopping-option-fields input {
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  padding: 5px 10px;
-  font-size: 0.85rem;
-  font-family: 'DM Sans', sans-serif;
-  background: var(--white);
-  color: var(--text);
-  width: 110px;
-}
-.shopping-option-fields input:focus { outline: none; border-color: var(--sage); }
-.shopping-option-fields textarea {
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  padding: 5px 10px;
-  font-size: 0.85rem;
-  font-family: 'DM Sans', sans-serif;
-  background: var(--white);
-  color: var(--text);
-  resize: vertical;
-  width: 200px;
-}
-.shopping-option-fields textarea:focus { outline: none; border-color: var(--sage); }
-.shopping-reactions {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.shopping-reaction-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.shopping-reaction-group label {
-  font-size: 0.78rem;
-  color: var(--muted);
-  font-weight: 500;
-}
-.reaction-btn {
-  background: none;
-  border: 1.5px solid var(--border);
-  border-radius: 999px;
-  padding: 3px 10px;
-  font-size: 0.82rem;
-  cursor: pointer;
-  transition: all 0.15s;
-  color: var(--muted);
-}
-.reaction-btn:hover { border-color: var(--sage); color: var(--sage-dark); }
-.reaction-btn.active-love { background: #ffe0e0; border-color: #e06060; color: #b03030; }
-.reaction-btn.active-like { background: #e0f0e0; border-color: var(--sage); color: var(--sage-dark); }
-.reaction-btn.active-neutral { background: var(--cream-dark); border-color: var(--border); color: var(--text); }
-.reaction-btn.active-dislike { background: #f0e0e0; border-color: #c06060; color: #904040; }
-.shopping-links-section,
-.shopping-images-section {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.shopping-links-section h5,
-.shopping-images-section h5 {
-  font-size: 0.78rem;
-  color: var(--muted);
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-}
-.shopping-link-row {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.shopping-link-row input {
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  padding: 4px 8px;
-  font-size: 0.82rem;
-  font-family: 'DM Sans', sans-serif;
-  background: var(--white);
-  color: var(--text);
-}
-.shopping-link-row input:focus { outline: none; border-color: var(--sage); }
-.shopping-link-row .link-url { flex: 2; min-width: 140px; }
-.shopping-link-row .link-label { flex: 1; min-width: 80px; }
-.shopping-link-row .link-price { width: 80px; }
-.shopping-link-fav-btn {
-  background: none;
-  border: 1.5px solid var(--border);
-  border-radius: 999px;
-  padding: 3px 8px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  color: var(--muted);
-  transition: all 0.15s;
-}
-.shopping-link-fav-btn.fav { color: #e0a030; border-color: #e0a030; background: #fff8e0; }
-.shopping-link-open-btn {
-  background: none;
-  border: 1.5px solid var(--border);
-  border-radius: 999px;
-  padding: 3px 8px;
-  cursor: pointer;
-  font-size: 0.78rem;
-  color: var(--sage-dark);
-  text-decoration: none;
-  transition: all 0.15s;
-}
-.shopping-link-open-btn:hover { background: var(--sage-light); }
-.shopping-image-thumbs {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  align-items: flex-start;
-}
-.shopping-image-thumb {
-  position: relative;
-  width: 72px;
-  height: 72px;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  background: var(--cream-dark);
-  cursor: pointer;
-}
-.shopping-image-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.shopping-image-thumb .thumb-del {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  background: rgba(0,0,0,0.55);
-  color: #fff;
-  border: none;
-  border-radius: 50%;
-  width: 18px;
-  height: 18px;
-  font-size: 0.65rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
-.shopping-image-add-row {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.shopping-image-add-row input[type="text"] {
-  flex: 1;
-  min-width: 160px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  padding: 4px 8px;
-  font-size: 0.82rem;
-  font-family: 'DM Sans', sans-serif;
-  background: var(--white);
-  color: var(--text);
-}
-.shopping-image-add-row input[type="text"]:focus { outline: none; border-color: var(--sage); }
-.shopping-option-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-}
 .shopping-item-actions {
   display: flex;
   gap: 8px;
@@ -7187,9 +6978,13 @@ function deleteShoppingOption(itemId, optId) {
   const item = shoppingList.find((i) => i.id === itemId);
   if (!item) return;
   if (!confirm('Remove this option?')) return;
+  const removed = item.options.find((o) => o.id === optId);
   item.options = item.options.filter((o) => o.id !== optId);
   saveShoppingList();
   renderShoppingList();
+  if (removed?.storagePath && syncRuntime.currentUser) {
+    try { getStorage().ref(removed.storagePath).delete(); } catch (_) {}
+  }
 }
 
 
@@ -7290,7 +7085,13 @@ function savePin() {
   };
   if (optId) {
     const opt = item.options.find((o) => o.id === optId);
-    if (opt) Object.assign(opt, fields);
+    if (opt) {
+      const oldPath = opt.storagePath;
+      Object.assign(opt, fields);
+      if (oldPath && oldPath !== fields.storagePath && syncRuntime.currentUser) {
+        try { getStorage().ref(oldPath).delete(); } catch (_) {}
+      }
+    }
   } else {
     item.options.push({
       id: shoppingId(), ...fields,
