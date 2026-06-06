@@ -2350,6 +2350,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
 </head>
 <body>
 
@@ -3652,6 +3653,11 @@ let editingContributionId = null;
 let boxes = migrateBoxes(readStoredJson(STORAGE_KEYS.boxes, []));
 let toPackItems = readStoredJson(STORAGE_KEYS.toPackItems, []);
 let shoppingList = readStoredJson(STORAGE_KEYS.shoppingList, []);
+// One-time reset for pins redesign (2026-06-06): legacy option shape is incompatible.
+if (!localStorage.getItem('shopping_pins_migrated_v1')) {
+  shoppingList = [];
+  localStorage.setItem('shopping_pins_migrated_v1', '1');
+}
 const DEFAULT_BOX_TYPES = ['Cardboard box', 'Clothes bag', 'Suitcase', 'Bin bag', 'Crate', 'Other'];
 let boxTypes = [...new Set([...DEFAULT_BOX_TYPES, ...readStoredJson(STORAGE_KEYS.boxTypes, []), ...boxes.map((b) => b.type).filter(Boolean)])];
 let editingBoxId = null;
