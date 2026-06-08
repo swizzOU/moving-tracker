@@ -2240,6 +2240,8 @@ a.pin-title:hover { text-decoration: underline; }
 .pin-react-btn.active-like { background: #fff3d6; border-color: #ffd98a; }
 .pin-react-btn.active-neutral { background: #eee; }
 .pin-react-btn.active-dislike { background: #e8eef0; }
+.pin-react-btn.pin-react-clear { color: var(--muted); font-weight: 600; }
+.pin-react-btn.pin-react-clear:hover { background: var(--danger); border-color: var(--danger); color: #fff; }
 
 /* Per-pin notes */
 .pin-notes { display: flex; flex-direction: column; gap: 5px; margin-top: 6px; }
@@ -7013,6 +7015,8 @@ function renderShoppingPin(itemId, opt) {
       ? `<span class="pin-react-picker">
           ${reactions.map((r) => `<button class="pin-react-btn ${reactionActiveClass(chosen, r)}"
             title="${r}" onclick="event.stopPropagation();setShoppingReaction('${itemId}','${opt.id}','${who}','${r}')">${emoji[r]}</button>`).join('')}
+          ${chosen ? `<button class="pin-react-btn pin-react-clear" title="Remove reaction"
+            onclick="event.stopPropagation();clearShoppingReaction('${itemId}','${opt.id}','${who}')">✕</button>` : ''}
         </span>`
       : '';
     return `
@@ -7229,6 +7233,17 @@ function setShoppingReaction(itemId, optId, who, reaction) {
   if (!opt) return;
   opt[who] = opt[who] === reaction ? '' : reaction;
   shoppingReactionPickerOpen = null; // close the picker after choosing
+  saveShoppingList();
+  renderShoppingList();
+}
+
+function clearShoppingReaction(itemId, optId, who) {
+  if (!ensureCanEdit()) return;
+  const item = shoppingList.find((i) => i.id === itemId);
+  const opt = item?.options.find((o) => o.id === optId);
+  if (!opt) return;
+  opt[who] = '';
+  shoppingReactionPickerOpen = null; // close the picker after clearing
   saveShoppingList();
   renderShoppingList();
 }
