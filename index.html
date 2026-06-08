@@ -2292,6 +2292,47 @@ a.pin-title:hover { text-decoration: underline; }
 @media (max-width: 480px) {
   .shopping-item-meta { grid-template-columns: 1fr; }
 }
+
+/* ── Home Tab ──────────────────────────────────────────────── */
+.home-hero { padding: 8px 0 4px; }
+.home-hero h2 {
+  font-family: 'Lora', serif; font-size: 1.6rem; color: var(--sage-dark); margin: 0 0 4px;
+}
+.home-hero p { color: var(--muted); margin: 0; font-size: 0.95rem; }
+.home-section-heading {
+  font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--muted); margin: 28px 0 12px;
+}
+.home-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px;
+}
+.home-card {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px; padding: 22px 12px; background: var(--white);
+  border: 1px solid var(--border); border-radius: 14px; cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: transform 0.16s, box-shadow 0.16s, border-color 0.16s;
+}
+.home-card:hover {
+  transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); border-color: var(--sage);
+}
+.home-card-icon { font-size: 1.7rem; line-height: 1; }
+.home-card-label { font-size: 0.9rem; font-weight: 600; color: var(--sage-dark); text-align: center; }
+.home-links {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px;
+}
+.home-link {
+  display: flex; align-items: center; gap: 14px; padding: 16px 18px;
+  background: var(--cream-dark); border: 1px solid var(--border); border-radius: 14px;
+  text-decoration: none; transition: transform 0.16s, box-shadow 0.16s, border-color 0.16s;
+}
+.home-link:hover {
+  transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); border-color: var(--sage);
+}
+.home-link-icon { font-size: 1.6rem; line-height: 1; }
+.home-link-text { display: flex; flex-direction: column; gap: 2px; }
+.home-link-text strong { color: var(--sage-dark); font-size: 0.98rem; }
+.home-link-text span { color: var(--muted); font-size: 0.82rem; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
@@ -2307,7 +2348,6 @@ a.pin-title:hover { text-decoration: underline; }
     <div>
       <h1>🏠 Dani & Ken Move to Spalding</h1>
       <p>Keep calm and pack one box at a time</p>
-      <p><a href="https://www.youtube.com/watch?v=qKlUGLi66w0&list=PLWeqmir3xMT7he6azUMFmmMaftYA4MoBr" target="_blank" rel="noopener noreferrer">📺 Watch the playlist</a></p>
     </div>
     <div class="sync-controls">
       <span id="sync-user-pill" class="sync-pill hidden"></span>
@@ -2318,7 +2358,8 @@ a.pin-title:hover { text-decoration: underline; }
 </header>
 
 <div class="tabs">
-  <button class="tab active" onclick="showTab('tasks')">✅ Tasks</button>
+  <button class="tab active" onclick="showTab('home')">🏠 Home</button>
+  <button class="tab" onclick="showTab('tasks')">✅ Tasks</button>
   <button class="tab" onclick="showTab('topack')">📋 To Pack</button>
   <button class="tab" onclick="showTab('packing')">📦 Packed</button>
   <button class="tab" onclick="showTab('furniture')">🛋️ Furniture</button>
@@ -2332,8 +2373,42 @@ a.pin-title:hover { text-decoration: underline; }
 
 <div class="main">
 
+  <!-- HOME TAB -->
+  <div id="tab-home">
+    <div class="home-hero">
+      <h2>Welcome home 🏡</h2>
+      <p>Everything for the move to Spalding, in one place. Jump to a section below.</p>
+    </div>
+
+    <h3 class="home-section-heading">Sections</h3>
+    <div class="home-grid">
+      <button class="home-card" onclick="showTab('tasks')"><span class="home-card-icon">✅</span><span class="home-card-label">Tasks</span></button>
+      <button class="home-card" onclick="showTab('topack')"><span class="home-card-icon">📋</span><span class="home-card-label">To Pack</span></button>
+      <button class="home-card" onclick="showTab('packing')"><span class="home-card-icon">📦</span><span class="home-card-label">Packed</span></button>
+      <button class="home-card" onclick="showTab('furniture')"><span class="home-card-icon">🛋️</span><span class="home-card-label">Furniture</span></button>
+      <button class="home-card" onclick="showTab('contacts')"><span class="home-card-icon">📞</span><span class="home-card-label">Contacts</span></button>
+      <button class="home-card" onclick="showTab('files')"><span class="home-card-icon">📁</span><span class="home-card-label">Files</span></button>
+      <button class="home-card" onclick="showTab('calendar')"><span class="home-card-icon">📅</span><span class="home-card-label">Calendar</span></button>
+      <button class="home-card" onclick="showTab('budget')"><span class="home-card-icon">💷</span><span class="home-card-label">Budget</span></button>
+      <button class="home-card" id="home-card-savings" onclick="showTab('savings')"><span class="home-card-icon">💰</span><span class="home-card-label">Savings</span></button>
+      <button class="home-card" onclick="showTab('shopping')"><span class="home-card-icon">🛒</span><span class="home-card-label">Shopping List</span></button>
+    </div>
+
+    <h3 class="home-section-heading">The house</h3>
+    <div class="home-links">
+      <a class="home-link" href="https://www.youtube.com/watch?v=qKlUGLi66w0&list=PLWeqmir3xMT7he6azUMFmmMaftYA4MoBr" target="_blank" rel="noopener noreferrer">
+        <span class="home-link-icon">📺</span>
+        <span class="home-link-text"><strong>House Tour Video</strong><span>Watch the walkthrough playlist</span></span>
+      </a>
+      <a class="home-link" href="https://www.zoopla.co.uk/for-sale/details/70269820/?search_identifier=3e5959c7e1a90e1b8f3a75fe74e4885768e2995c4e0989c4496762c2a2a868bd" target="_blank" rel="noopener noreferrer">
+        <span class="home-link-icon">🏷️</span>
+        <span class="home-link-text"><strong>Zoopla Listing</strong><span>The property on Zoopla</span></span>
+      </a>
+    </div>
+  </div>
+
   <!-- TASKS TAB -->
-  <div id="tab-tasks">
+  <div id="tab-tasks" class="hidden">
     <div class="task-panel">
       <div class="task-stats">
         <div class="stat"><span id="stat-total">0</span>Total tasks</div>
@@ -3687,6 +3762,7 @@ function refreshSavingsAccess() {
   if (!btn || !panel) return;
   const allowed = isSavingsAllowed();
   btn.classList.toggle('hidden', !allowed);
+  document.getElementById('home-card-savings')?.classList.toggle('hidden', !allowed);
   // If current tab is savings but user lost access, fall back to tasks.
   if (allowed) {
     // nothing
@@ -5653,7 +5729,7 @@ function renderTaskCategoryOptions(selectedCategory = '') {
 
 function showTab(t) {
   localStorage.setItem('move_active_tab', t);
-  const tabs = ['tasks','furniture','contacts','budget','savings','calendar','files','packing','topack','shopping'];
+  const tabs = ['home','tasks','furniture','contacts','budget','savings','calendar','files','packing','topack','shopping'];
   tabs.forEach(x => {
     const panel = document.getElementById('tab-'+x);
     const isActive = x === t;
@@ -6877,7 +6953,7 @@ renderPacking();
 renderToPackTab();
 renderShoppingList();
 updateStats();
-showTab(localStorage.getItem('move_active_tab') || 'tasks');
+showTab(localStorage.getItem('move_active_tab') || 'home');
 save();
 refreshSyncStatus();
 configureCloudSync();
