@@ -2135,41 +2135,87 @@
 .shopping-pin {
   background: var(--white);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  transition: box-shadow 0.18s, transform 0.18s;
 }
+.shopping-pin:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.10); transform: translateY(-2px); }
 .shopping-pin.fav { border-color: var(--sage-dark); box-shadow: 0 0 0 2px var(--sage-dark) inset; }
+
+.pin-image-wrap { position: relative; }
 .pin-image { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: var(--cream-dark); display: block; }
 .pin-image-placeholder {
   width: 100%; aspect-ratio: 1/1; background: var(--cream-dark);
   display: flex; align-items: center; justify-content: center;
   color: var(--muted); font-size: 1.6rem;
 }
-.pin-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+
+/* Favourite star floats on the image, bottom-left */
+.pin-fav {
+  position: absolute; bottom: 8px; left: 8px;
+  width: 30px; height: 30px; border-radius: 50%;
+  border: none; cursor: pointer; font-size: 0.95rem; line-height: 1;
+  background: rgba(255,255,255,0.85); backdrop-filter: blur(2px);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  opacity: 0; transition: opacity 0.16s; filter: grayscale(1);
+}
+.shopping-pin:hover .pin-fav,
+.shopping-pin.controls-open .pin-fav { opacity: 0.85; }
+.pin-fav.on { opacity: 1 !important; filter: none; }
+.pin-fav:hover { transform: scale(1.08); }
+
+/* Edit / delete float top-right, revealed on hover or tap */
+.pin-hover-actions {
+  position: absolute; top: 8px; right: 8px; display: flex; gap: 6px;
+  opacity: 0; transform: translateY(-3px); transition: opacity 0.16s, transform 0.16s;
+  pointer-events: none;
+}
+.shopping-pin:hover .pin-hover-actions,
+.shopping-pin.controls-open .pin-hover-actions { opacity: 1; transform: none; pointer-events: auto; }
+.pin-icon-btn {
+  width: 30px; height: 30px; border-radius: 50%; border: none; cursor: pointer;
+  background: rgba(255,255,255,0.9); backdrop-filter: blur(2px);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18); font-size: 0.8rem; line-height: 1;
+  color: var(--text); transition: background 0.15s, color 0.15s, transform 0.12s;
+}
+.pin-icon-btn:hover { transform: scale(1.08); background: #fff; }
+.pin-icon-btn.danger:hover { background: var(--danger); color: #fff; }
+
+.pin-body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 5px; cursor: default; }
 .pin-title {
   font-size: 0.9rem; font-weight: 600; color: var(--sage-dark);
+  text-decoration: none;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-.pin-price { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+a.pin-title:hover { text-decoration: underline; }
+.pin-price { font-size: 0.92rem; font-weight: 700; color: var(--text); }
 .pin-meta { font-size: 0.78rem; color: var(--muted); }
-.pin-reactions { display: flex; flex-direction: column; gap: 4px; font-size: 0.78rem; }
-.pin-reaction-row { display: flex; align-items: center; gap: 4px; }
-.pin-reaction-row > span { color: var(--muted); width: 16px; }
+
+/* Reactions: chosen-only at rest, full picker on hover/tap */
+.pin-reactions { display: flex; flex-direction: column; gap: 3px; margin-top: 2px; }
+.pin-reaction-row { display: flex; align-items: center; gap: 6px; min-height: 24px; }
+.pin-react-who { color: var(--muted); font-size: 0.72rem; font-weight: 600; width: 12px; }
+.pin-react-chosen { font-size: 0.95rem; line-height: 1; }
+.shopping-pin:hover .pin-react-chosen,
+.shopping-pin.controls-open .pin-react-chosen { display: none; }
+.pin-react-picker {
+  display: none; gap: 3px;
+}
+.shopping-pin:hover .pin-react-picker,
+.shopping-pin.controls-open .pin-react-picker { display: flex; }
 .pin-react-btn {
   border: 1px solid var(--border); background: var(--white); border-radius: 999px;
-  padding: 1px 6px; cursor: pointer; font-size: 0.85rem; line-height: 1.4;
+  width: 26px; height: 22px; padding: 0; cursor: pointer; font-size: 0.82rem; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: transform 0.1s, background 0.12s, border-color 0.12s;
 }
+.pin-react-btn:hover { transform: scale(1.12); }
 .pin-react-btn.active-love { background: #ffe1e6; border-color: #ffb3c0; }
 .pin-react-btn.active-like { background: #fff3d6; border-color: #ffd98a; }
 .pin-react-btn.active-neutral { background: #eee; }
 .pin-react-btn.active-dislike { background: #e8eef0; }
-.pin-actions { display: flex; gap: 6px; align-items: center; padding: 8px 12px; border-top: 1px solid var(--border); }
-.pin-actions .pin-fav { cursor: pointer; background: none; border: none; font-size: 1rem; opacity: 0.4; }
-.pin-actions .pin-fav.on { opacity: 1; }
-.pin-actions a, .pin-actions button { font-size: 0.78rem; }
-.pin-actions .spacer { flex: 1; }
 @media (max-width: 700px) {
   .shopping-item-meta { grid-template-columns: 1fr 1fr; }
   .shopping-toolbar { flex-direction: column; align-items: flex-start; }
@@ -6892,29 +6938,58 @@ function renderShoppingPin(itemId, opt) {
     ? `<img class="pin-image" src="${escapeHtml(safeImg)}" alt="${escapeHtml(opt.title || 'image')}" onerror="this.outerHTML='<div class=\\'pin-image-placeholder\\'>🛋️</div>'">`
     : `<div class="pin-image-placeholder">🛋️</div>`;
 
-  const reactionRow = (who) => `
-    <div class="pin-reaction-row"><span>${who === 'reactionDani' ? 'D' : 'K'}</span>
-      ${reactions.map((r) => `<button class="pin-react-btn ${reactionActiveClass(opt[who], r)}"
-        title="${r}" onclick="setShoppingReaction('${itemId}','${opt.id}','${who}','${r}')">${emoji[r]}</button>`).join('')}
+  // At rest: just the person's initial + their chosen emoji (dot if none).
+  // On hover/open: the full picker row fades in so you can change it.
+  const reactionRow = (who) => {
+    const chosen = opt[who];
+    return `
+    <div class="pin-reaction-row">
+      <span class="pin-react-who">${who === 'reactionDani' ? 'D' : 'K'}</span>
+      <span class="pin-react-chosen">${chosen ? emoji[chosen] : '·'}</span>
+      <span class="pin-react-picker">
+        ${reactions.map((r) => `<button class="pin-react-btn ${reactionActiveClass(chosen, r)}"
+          title="${r}" onclick="event.stopPropagation();setShoppingReaction('${itemId}','${opt.id}','${who}','${r}')">${emoji[r]}</button>`).join('')}
+      </span>
     </div>`;
+  };
+
+  const titleText = escapeHtml(opt.title || 'Untitled');
+  const titleHtml = opt.title
+    ? (opt.url
+        ? `<a class="pin-title" href="${escapeHtml(safeHref(opt.url))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${titleText}</a>`
+        : `<span class="pin-title">${titleText}</span>`)
+    : '';
 
   return `
 <div class="shopping-pin ${opt.favourite ? 'fav' : ''}" id="sopt-${opt.id}">
-  ${imgHtml}
-  <div class="pin-body">
-    ${opt.title ? `<div class="pin-title">${escapeHtml(opt.title)}</div>` : ''}
+  <div class="pin-image-wrap">
+    ${imgHtml}
+    <button class="pin-fav ${opt.favourite ? 'on' : ''}" title="Favourite"
+      onclick="event.stopPropagation();togglePinFavourite('${itemId}','${opt.id}')">⭐</button>
+    <div class="pin-hover-actions">
+      <button class="pin-icon-btn" title="Edit"
+        onclick="event.stopPropagation();openPinModal('${itemId}','${opt.id}')">✎</button>
+      <button class="pin-icon-btn danger" title="Delete"
+        onclick="event.stopPropagation();deleteShoppingOption('${itemId}','${opt.id}')">✕</button>
+    </div>
+  </div>
+  <div class="pin-body" onclick="togglePinControls('${opt.id}')">
+    ${titleHtml}
     ${opt.price ? `<div class="pin-price">£${Number(opt.price).toLocaleString()}</div>` : ''}
     ${(opt.colourNotes || opt.size) ? `<div class="pin-meta">${escapeHtml([opt.colourNotes, opt.size].filter(Boolean).join(' · '))}</div>` : ''}
     <div class="pin-reactions">${reactionRow('reactionDani')}${reactionRow('reactionKen')}</div>
   </div>
-  <div class="pin-actions">
-    <button class="pin-fav ${opt.favourite ? 'on' : ''}" title="Favourite" onclick="togglePinFavourite('${itemId}','${opt.id}')">⭐</button>
-    ${opt.url ? `<a href="${escapeHtml(safeHref(opt.url))}" target="_blank" rel="noopener">Open ↗</a>` : ''}
-    <span class="spacer"></span>
-    <button class="btn-sm" onclick="openPinModal('${itemId}','${opt.id}')">✎</button>
-    <button class="btn-sm-danger" onclick="deleteShoppingOption('${itemId}','${opt.id}')">✕</button>
-  </div>
 </div>`;
+}
+
+// Mobile/touch: tapping the pin body toggles the hover-revealed controls.
+function togglePinControls(optId) {
+  const card = document.getElementById('sopt-' + optId);
+  if (!card) return;
+  document.querySelectorAll('.shopping-pin.controls-open').forEach((el) => {
+    if (el !== card) el.classList.remove('controls-open');
+  });
+  card.classList.toggle('controls-open');
 }
 
 function addShoppingItem() {
