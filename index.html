@@ -305,12 +305,13 @@
   }
 
   /* ── Savings redesign ───────────────────────────────────────── */
-  .sv-progress-wrap { margin-top: 10px; }
-  .sv-progress-wrap .progress-bar-outer { width: 100%; height: 10px; border-radius: 6px; background: var(--cream-dark); overflow: hidden; }
+  .sv-progress-wrap { margin-top: 14px; }
+  .sv-progress-wrap .progress-bar-outer { width: 100%; height: 12px; border-radius: 6px; background: var(--cream-dark); overflow: hidden; }
   .sv-progress-wrap .progress-bar-inner { height: 100%; background: var(--sage); border-radius: 6px; transition: width 0.4s; }
-  .sv-progress-labels { margin-top: 4px; font-size: 0.76rem; color: var(--muted); }
+  .sv-progress-labels { margin-top: 6px; font-size: 0.8rem; color: var(--muted); }
+  .sv-progress-labels strong { color: var(--text); }
 
-  .sv-priority-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .sv-priority-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 0; }
   .sv-priority-badge { font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; border: 1.5px solid var(--border); white-space: nowrap; }
   .sv-priority-badge.high   { background: #FDE8D8; color: #8A3A1A; border-color: #F5C8AA; }
   .sv-priority-badge.medium { background: var(--yellow); color: #7A6210; border-color: #EDD98A; }
@@ -338,16 +339,16 @@
   .sv-contrib-delete { border: none; background: none; color: var(--danger); cursor: pointer; font-size: 0.8rem; margin-left: 0; padding: 0 4px; opacity: 0.6; }
   .sv-contrib-delete:hover { opacity: 1; }
 
-  .sv-person-totals { margin-top: 6px; font-size: 0.78rem; color: var(--muted); }
-  .sv-eta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
-  .sv-eta-chip { font-size: 0.76rem; padding: 3px 8px; border-radius: 20px; background: var(--card-bg); border: 1px solid var(--border); color: var(--text); white-space: nowrap; }
+  .sv-eta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }
+  .sv-eta-chip { font-size: 0.76rem; padding: 3px 9px; border-radius: 20px; background: var(--cream-dark); border: 1px solid var(--border); color: var(--text); white-space: nowrap; }
   .sv-eta-chip.sv-eta-on-track { background: var(--sage-light); border-color: var(--sage); color: var(--sage-dark); }
   .sv-eta-chip.sv-eta-behind { background: #fff3e0; border-color: #e6a817; color: #7a4f00; }
-  .sv-eta-chip.sv-eta-current { background: var(--card-bg); }
+  .sv-eta-chip.sv-eta-current { background: var(--cream-dark); }
   .sv-eta-chip.sv-eta-deadline { background: var(--sage-light); border-color: var(--sage); color: var(--sage-dark); }
   .sv-eta-chip-icon { margin-right: 3px; font-weight: 700; }
-  .sv-eta-need { font-size: 0.74rem; color: var(--muted); }
-  .sv-eta-achieved-badge { font-size: 0.76rem; padding: 3px 10px; border-radius: 20px; background: var(--sage); color: var(--white); font-weight: 600; }
+  .sv-eta-need { font-size: 0.74rem; color: var(--muted); margin-top: 5px; }
+  .sv-eta-muted { font-size: 0.78rem; color: var(--muted); font-style: italic; }
+  .sv-eta-achieved-badge { font-size: 0.78rem; padding: 4px 12px; border-radius: 20px; background: var(--sage); color: var(--white); font-weight: 600; }
   .sv-modal-goal-name { font-size: 0.9rem; color: var(--sage-dark); font-weight: 600; margin-bottom: 4px; margin-top: -6px; }
 
   .sv-timeline-eta-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
@@ -355,25 +356,45 @@
   .sv-timeline-eta-label { min-width: 80px; font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
   .sv-eta-achieved { color: var(--sage-dark); font-weight: 600; }
 
-  .sv-chart-wrap { overflow-x: auto; margin-top: 8px; padding-top: 32px; }
-  .sv-chart { display: flex; align-items: flex-end; gap: 4px; height: 140px; padding-bottom: 36px; position: relative; min-width: max-content; }
-  .sv-chart-bar-group { display: flex; flex-direction: column; align-items: center; position: relative; width: 18px; cursor: default; }
-  .sv-chart-bar { width: 13px; background: var(--sage-light); border-radius: 3px 3px 0 0; border: 1px solid var(--sage); min-height: 4px; position: relative; overflow: visible; }
-  .sv-chart-bar.has-milestone { background: var(--sage); }
-  .sv-chart-milestone-dot { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); width: 8px; height: 8px; border-radius: 50%; background: var(--warm); border: 2px solid var(--white); }
-  .sv-chart-label { position: absolute; bottom: -34px; font-size: 0.58rem; color: var(--muted); white-space: nowrap; transform: rotate(-45deg); transform-origin: top left; left: 9px; }
-  .sv-chart-milestone-tip { display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: var(--text); color: var(--white); font-size: 0.64rem; padding: 3px 7px; border-radius: 5px; white-space: nowrap; pointer-events: none; z-index: 100; }
-  .sv-chart-milestone-tip.tip-left { left: 0; transform: none; }
-  .sv-chart-milestone-tip.tip-right { left: auto; right: 0; transform: none; }
-  .sv-chart-bar-group:hover .sv-chart-milestone-tip { display: block; }
-  .sv-chart-empty { color: var(--muted); font-style: italic; font-size: 0.84rem; padding: 6px 2px; }
+  /* Goal card layout */
+  .sv-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  #savings-list { gap: 16px; }
+  .sv-card-head {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  }
+  .sv-card-title { flex: 1; min-width: 0; }
+  .sv-card-title h4 {
+    font-family: 'Lora', serif; font-size: 1.15rem; font-weight: 600;
+    color: var(--text); margin: 0 0 8px;
+  }
+  .sv-card-target { text-align: right; flex-shrink: 0; }
+  .sv-card-target-amount { font-size: 1.2rem; font-weight: 700; color: var(--warm); line-height: 1.1; }
+  .sv-card-target-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .sv-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+    margin-top: 14px; padding: 12px; background: var(--cream); border-radius: 10px;
+  }
+  .sv-stat { display: flex; flex-direction: column; gap: 2px; }
+  .sv-stat-val { font-size: 0.98rem; font-weight: 700; color: var(--sage-dark); }
+  .sv-stat-label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+
+  .sv-card-note {
+    margin-top: 12px; font-size: 0.82rem; color: var(--muted); font-style: italic;
+    padding-left: 10px; border-left: 3px solid var(--border);
+  }
+  .sv-card-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
 
   @media (max-width: 700px) {
     .sv-priority-row { gap: 5px; }
     .sv-priority-badge { font-size: 0.65rem; }
-    .sv-chart { height: 110px; }
-    .sv-chart-bar-group { width: 18px; }
-    .sv-chart-bar { width: 20px; }
+    .sv-card { padding: 14px; }
+    .sv-stats { grid-template-columns: repeat(2, 1fr); }
   }
   /* ── End savings redesign ───────────────────────────────────── */
 
@@ -4973,47 +4994,6 @@ function computeDashboardStats() {
   return { totalSaved, daniSaved, kenSaved, monthlyDani, monthlyKen, monthlyRate: monthlyDani + monthlyKen, goalCount: savings.length, achievedCount: achieved };
 }
 
-function buildGoalProjection(goal, numMonths) {
-  const now = new Date();
-  const startAmount = getSavedByPerson(goal).total;
-  const rate = getGoalMonthlyRate(goal);
-  const target = Number(goal.target) || 0;
-  const result = [];
-  for (let i = 0; i < numMonths; i++) {
-    const raw = startAmount + rate * (i + 1);
-    const amount = target > 0 ? Math.min(raw, target) : raw;
-    const d = new Date(now.getFullYear(), now.getMonth() + i + 1, 1);
-    const label = d.toLocaleString('en-GB', { month: 'short', year: '2-digit' });
-    const funded = raw >= target && target > 0 && (startAmount + rate * i) < target;
-    result.push({ label, amount, funded });
-  }
-  return result;
-}
-
-function renderGoalChart(projection, target) {
-  const maxAmount = Math.max(...projection.map(p => p.amount), 1);
-  const chartH = 112;
-  if (projection.every(p => p.amount <= 0)) {
-    return '<div class="sv-chart-empty">Set a monthly rate to see the projection.</div>';
-  }
-  const total = projection.length;
-  const bars = projection.map((p, i) => {
-    const h = Math.max(4, Math.round((p.amount / maxAmount) * chartH));
-    const dot = p.funded ? '<div class="sv-chart-milestone-dot"></div>' : '';
-    const tipText = p.funded
-      ? `Goal funded! · ${formatCurrency(p.amount)}`
-      : formatCurrency(p.amount);
-    const tipClass = i < 3 ? 'sv-chart-milestone-tip tip-left' : i >= total - 3 ? 'sv-chart-milestone-tip tip-right' : 'sv-chart-milestone-tip';
-    const tip = `<div class="${tipClass}">${tipText}</div>`;
-    return `<div class="sv-chart-bar-group">
-      <div class="sv-chart-bar${p.funded ? ' has-milestone' : ''}" style="height:${h}px;">${dot}${tip}</div>
-      <div class="sv-chart-label">${p.label}</div>
-    </div>`;
-  }).join('');
-  return `<div class="sv-chart">${bars}</div>`;
-}
-
-
 function renderPacking() {
   const listEl = document.getElementById('packing-list');
   if (!listEl) return;
@@ -5477,39 +5457,28 @@ function renderSavings() {
       deadlineLabel = d.toLocaleString('en-GB', { month: 'short', year: 'numeric' });
     }
 
-    // Build ETA section
+    // Build ETA section. A single status line + optional "need £X/mo" sub-line.
     let etaHtml;
     if (remaining <= 0) {
-      etaHtml = '<div class="sv-eta-row"><span class="sv-eta-achieved-badge">Achieved</span></div>';
+      etaHtml = '<div class="sv-eta-row"><span class="sv-eta-achieved-badge">🎉 Achieved</span></div>';
     } else if (deadlineLabel && reqMonthly !== null) {
       const onTrack = currentRate >= reqMonthly * 0.99;
       const statusClass = onTrack ? 'sv-eta-on-track' : 'sv-eta-behind';
       const statusIcon = onTrack ? '✓' : '!';
+      const statusWord = onTrack ? 'On track' : 'Behind';
       etaHtml = `<div class="sv-eta-row">
-        <span class="sv-eta-chip ${statusClass}"><span class="sv-eta-chip-icon">${statusIcon}</span>Deadline: <strong>${deadlineLabel}</strong></span>
-        <span class="sv-eta-chip sv-eta-current">At current rate: <strong>${currentEtaLabel || 'unknown'}</strong></span>
-        <span class="sv-eta-need">Need <strong>${formatCurrency(reqMonthly)}/mo</strong> combined · ${formatCurrency(reqMonthly / 2)}/mo each</span>
-      </div>`;
+        <span class="sv-eta-chip ${statusClass}"><span class="sv-eta-chip-icon">${statusIcon}</span>${statusWord}</span>
+        <span class="sv-eta-chip sv-eta-deadline">Deadline <strong>${deadlineLabel}</strong></span>
+        <span class="sv-eta-chip sv-eta-current">At current rate <strong>${currentEtaLabel || 'unknown'}</strong></span>
+      </div>
+      <div class="sv-eta-need">Need <strong>${formatCurrency(reqMonthly)}/mo</strong> combined · ${formatCurrency(reqMonthly / 2)}/mo each to hit the deadline</div>`;
     } else if (deadlineLabel) {
-      etaHtml = `<div class="sv-eta-row"><span class="sv-eta-chip sv-eta-deadline">Deadline: <strong>${deadlineLabel}</strong></span>${currentEtaLabel ? `<span class="sv-eta-chip sv-eta-current">At current rate: <strong>${currentEtaLabel}</strong></span>` : ''}</div>`;
+      etaHtml = `<div class="sv-eta-row"><span class="sv-eta-chip sv-eta-deadline">Deadline <strong>${deadlineLabel}</strong></span>${currentEtaLabel ? `<span class="sv-eta-chip sv-eta-current">At current rate <strong>${currentEtaLabel}</strong></span>` : ''}</div>`;
     } else if (currentEtaLabel) {
-      etaHtml = `<div class="sv-eta-row"><span class="sv-eta-chip sv-eta-current">ETA: <strong>${currentEtaLabel}</strong></span></div>`;
+      etaHtml = `<div class="sv-eta-row"><span class="sv-eta-chip sv-eta-current">Finish by <strong>${currentEtaLabel}</strong></span></div>`;
     } else {
-      etaHtml = `<div class="sv-eta-row"><span style="font-size:0.78rem;color:var(--muted);">Set a monthly rate to see ETA</span></div>`;
+      etaHtml = `<div class="sv-eta-row"><span class="sv-eta-muted">Set a monthly rate to see when you'll hit this goal</span></div>`;
     }
-
-    // Chart — show up to the later of: current-rate ETA or deadline
-    const currentRateMonths = currentRate > 0 && target > 0 ? Math.ceil(remaining / currentRate) : 18;
-    let deadlineMonths = 0;
-    if (g.targetDate) {
-      const [y, m] = g.targetDate.split('-').map(Number);
-      const deadline = new Date(y, m - 1, 1);
-      const now = new Date(); now.setDate(1);
-      deadlineMonths = Math.max(1, (deadline.getFullYear() - now.getFullYear()) * 12 + (deadline.getMonth() - now.getMonth()));
-    }
-    const numMonths = Math.min(Math.max(currentRateMonths, deadlineMonths, 6), 120);
-    const projection = buildGoalProjection(g, numMonths);
-    const chart = renderGoalChart(projection, target);
 
     const daniBadge = `<span class="sv-priority-badge ${p.dani || 'unset'}">Dani: ${p.dani ? p.dani.charAt(0).toUpperCase() + p.dani.slice(1) : '—'}</span>`;
     const kenBadge  = `<span class="sv-priority-badge ${p.ken  || 'unset'}">Ken: ${p.ken   ? p.ken.charAt(0).toUpperCase()  + p.ken.slice(1)  : '—'}</span>`;
@@ -5528,28 +5497,40 @@ function renderSavings() {
       </div>`).join('');
 
     return `
-      <div class="budget-item">
-        <div class="budget-item-head">
-          <div class="budget-item-desc">${g.title}</div>
-          <div style="text-align:right;">
-            <div class="budget-item-amount">${formatCurrency(target)}</div>
-            <div style="font-size:0.78rem;color:var(--muted);">Target</div>
+      <div class="sv-card">
+        <div class="sv-card-head">
+          <div class="sv-card-title">
+            <h4>${g.title}</h4>
+            <div class="sv-priority-row">${daniBadge}${kenBadge}${conflict}${myPriority}</div>
+          </div>
+          <div class="sv-card-target">
+            <div class="sv-card-target-amount">${formatCurrency(target)}</div>
+            <div class="sv-card-target-label">Target</div>
           </div>
         </div>
-        <div class="sv-priority-row">${daniBadge}${kenBadge}${conflict}${myPriority}</div>
+
         <div class="sv-progress-wrap">
           <div class="progress-bar-outer"><div class="progress-bar-inner" style="width:${pct}%;"></div></div>
-          <div class="sv-progress-labels">${formatCurrency(by.total)} saved of ${formatCurrency(target)} · ${pct}%</div>
+          <div class="sv-progress-labels"><strong>${formatCurrency(by.total)}</strong> of ${formatCurrency(target)} saved · <strong>${pct}%</strong></div>
         </div>
-        <div class="sv-person-totals">Dani ${formatCurrency(by.dani)} · Ken ${formatCurrency(by.ken)} · ${formatCurrency(g.monthlyDani || 0)}/mo Dani · ${formatCurrency(g.monthlyKen || 0)}/mo Ken</div>
+
         ${etaHtml}
-        <div class="sv-chart-wrap">${chart}</div>
-        ${g.note ? `<div class="budget-item-notes">${g.note}</div>` : ''}
+
+        <div class="sv-stats">
+          <div class="sv-stat"><span class="sv-stat-val">${formatCurrency(by.dani)}</span><span class="sv-stat-label">Dani saved</span></div>
+          <div class="sv-stat"><span class="sv-stat-val">${formatCurrency(by.ken)}</span><span class="sv-stat-label">Ken saved</span></div>
+          <div class="sv-stat"><span class="sv-stat-val">${formatCurrency(g.monthlyDani || 0)}</span><span class="sv-stat-label">Dani / month</span></div>
+          <div class="sv-stat"><span class="sv-stat-val">${formatCurrency(g.monthlyKen || 0)}</span><span class="sv-stat-label">Ken / month</span></div>
+        </div>
+
+        ${g.note ? `<div class="sv-card-note">${g.note}</div>` : ''}
+
         <details class="sv-contributions-log">
           <summary>${contribs.length} contribution${contribs.length !== 1 ? 's' : ''} ▾</summary>
           <div class="sv-contributions-list">${contribRows || '<div class="budget-empty">No contributions yet.</div>'}</div>
         </details>
-        <div class="furn-actions" style="margin-top:10px;">
+
+        <div class="sv-card-actions">
           <button class="furn-action-btn" onclick="openEditSaving(${g.id})">Edit goal</button>
           <button class="furn-action-btn" onclick="openAddContribution(${g.id})">+ Log contribution</button>
           <button class="furn-action-btn delete" onclick="deleteSaving(${g.id})">Delete</button>
