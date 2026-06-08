@@ -3540,6 +3540,10 @@ let editingContributionId = null;
 let boxes = migrateBoxes(readStoredJson(STORAGE_KEYS.boxes, []));
 let toPackItems = readStoredJson(STORAGE_KEYS.toPackItems, []);
 let shoppingList = readStoredJson(STORAGE_KEYS.shoppingList, []);
+// Which person's reaction picker is open, as "<optId>:<who>" (null = none).
+// Declared here (not in the Shopping section below) so it's initialized before
+// the init-time renderShoppingList() call — otherwise it throws a TDZ error.
+let shoppingReactionPickerOpen = null;
 const DEFAULT_BOX_TYPES = ['Cardboard box', 'Clothes bag', 'Suitcase', 'Bin bag', 'Crate', 'Other'];
 let boxTypes = [...new Set([...DEFAULT_BOX_TYPES, ...readStoredJson(STORAGE_KEYS.boxTypes, []), ...boxes.map((b) => b.type).filter(Boolean)])];
 let editingBoxId = null;
@@ -7001,9 +7005,6 @@ function renderShoppingPin(itemId, opt) {
   </div>
 </div>`;
 }
-
-// Tracks which person's reaction picker is open, as "<optId>:<who>" (null = none).
-let shoppingReactionPickerOpen = null;
 
 function toggleReactionPicker(optId, who) {
   if (!ensureCanEdit()) return;
