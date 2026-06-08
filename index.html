@@ -1986,20 +1986,11 @@
 .shopping-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
   padding: var(--space-md) var(--space-xl);
   flex-wrap: wrap;
   border-bottom: 1px solid var(--border);
-}
-.shopping-filter-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.shopping-filter-label {
-  font-size: 0.82rem;
-  color: var(--muted);
 }
 #shopping-list-container {
   padding: var(--space-md) var(--space-xl);
@@ -2787,16 +2778,6 @@ a.pin-title:hover { text-decoration: underline; }
   <!-- SHOPPING LIST TAB -->
   <div id="tab-shopping" class="hidden">
     <div class="shopping-toolbar">
-      <div class="shopping-filter-group">
-        <label class="shopping-filter-label" for="shopping-filter-reaction">Filter reactions:</label>
-        <select id="shopping-filter-reaction" class="filter-select" onchange="renderShoppingList()">
-          <option value="all">All options</option>
-          <option value="love">❤️ Love (either)</option>
-          <option value="dislike">👎 Disliked by both</option>
-          <option value="dani-love">Dani loves</option>
-          <option value="ken-love">Ken loves</option>
-        </select>
-      </div>
       <button class="add-btn" onclick="addShoppingItem()">+ Add item type</button>
     </div>
     <div id="shopping-list-container"></div>
@@ -6921,33 +6902,22 @@ function saveShoppingList() {
 function renderShoppingList() {
   const container = document.getElementById('shopping-list-container');
   if (!container) return;
-  const filterReaction = document.getElementById('shopping-filter-reaction')?.value || 'all';
 
   if (shoppingList.length === 0) {
     container.innerHTML = `<div style="text-align:center;padding:48px 0;color:var(--muted);font-size:0.95rem;">No items yet — click <strong>+ Add item type</strong> to start your shopping list.</div>`;
     return;
   }
 
-  container.innerHTML = shoppingList.map((item) => renderShoppingItemCard(item, filterReaction)).join('');
-}
-
-function filterOptions(options, filterReaction) {
-  if (filterReaction === 'all') return options;
-  return options.filter((opt) => {
-    if (filterReaction === 'love') return opt.reactionDani === 'love' || opt.reactionKen === 'love';
-    if (filterReaction === 'dislike') return opt.reactionDani === 'dislike' && opt.reactionKen === 'dislike';
-    if (filterReaction === 'dani-love') return opt.reactionDani === 'love';
-    if (filterReaction === 'ken-love') return opt.reactionKen === 'love';
-    return true;
-  });
+  container.innerHTML = shoppingList.map((item) => renderShoppingItemCard(item)).join('');
 }
 
 function reactionActiveClass(reaction, value) {
   return reaction === value ? `active-${value}` : '';
 }
 
-function renderShoppingItemCard(item, filterReaction) {
-  const visibleOptions = filterOptions(item.options || [], filterReaction);
+function renderShoppingItemCard(item) {
+  // Starred pins float to the top; otherwise keep insertion order.
+  const visibleOptions = [...(item.options || [])].sort((a, b) => (b.favourite ? 1 : 0) - (a.favourite ? 1 : 0));
   const budgetLabel = (item.budgetMin || item.budgetMax)
     ? `£${item.budgetMin || 0}–£${item.budgetMax || '?'}`
     : 'No budget set';
@@ -6971,7 +6941,7 @@ function renderShoppingItemCard(item, filterReaction) {
       <h4>Options to consider</h4>
       <div class="shopping-pins-grid">
         ${visibleOptions.length === 0
-          ? `<div style="color:var(--muted);font-size:0.85rem;padding:8px 0">No options match the current filter.</div>`
+          ? `<div style="color:var(--muted);font-size:0.85rem;padding:8px 0">No options yet — click <strong>+ Add pin</strong> below.</div>`
           : visibleOptions.map((opt) => renderShoppingPin(item.id, opt)).join('')}
       </div>
       <button class="btn-sm" style="margin-top:10px;align-self:flex-start" onclick="openPinModal('${item.id}')">+ Add pin</button>
