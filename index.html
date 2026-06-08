@@ -2199,6 +2199,12 @@
 }
 a.pin-title:hover { text-decoration: underline; }
 .pin-price { font-size: 0.92rem; font-weight: 700; color: var(--text); }
+.pin-overbudget {
+  display: inline-block; margin-left: 4px;
+  font-size: 0.68rem; font-weight: 600; color: var(--danger);
+  background: #fdecec; border: 1px solid #f5c2c2; border-radius: 999px;
+  padding: 1px 7px; vertical-align: middle; white-space: nowrap;
+}
 .pin-meta { font-size: 0.78rem; color: var(--muted); }
 
 /* Reactions: a + (or chosen emoji) per person; click opens an inline picker */
@@ -6942,7 +6948,7 @@ function renderShoppingItemCard(item) {
       <div class="shopping-pins-grid">
         ${visibleOptions.length === 0
           ? `<div style="color:var(--muted);font-size:0.85rem;padding:8px 0">No options yet — click <strong>+ Add pin</strong> below.</div>`
-          : visibleOptions.map((opt) => renderShoppingPin(item.id, opt)).join('')}
+          : visibleOptions.map((opt) => renderShoppingPin(item.id, opt, item.budgetMax)).join('')}
       </div>
       <button class="btn-sm" style="margin-top:10px;align-self:flex-start" onclick="openPinModal('${item.id}')">+ Add pin</button>
     </div>
@@ -6954,7 +6960,7 @@ function renderShoppingItemCard(item) {
 </div>`;
 }
 
-function renderShoppingPin(itemId, opt) {
+function renderShoppingPin(itemId, opt, budgetMax) {
   const reactions = ['love','like','neutral','dislike'];
   const emoji = { love: '❤️', like: '👍', neutral: '😐', dislike: '👎' };
   // Back-compat: pre-redesign options stored data in links[]/images[] arrays
@@ -7045,7 +7051,10 @@ function renderShoppingPin(itemId, opt) {
   </div>
   <div class="pin-body" onclick="togglePinControls('${opt.id}')">
     ${titleHtml}
-    ${opt.price ? `<div class="pin-price">£${Number(opt.price).toLocaleString()}</div>` : ''}
+    ${opt.price ? `<div class="pin-price">£${Number(opt.price).toLocaleString()}${
+      (budgetMax && Number(opt.price) > Number(budgetMax))
+        ? ` <span class="pin-overbudget" title="Over the £${Number(budgetMax).toLocaleString()} budget">⚠️ Over budget</span>`
+        : ''}</div>` : ''}
     ${(opt.colourNotes || opt.size) ? `<div class="pin-meta">${escapeHtml([opt.colourNotes, opt.size].filter(Boolean).join(' · '))}</div>` : ''}
     <div class="pin-reactions">${reactionRow('reactionDani')}${reactionRow('reactionKen')}</div>
     <div class="pin-notes">${notesHtml}${noteFormHtml}</div>
