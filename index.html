@@ -7023,13 +7023,14 @@ function renderShoppingPin(itemId, opt) {
         onclick="event.stopPropagation();deletePinNote('${itemId}','${opt.id}',${idx})">✕</button>
     </div>`).join('');
   const formOpen = shoppingNoteFormOpen === opt.id;
+  const defaultNoteWho = currentUserNoteName();
   const noteFormHtml = formOpen
     ? `<div class="pin-note-form" onclick="event.stopPropagation()">
          <textarea id="pin-note-text-${opt.id}" rows="2" placeholder="Write a note…"></textarea>
          <div class="pin-note-form-row">
            <select id="pin-note-who-${opt.id}">
-             <option value="Dani">Dani</option>
-             <option value="Ken">Ken</option>
+             <option value="Dani"${defaultNoteWho === 'Dani' ? ' selected' : ''}>Dani</option>
+             <option value="Ken"${defaultNoteWho === 'Ken' ? ' selected' : ''}>Ken</option>
            </select>
            <button class="btn-sm" onclick="savePinNote('${itemId}','${opt.id}')">Done</button>
            <button class="pin-note-del" title="Cancel" onclick="toggleNoteForm('${opt.id}')">Cancel</button>
@@ -7065,6 +7066,14 @@ function toggleReactionPicker(optId, who) {
   const key = `${optId}:${who}`;
   shoppingReactionPickerOpen = shoppingReactionPickerOpen === key ? null : key;
   renderShoppingList();
+}
+
+// Default a new note to whoever is signed in (Dani or Ken); falls back to Dani.
+function currentUserNoteName() {
+  const user = syncRuntime.currentUser;
+  const name = (user?.displayName || '').toLowerCase();
+  if (name.includes('ken')) return 'Ken';
+  return 'Dani';
 }
 
 function toggleNoteForm(optId) {
