@@ -3540,11 +3540,6 @@ let editingContributionId = null;
 let boxes = migrateBoxes(readStoredJson(STORAGE_KEYS.boxes, []));
 let toPackItems = readStoredJson(STORAGE_KEYS.toPackItems, []);
 let shoppingList = readStoredJson(STORAGE_KEYS.shoppingList, []);
-// One-time reset for pins redesign (2026-06-06): legacy option shape is incompatible.
-if (!localStorage.getItem('shopping_pins_migrated_v1')) {
-  shoppingList = [];
-  localStorage.setItem('shopping_pins_migrated_v1', '1');
-}
 const DEFAULT_BOX_TYPES = ['Cardboard box', 'Clothes bag', 'Suitcase', 'Bin bag', 'Crate', 'Other'];
 let boxTypes = [...new Set([...DEFAULT_BOX_TYPES, ...readStoredJson(STORAGE_KEYS.boxTypes, []), ...boxes.map((b) => b.type).filter(Boolean)])];
 let editingBoxId = null;
@@ -6940,6 +6935,14 @@ function renderShoppingItemCard(item, filterReaction) {
 function renderShoppingPin(itemId, opt) {
   const reactions = ['love','like','neutral','dislike'];
   const emoji = { love: '❤️', like: '👍', neutral: '😐', dislike: '👎' };
+  // Back-compat: pre-redesign options stored data in links[]/images[] arrays
+  // and used `label` for the name. Derive the pin fields when they're missing.
+  const legacyLink = (opt.links || []).find((l) => l.favourite) || (opt.links || [])[0];
+  const image = opt.image || (opt.images || [])[0]?.src || '';
+  const url = opt.url || legacyLink?.url || '';
+  const title = opt.title || opt.label || '';
+  const price = opt.price || legacyLink?.price || 0;
+  opt = { ...opt, image, url, title, price };
   const safeImg = safeSrc(opt.image || '');
   const imgHtml = safeImg
     ? `<img class="pin-image" src="${escapeHtml(safeImg)}" alt="${escapeHtml(opt.title || 'image')}" onerror="this.outerHTML='<div class=\\'pin-image-placeholder\\'>🛋️</div>'">`
