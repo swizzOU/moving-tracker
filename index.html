@@ -2029,6 +2029,11 @@
   color: var(--sage-dark);
   flex: 1;
 }
+.shopping-item-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
 .shopping-item-budget {
   font-size: 0.8rem;
   color: var(--muted);
@@ -2036,6 +2041,10 @@
   border: 1px solid var(--border);
   border-radius: 999px;
   padding: 2px 10px;
+}
+.shopping-item-count {
+  font-size: 0.8rem;
+  color: var(--muted);
 }
 .shopping-item-chevron {
   color: var(--muted);
@@ -2272,6 +2281,13 @@ a.pin-title:hover { text-decoration: underline; }
   .shopping-item-meta { grid-template-columns: 1fr 1fr; }
   .shopping-toolbar { flex-direction: column; align-items: flex-start; }
   #shopping-list-container { padding: var(--space-md); }
+  /* Drop budget + option count to their own row below the name + pencil */
+  .shopping-item-header { flex-wrap: wrap; }
+  .shopping-item-sub {
+    order: 3;
+    flex-basis: 100%;
+    margin-left: 26px; /* line up under the name, past the chevron */
+  }
 }
 @media (max-width: 480px) {
   .shopping-item-meta { grid-template-columns: 1fr; }
@@ -6940,8 +6956,10 @@ function renderShoppingItemCard(item, filterReaction) {
   <div class="shopping-item-header" onclick="toggleShoppingItem('${item.id}')">
     <span class="shopping-item-chevron ${chevronClass}">▶</span>
     <span class="shopping-item-name">${escapeHtml(item.name || 'Unnamed item')}</span>
-    <span class="shopping-item-budget">${budgetLabel}</span>
-    <span style="font-size:0.8rem;color:var(--muted)">${(item.options||[]).length} option${(item.options||[]).length !== 1 ? 's' : ''}</span>
+    <span class="shopping-item-sub">
+      <span class="shopping-item-budget">${budgetLabel}</span>
+      <span class="shopping-item-count">${(item.options||[]).length} option${(item.options||[]).length !== 1 ? 's' : ''}</span>
+    </span>
     <button class="shopping-item-edit" title="Edit name & budget"
       onclick="event.stopPropagation();editShoppingItem('${item.id}')">✎</button>
   </div>
