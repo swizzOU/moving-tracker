@@ -166,6 +166,9 @@
   .tab:hover { color: var(--sage-dark); }
   .tab.active { color: var(--sage-dark); border-bottom-color: var(--sage-dark); font-weight: 600; }
 
+  /* Hamburger toggle — hidden on desktop, shown on mobile */
+  .tabnav-toggle { display: none; }
+
   .main {
     padding: 28px var(--space-xl);
     max-width: 1200px;
@@ -1425,7 +1428,41 @@
 
   @media (max-width: 700px) {
     header { padding: 18px var(--space-md); }
-    .tabs { padding: 12px var(--space-md) 0; }
+
+    /* Tabs collapse into a hamburger dropdown on mobile */
+    .tabnav { position: relative; background: var(--cream); border-bottom: 2px solid var(--border); }
+    .tabnav-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 12px var(--space-md);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--sage-dark);
+    }
+    .tabnav-burger { font-size: 1.3rem; line-height: 1; }
+    .tabnav-current { font-size: 0.95rem; font-weight: 600; }
+    .tabs {
+      display: none;
+      flex-direction: column;
+      padding: 4px var(--space-md) 8px;
+      border-bottom: none;
+      row-gap: 0;
+    }
+    .tabnav.open .tabs { display: flex; }
+    .tab {
+      width: 100%;
+      text-align: left;
+      padding: 11px 8px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 0;
+    }
+    .tab:last-child { border-bottom: none; }
+    .tab.active { border-bottom-color: var(--border); background: var(--cream-dark); border-radius: 8px; }
+
     .main { padding: 16px var(--space-md); }
     .files-panel { padding: var(--space-md); }
     .files-toolbar { gap: 8px; }
@@ -2357,19 +2394,25 @@ a.pin-title:hover { text-decoration: underline; }
   </div>
 </header>
 
-<div class="tabs">
-  <button class="tab active" onclick="showTab('home')">🏠 Home</button>
-  <button class="tab" onclick="showTab('tasks')">✅ Tasks</button>
-  <button class="tab" onclick="showTab('topack')">📋 To Pack</button>
-  <button class="tab" onclick="showTab('packing')">📦 Packed</button>
-  <button class="tab" onclick="showTab('furniture')">🛋️ Furniture</button>
-  <button class="tab" onclick="showTab('contacts')">📞 Contacts</button>
-  <button class="tab" onclick="showTab('files')">📁 Files</button>
-  <button class="tab" onclick="showTab('calendar')">📅 Calendar</button>
-  <button class="tab" onclick="showTab('budget')">💷 Budget</button>
-  <button class="tab" id="tab-btn-savings" onclick="showTab('savings')">💰 Savings</button>
-  <button class="tab" onclick="showTab('shopping')">🛒 Shopping List</button>
-</div>
+<nav class="tabnav">
+  <button class="tabnav-toggle" id="tabnav-toggle" aria-expanded="false" aria-controls="tabs" onclick="toggleTabMenu()">
+    <span class="tabnav-burger">☰</span>
+    <span class="tabnav-current" id="tabnav-current">🏠 Home</span>
+  </button>
+  <div class="tabs" id="tabs">
+    <button class="tab active" onclick="showTab('home')">🏠 Home</button>
+    <button class="tab" onclick="showTab('tasks')">✅ Tasks</button>
+    <button class="tab" onclick="showTab('topack')">📋 To Pack</button>
+    <button class="tab" onclick="showTab('packing')">📦 Packed</button>
+    <button class="tab" onclick="showTab('furniture')">🛋️ Furniture</button>
+    <button class="tab" onclick="showTab('contacts')">📞 Contacts</button>
+    <button class="tab" onclick="showTab('files')">📁 Files</button>
+    <button class="tab" onclick="showTab('calendar')">📅 Calendar</button>
+    <button class="tab" onclick="showTab('budget')">💷 Budget</button>
+    <button class="tab" id="tab-btn-savings" onclick="showTab('savings')">💰 Savings</button>
+    <button class="tab" onclick="showTab('shopping')">🛒 Shopping List</button>
+  </div>
+</nav>
 
 <div class="main">
 
@@ -5727,6 +5770,21 @@ function renderTaskCategoryOptions(selectedCategory = '') {
     : categories[0];
 }
 
+function toggleTabMenu() {
+  const nav = document.querySelector('.tabnav');
+  const toggle = document.getElementById('tabnav-toggle');
+  if (!nav) return;
+  const open = nav.classList.toggle('open');
+  toggle?.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+function closeTabMenu() {
+  const nav = document.querySelector('.tabnav');
+  if (!nav) return;
+  nav.classList.remove('open');
+  document.getElementById('tabnav-toggle')?.setAttribute('aria-expanded', 'false');
+}
+
 function showTab(t) {
   localStorage.setItem('move_active_tab', t);
   const tabs = ['home','tasks','furniture','contacts','budget','savings','calendar','files','packing','topack','shopping'];
@@ -5738,8 +5796,15 @@ function showTab(t) {
   });
   document.querySelectorAll('.tab').forEach((btn) => {
     const match = btn.getAttribute('onclick')?.match(/showTab\('(\w+)'\)/);
-    btn.classList.toggle('active', match ? match[1] === t : false);
+    const isActive = match ? match[1] === t : false;
+    btn.classList.toggle('active', isActive);
+    // Mirror the active tab's label into the mobile hamburger button.
+    if (isActive) {
+      const current = document.getElementById('tabnav-current');
+      if (current) current.textContent = btn.textContent.trim();
+    }
   });
+  closeTabMenu(); // collapse the mobile dropdown after choosing a tab
 
   // Initialize calendar when switching to calendar tab
   if (t === 'calendar' && calendar === null) {
