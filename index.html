@@ -2043,6 +2043,14 @@
   transition: transform 0.2s;
 }
 .shopping-item-chevron.open { transform: rotate(90deg); }
+.shopping-item-edit {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 1px solid var(--border); background: var(--white);
+  color: var(--muted); cursor: pointer; font-size: 0.8rem; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.shopping-item-edit:hover { border-color: var(--sage); color: var(--sage-dark); }
 .shopping-item-body {
   padding: 16px 18px;
   display: flex;
@@ -2223,6 +2231,43 @@ a.pin-title:hover { text-decoration: underline; }
 .pin-react-btn.active-like { background: #fff3d6; border-color: #ffd98a; }
 .pin-react-btn.active-neutral { background: #eee; }
 .pin-react-btn.active-dislike { background: #e8eef0; }
+
+/* Per-pin notes */
+.pin-notes { display: flex; flex-direction: column; gap: 5px; margin-top: 6px; }
+.pin-note {
+  display: flex; align-items: flex-start; gap: 6px;
+  background: var(--cream); border: 1px solid var(--border); border-radius: 8px;
+  padding: 5px 8px; font-size: 0.78rem; color: var(--text);
+}
+.pin-note-who {
+  flex-shrink: 0; font-weight: 700; font-size: 0.68rem; color: #fff;
+  background: var(--sage); border-radius: 999px; padding: 1px 6px; line-height: 1.5;
+}
+.pin-note-who.ken { background: var(--warm, #b58a6a); }
+.pin-note-text { flex: 1; white-space: pre-wrap; word-break: break-word; }
+.pin-note-del {
+  flex-shrink: 0; border: none; background: none; color: var(--muted);
+  cursor: pointer; font-size: 0.78rem; line-height: 1; padding: 0 2px;
+}
+.pin-note-del:hover { color: var(--danger); }
+.pin-note-add {
+  border: 1px dashed var(--border); background: var(--white); color: var(--muted);
+  border-radius: 7px; padding: 4px 8px; font-size: 0.76rem; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; align-self: flex-start; transition: all 0.15s;
+}
+.pin-note-add:hover { border-color: var(--sage); color: var(--sage-dark); border-style: solid; }
+.pin-note-form { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.pin-note-form textarea {
+  border: 1px solid var(--border); border-radius: 7px; padding: 6px 8px;
+  font-size: 0.78rem; font-family: 'DM Sans', sans-serif; background: var(--cream);
+  color: var(--text); resize: vertical; width: 100%;
+}
+.pin-note-form textarea:focus { outline: none; border-color: var(--sage); }
+.pin-note-form-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.pin-note-form select {
+  border: 1px solid var(--border); border-radius: 7px; padding: 4px 8px;
+  font-size: 0.76rem; font-family: 'DM Sans', sans-serif; background: var(--white); color: var(--text);
+}
 @media (max-width: 700px) {
   .shopping-item-meta { grid-template-columns: 1fr 1fr; }
   .shopping-toolbar { flex-direction: column; align-items: flex-start; }
@@ -2952,7 +2997,8 @@ a.pin-title:hover { text-decoration: underline; }
 <!-- ADD SHOPPING ITEM MODAL -->
 <div class="modal-overlay" id="modal-shopping-item">
   <div class="modal">
-    <h3>Add item type</h3>
+    <h3 id="shopping-item-modal-title">Add item type</h3>
+    <input type="hidden" id="si-id">
     <label for="si-name">What are you shopping for?</label>
     <input type="text" id="si-name" placeholder="e.g. Sofa, Coffee Table, Rug…" />
     <label for="si-budget-min">Budget range (optional)</label>
@@ -2964,7 +3010,7 @@ a.pin-title:hover { text-decoration: underline; }
     </div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal('modal-shopping-item')">Cancel</button>
-      <button class="btn-save" onclick="saveShoppingItem()">Add item</button>
+      <button class="btn-save" id="si-save-btn" onclick="saveShoppingItem()">Add item</button>
     </div>
   </div>
 </div>
@@ -3544,6 +3590,8 @@ let shoppingList = readStoredJson(STORAGE_KEYS.shoppingList, []);
 // Declared here (not in the Shopping section below) so it's initialized before
 // the init-time renderShoppingList() call — otherwise it throws a TDZ error.
 let shoppingReactionPickerOpen = null;
+// Which pin's "add note" composer is open, as the option id (null = none).
+let shoppingNoteFormOpen = null;
 const DEFAULT_BOX_TYPES = ['Cardboard box', 'Clothes bag', 'Suitcase', 'Bin bag', 'Crate', 'Other'];
 let boxTypes = [...new Set([...DEFAULT_BOX_TYPES, ...readStoredJson(STORAGE_KEYS.boxTypes, []), ...boxes.map((b) => b.type).filter(Boolean)])];
 let editingBoxId = null;
@@ -6894,31 +6942,11 @@ function renderShoppingItemCard(item, filterReaction) {
     <span class="shopping-item-name">${escapeHtml(item.name || 'Unnamed item')}</span>
     <span class="shopping-item-budget">${budgetLabel}</span>
     <span style="font-size:0.8rem;color:var(--muted)">${(item.options||[]).length} option${(item.options||[]).length !== 1 ? 's' : ''}</span>
+    <button class="shopping-item-edit" title="Edit name & budget"
+      onclick="event.stopPropagation();editShoppingItem('${item.id}')">✎</button>
   </div>
   ${item.collapsed ? '' : `
   <div class="shopping-item-body">
-    <div class="shopping-item-meta">
-      <div class="shopping-meta-field" style="grid-column:1/-1">
-        <label>Budget range</label>
-        <div class="shopping-budget-row">
-          <span>£</span>
-          <input type="number" min="0" placeholder="Min" value="${item.budgetMin || ''}"
-            onchange="updateShoppingItemField('${item.id}','budgetMin', +this.value || 0)">
-          <span>to £</span>
-          <input type="number" min="0" placeholder="Max" value="${item.budgetMax || ''}"
-            onchange="updateShoppingItemField('${item.id}','budgetMax', +this.value || 0)">
-        </div>
-      </div>
-      <div class="shopping-meta-field">
-        <label>Notes — Dani</label>
-        <textarea rows="2" placeholder="Dani's thoughts…" onchange="updateShoppingItemField('${item.id}','notesDani',this.value)">${escapeHtml(item.notesDani || '')}</textarea>
-      </div>
-      <div class="shopping-meta-field">
-        <label>Notes — Ken</label>
-        <textarea rows="2" placeholder="Ken's thoughts…" onchange="updateShoppingItemField('${item.id}','notesKen',this.value)">${escapeHtml(item.notesKen || '')}</textarea>
-      </div>
-    </div>
-
     <div class="shopping-options-section">
       <h4>Options to consider</h4>
       <div class="shopping-pins-grid">
@@ -6984,6 +7012,31 @@ function renderShoppingPin(itemId, opt) {
         : `<span class="pin-title">${titleText}</span>`)
     : '';
 
+  // Per-pin notes: a list of {who:'Dani'|'Ken', text}. The form is shown when
+  // this pin's note composer is open (tracked in shoppingNoteFormOpen).
+  const notes = Array.isArray(opt.notes) ? opt.notes : [];
+  const notesHtml = notes.map((n, idx) => `
+    <div class="pin-note">
+      <span class="pin-note-who ${n.who === 'Ken' ? 'ken' : ''}">${escapeHtml((n.who || '?')[0])}</span>
+      <span class="pin-note-text">${escapeHtml(n.text || '')}</span>
+      <button class="pin-note-del" title="Delete note"
+        onclick="event.stopPropagation();deletePinNote('${itemId}','${opt.id}',${idx})">✕</button>
+    </div>`).join('');
+  const formOpen = shoppingNoteFormOpen === opt.id;
+  const noteFormHtml = formOpen
+    ? `<div class="pin-note-form" onclick="event.stopPropagation()">
+         <textarea id="pin-note-text-${opt.id}" rows="2" placeholder="Write a note…"></textarea>
+         <div class="pin-note-form-row">
+           <select id="pin-note-who-${opt.id}">
+             <option value="Dani">Dani</option>
+             <option value="Ken">Ken</option>
+           </select>
+           <button class="btn-sm" onclick="savePinNote('${itemId}','${opt.id}')">Done</button>
+           <button class="pin-note-del" title="Cancel" onclick="toggleNoteForm('${opt.id}')">Cancel</button>
+         </div>
+       </div>`
+    : `<button class="pin-note-add" onclick="event.stopPropagation();toggleNoteForm('${opt.id}')">+ Add note</button>`;
+
   return `
 <div class="shopping-pin ${opt.favourite ? 'fav' : ''}" id="sopt-${opt.id}">
   <div class="pin-image-wrap">
@@ -7002,6 +7055,7 @@ function renderShoppingPin(itemId, opt) {
     ${opt.price ? `<div class="pin-price">£${Number(opt.price).toLocaleString()}</div>` : ''}
     ${(opt.colourNotes || opt.size) ? `<div class="pin-meta">${escapeHtml([opt.colourNotes, opt.size].filter(Boolean).join(' · '))}</div>` : ''}
     <div class="pin-reactions">${reactionRow('reactionDani')}${reactionRow('reactionKen')}</div>
+    <div class="pin-notes">${notesHtml}${noteFormHtml}</div>
   </div>
 </div>`;
 }
@@ -7010,6 +7064,40 @@ function toggleReactionPicker(optId, who) {
   if (!ensureCanEdit()) return;
   const key = `${optId}:${who}`;
   shoppingReactionPickerOpen = shoppingReactionPickerOpen === key ? null : key;
+  renderShoppingList();
+}
+
+function toggleNoteForm(optId) {
+  if (!ensureCanEdit()) return;
+  shoppingNoteFormOpen = shoppingNoteFormOpen === optId ? null : optId;
+  renderShoppingList();
+  if (shoppingNoteFormOpen) {
+    setTimeout(() => document.getElementById(`pin-note-text-${optId}`)?.focus(), 30);
+  }
+}
+
+function savePinNote(itemId, optId) {
+  if (!ensureCanEdit()) return;
+  const item = shoppingList.find((i) => i.id === itemId);
+  const opt = item?.options.find((o) => o.id === optId);
+  if (!opt) return;
+  const text = document.getElementById(`pin-note-text-${optId}`)?.value.trim();
+  const who = document.getElementById(`pin-note-who-${optId}`)?.value || 'Dani';
+  if (!text) { document.getElementById(`pin-note-text-${optId}`)?.focus(); return; }
+  if (!Array.isArray(opt.notes)) opt.notes = [];
+  opt.notes.push({ who, text });
+  shoppingNoteFormOpen = null;
+  saveShoppingList();
+  renderShoppingList();
+}
+
+function deletePinNote(itemId, optId, idx) {
+  if (!ensureCanEdit()) return;
+  const item = shoppingList.find((i) => i.id === itemId);
+  const opt = item?.options.find((o) => o.id === optId);
+  if (!opt || !Array.isArray(opt.notes)) return;
+  opt.notes.splice(idx, 1);
+  saveShoppingList();
   renderShoppingList();
 }
 
@@ -7024,9 +7112,26 @@ function togglePinControls(optId) {
 }
 
 function addShoppingItem() {
+  document.getElementById('si-id').value = '';
   document.getElementById('si-name').value = '';
   document.getElementById('si-budget-min').value = '';
   document.getElementById('si-budget-max').value = '';
+  document.getElementById('shopping-item-modal-title').textContent = 'Add item type';
+  document.getElementById('si-save-btn').textContent = 'Add item';
+  document.getElementById('modal-shopping-item').classList.add('open');
+  setTimeout(() => document.getElementById('si-name').focus(), 50);
+}
+
+function editShoppingItem(itemId) {
+  if (!ensureCanEdit()) return;
+  const item = shoppingList.find((i) => i.id === itemId);
+  if (!item) return;
+  document.getElementById('si-id').value = item.id;
+  document.getElementById('si-name').value = item.name || '';
+  document.getElementById('si-budget-min').value = item.budgetMin || '';
+  document.getElementById('si-budget-max').value = item.budgetMax || '';
+  document.getElementById('shopping-item-modal-title').textContent = 'Edit item type';
+  document.getElementById('si-save-btn').textContent = 'Save';
   document.getElementById('modal-shopping-item').classList.add('open');
   setTimeout(() => document.getElementById('si-name').focus(), 50);
 }
@@ -7037,12 +7142,17 @@ function saveShoppingItem() {
   if (!name) { document.getElementById('si-name').focus(); return; }
   const budgetMin = +document.getElementById('si-budget-min').value || 0;
   const budgetMax = +document.getElementById('si-budget-max').value || 0;
-  shoppingList.push({
-    id: shoppingId(), name,
-    budgetMin, budgetMax,
-    notesDani: '', notesKen: '',
-    collapsed: false, options: []
-  });
+  const editId = document.getElementById('si-id').value;
+  if (editId) {
+    const item = shoppingList.find((i) => i.id === editId);
+    if (item) { item.name = name; item.budgetMin = budgetMin; item.budgetMax = budgetMax; }
+  } else {
+    shoppingList.push({
+      id: shoppingId(), name,
+      budgetMin, budgetMax,
+      collapsed: false, options: []
+    });
+  }
   saveShoppingList();
   renderShoppingList();
   closeModal('modal-shopping-item');
@@ -7064,20 +7174,6 @@ function deleteShoppingItem(itemId) {
   saveShoppingList();
   renderShoppingList();
 }
-
-function updateShoppingItemField(itemId, field, value) {
-  if (!ensureCanEdit()) return;
-  const item = shoppingList.find((i) => i.id === itemId);
-  if (!item) return;
-  item[field] = value;
-  saveShoppingList();
-  const budgetLabel = (item.budgetMin || item.budgetMax)
-    ? `£${item.budgetMin || 0}–£${item.budgetMax || '?'}`
-    : 'No budget set';
-  const pill = document.querySelector(`#sitem-${itemId} .shopping-item-budget`);
-  if (pill) pill.textContent = budgetLabel;
-}
-
 
 // Only delete Storage objects we created: must sit directly under shopping-images/ with no traversal.
 function deleteShoppingImageByPath(path) {
