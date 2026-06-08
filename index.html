@@ -6973,6 +6973,13 @@ function updateShoppingItemField(itemId, field, value) {
 }
 
 
+// Only delete Storage objects we created: must sit directly under shopping-images/ with no traversal.
+function deleteShoppingImageByPath(path) {
+  if (!path || typeof path !== 'string' || !syncRuntime.currentUser) return;
+  if (!/^shopping-images\/[^/]+$/.test(path)) return;
+  try { getStorage().ref(path).delete(); } catch (_) {}
+}
+
 function deleteShoppingOption(itemId, optId) {
   if (!ensureCanEdit()) return;
   const item = shoppingList.find((i) => i.id === itemId);
@@ -6982,9 +6989,7 @@ function deleteShoppingOption(itemId, optId) {
   item.options = item.options.filter((o) => o.id !== optId);
   saveShoppingList();
   renderShoppingList();
-  if (removed?.storagePath && syncRuntime.currentUser) {
-    try { getStorage().ref(removed.storagePath).delete(); } catch (_) {}
-  }
+  deleteShoppingImageByPath(removed?.storagePath);
 }
 
 
@@ -7091,9 +7096,7 @@ function savePin() {
     if (opt) {
       const oldPath = opt.storagePath;
       Object.assign(opt, fields);
-      if (oldPath && oldPath !== fields.storagePath && syncRuntime.currentUser) {
-        try { getStorage().ref(oldPath).delete(); } catch (_) {}
-      }
+      if (oldPath && oldPath !== fields.storagePath) deleteShoppingImageByPath(oldPath);
     }
   } else {
     item.options.push({
