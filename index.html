@@ -2193,18 +2193,25 @@ a.pin-title:hover { text-decoration: underline; }
 .pin-price { font-size: 0.92rem; font-weight: 700; color: var(--text); }
 .pin-meta { font-size: 0.78rem; color: var(--muted); }
 
-/* Reactions: chosen-only at rest, full picker on hover/tap */
-.pin-reactions { display: flex; flex-direction: column; gap: 3px; margin-top: 2px; }
-.pin-reaction-row { display: flex; align-items: center; gap: 6px; min-height: 24px; }
+/* Reactions: a + (or chosen emoji) per person; click opens an inline picker */
+.pin-reactions { display: flex; flex-direction: column; gap: 4px; margin-top: 2px; }
+.pin-reaction-row { display: flex; align-items: center; gap: 6px; min-height: 26px; }
 .pin-react-who { color: var(--muted); font-size: 0.72rem; font-weight: 600; width: 12px; }
-.pin-react-chosen { font-size: 0.95rem; line-height: 1; }
-.shopping-pin:hover .pin-react-chosen,
-.shopping-pin.controls-open .pin-react-chosen { display: none; }
-.pin-react-picker {
-  display: none; gap: 3px;
+.pin-react-trigger {
+  width: 24px; height: 24px; border-radius: 50%; cursor: pointer; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: transform 0.12s, background 0.12s, border-color 0.12s;
 }
-.shopping-pin:hover .pin-react-picker,
-.shopping-pin.controls-open .pin-react-picker { display: flex; }
+.pin-react-trigger.is-add {
+  border: 1px dashed var(--border); background: var(--white);
+  color: var(--muted); font-size: 1rem; font-weight: 600;
+}
+.pin-react-trigger.is-add:hover { border-color: var(--sage); color: var(--sage-dark); border-style: solid; }
+.pin-react-trigger.has-emoji {
+  border: 1px solid var(--border); background: var(--cream-dark); font-size: 0.95rem;
+}
+.pin-react-trigger.has-emoji:hover { transform: scale(1.1); }
+.pin-react-picker { display: inline-flex; gap: 3px; }
 .pin-react-btn {
   border: 1px solid var(--border); background: var(--white); border-radius: 999px;
   width: 26px; height: 22px; padding: 0; cursor: pointer; font-size: 0.82rem; line-height: 1;
@@ -6938,18 +6945,28 @@ function renderShoppingPin(itemId, opt) {
     ? `<img class="pin-image" src="${escapeHtml(safeImg)}" alt="${escapeHtml(opt.title || 'image')}" onerror="this.outerHTML='<div class=\\'pin-image-placeholder\\'>🛋️</div>'">`
     : `<div class="pin-image-placeholder">🛋️</div>`;
 
-  // At rest: just the person's initial + their chosen emoji (dot if none).
-  // On hover/open: the full picker row fades in so you can change it.
+  // Each person shows a + (no reaction) or their chosen emoji. Clicking either
+  // opens the inline picker; choosing an emoji sets it (or clears if re-chosen).
+  const pickerKey = `${opt.id}:`;
   const reactionRow = (who) => {
     const chosen = opt[who];
+    const open = shoppingReactionPickerOpen === pickerKey + who;
+    const trigger = chosen
+      ? `<button class="pin-react-trigger has-emoji" title="Change reaction"
+           onclick="event.stopPropagation();toggleReactionPicker('${opt.id}','${who}')">${emoji[chosen]}</button>`
+      : `<button class="pin-react-trigger is-add" title="Add reaction"
+           onclick="event.stopPropagation();toggleReactionPicker('${opt.id}','${who}')">+</button>`;
+    const picker = open
+      ? `<span class="pin-react-picker">
+          ${reactions.map((r) => `<button class="pin-react-btn ${reactionActiveClass(chosen, r)}"
+            title="${r}" onclick="event.stopPropagation();setShoppingReaction('${itemId}','${opt.id}','${who}','${r}')">${emoji[r]}</button>`).join('')}
+        </span>`
+      : '';
     return `
     <div class="pin-reaction-row">
       <span class="pin-react-who">${who === 'reactionDani' ? 'D' : 'K'}</span>
-      <span class="pin-react-chosen">${chosen ? emoji[chosen] : '·'}</span>
-      <span class="pin-react-picker">
-        ${reactions.map((r) => `<button class="pin-react-btn ${reactionActiveClass(chosen, r)}"
-          title="${r}" onclick="event.stopPropagation();setShoppingReaction('${itemId}','${opt.id}','${who}','${r}')">${emoji[r]}</button>`).join('')}
-      </span>
+      ${trigger}
+      ${picker}
     </div>`;
   };
 
@@ -6980,6 +6997,16 @@ function renderShoppingPin(itemId, opt) {
     <div class="pin-reactions">${reactionRow('reactionDani')}${reactionRow('reactionKen')}</div>
   </div>
 </div>`;
+}
+
+// Tracks which person's reaction picker is open, as "<optId>:<who>" (null = none).
+let shoppingReactionPickerOpen = null;
+
+function toggleReactionPicker(optId, who) {
+  if (!ensureCanEdit()) return;
+  const key = `${optId}:${who}`;
+  shoppingReactionPickerOpen = shoppingReactionPickerOpen === key ? null : key;
+  renderShoppingList();
 }
 
 // Mobile/touch: tapping the pin body toggles the hover-revealed controls.
@@ -7074,6 +7101,7 @@ function setShoppingReaction(itemId, optId, who, reaction) {
   const opt = item?.options.find((o) => o.id === optId);
   if (!opt) return;
   opt[who] = opt[who] === reaction ? '' : reaction;
+  shoppingReactionPickerOpen = null; // close the picker after choosing
   saveShoppingList();
   renderShoppingList();
 }
