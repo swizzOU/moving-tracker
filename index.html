@@ -447,6 +447,43 @@
   }
   /* ── End savings redesign ───────────────────────────────────── */
 
+  /* ── Mortgage tab ───────────────────────────────────────────── */
+  .mtg-calc-controls { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .mtg-field { display: flex; flex-direction: column; gap: 5px; flex: 1 1 200px; }
+  .mtg-field label { font-size: 0.78rem; color: var(--muted); font-weight: 500; }
+  .mtg-field input {
+    border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px;
+    font-size: 0.95rem; font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text);
+  }
+  .mtg-field input:focus { outline: none; border-color: var(--sage); }
+  .mtg-calc-empty { color: var(--muted); font-style: italic; font-size: 0.88rem; padding: 8px 0; }
+  .mtg-result-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 4px;
+  }
+  .mtg-result {
+    display: flex; flex-direction: column; gap: 3px;
+    background: var(--cream); border-radius: 10px; padding: 14px 16px;
+  }
+  .mtg-result-good { background: var(--sage-light); }
+  .mtg-result-val { font-size: 1.25rem; font-weight: 700; color: var(--sage-dark); font-family: 'Lora', serif; }
+  .mtg-result-good .mtg-result-val { color: var(--sage-dark); }
+  .mtg-result-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+  .mtg-schedule-title { font-size: 0.82rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin: 22px 0 10px; }
+  .mtg-table-scroll { overflow-x: auto; }
+  .mtg-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 420px; }
+  .mtg-table th {
+    text-align: left; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.4px;
+    color: var(--muted); font-weight: 600; padding: 8px 12px; border-bottom: 2px solid var(--border);
+  }
+  .mtg-table th:not(:first-child), .mtg-table td:not(:first-child) { text-align: right; }
+  .mtg-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text); }
+  .mtg-table tbody tr:last-child td { border-bottom: none; font-weight: 600; }
+  .mtg-table tbody tr:hover { background: var(--cream); }
+
+  @media (max-width: 600px) {
+    .mtg-result-grid { grid-template-columns: 1fr; }
+  }
+
   .budget-empty {
     color: var(--muted);
     font-style: italic;
@@ -2480,6 +2517,7 @@ a.pin-title:hover { text-decoration: underline; }
     <button class="tab" onclick="showTab('calendar')">📅 Calendar</button>
     <button class="tab" onclick="showTab('budget')">💷 Budget</button>
     <button class="tab" id="tab-btn-savings" onclick="showTab('savings')">💰 Savings</button>
+    <button class="tab" id="tab-btn-mortgage" onclick="showTab('mortgage')">🏦 Mortgage</button>
     <button class="tab" onclick="showTab('shopping')">🛒 Shopping List</button>
   </div>
 </nav>
@@ -2504,6 +2542,7 @@ a.pin-title:hover { text-decoration: underline; }
       <button class="home-card" onclick="showTab('calendar')"><span class="home-card-icon">📅</span><span class="home-card-label">Calendar</span></button>
       <button class="home-card" onclick="showTab('budget')"><span class="home-card-icon">💷</span><span class="home-card-label">Budget</span></button>
       <button class="home-card" id="home-card-savings" onclick="showTab('savings')"><span class="home-card-icon">💰</span><span class="home-card-label">Savings</span></button>
+      <button class="home-card" id="home-card-mortgage" onclick="showTab('mortgage')"><span class="home-card-icon">🏦</span><span class="home-card-label">Mortgage</span></button>
       <button class="home-card" onclick="showTab('shopping')"><span class="home-card-icon">🛒</span><span class="home-card-label">Shopping List</span></button>
     </div>
 
@@ -2697,6 +2736,55 @@ a.pin-title:hover { text-decoration: underline; }
     <div class="task-panel">
       <h3 class="budget-heading">Saving Goals</h3>
       <div id="savings-list" class="budget-list"></div>
+    </div>
+  </div>
+
+  <!-- MORTGAGE TAB -->
+  <div id="tab-mortgage" class="hidden">
+    <div class="task-panel">
+      <div class="sv-summary">
+        <div class="sv-summary-hero">
+          <div class="sv-summary-hero-val" id="mtg-balance-display">£0</div>
+          <div class="sv-summary-hero-label">Outstanding balance · <span id="mtg-rate-display">0%</span> · <span id="mtg-term-display">—</span> left</div>
+          <button class="add-btn" onclick="openEditMortgage()">Edit mortgage details</button>
+        </div>
+        <div class="sv-summary-groups">
+          <div class="sv-summary-group">
+            <div class="sv-summary-group-title">Monthly repayment</div>
+            <div class="sv-summary-rows">
+              <div class="sv-summary-row"><span>Dani</span><strong id="mtg-monthly-dani">£0.00</strong></div>
+              <div class="sv-summary-row"><span>Ken</span><strong id="mtg-monthly-ken">£0.00</strong></div>
+              <div class="sv-summary-row sv-summary-row-total"><span>Combined</span><strong id="mtg-monthly-combined">£0.00</strong></div>
+            </div>
+          </div>
+          <div class="sv-summary-group">
+            <div class="sv-summary-group-title">At a glance</div>
+            <div class="sv-summary-rows">
+              <div class="sv-summary-row"><span>Interest rate</span><strong id="mtg-rate-2">0%</strong></div>
+              <div class="sv-summary-row"><span>Term remaining</span><strong id="mtg-term-2">—</strong></div>
+              <div class="sv-summary-row sv-summary-row-total"><span>Mortgage-free</span><strong id="mtg-payoff-date">—</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="task-panel">
+      <h3 class="budget-heading">Overpayment calculator</h3>
+      <div class="mtg-calc-controls">
+        <div class="mtg-field">
+          <label for="mtg-overpay-monthly">Extra per month (£)</label>
+          <input type="number" id="mtg-overpay-monthly" min="0" step="any" placeholder="e.g. 200"
+            oninput="updateMortgageField('overpayMonthly', +this.value || 0)">
+        </div>
+        <div class="mtg-field">
+          <label for="mtg-overpay-oneoff">One-off lump sum (£)</label>
+          <input type="number" id="mtg-overpay-oneoff" min="0" step="any" placeholder="e.g. 5000"
+            oninput="updateMortgageField('overpayOneOff', +this.value || 0)">
+        </div>
+      </div>
+      <div id="mtg-calc-summary" class="mtg-calc-summary"></div>
+      <div id="mtg-schedule-wrap" class="mtg-schedule-wrap"></div>
     </div>
   </div>
 
@@ -3368,6 +3456,27 @@ a.pin-title:hover { text-decoration: underline; }
     </div>
   </div>
 
+  <!-- EDIT MORTGAGE MODAL -->
+  <div class="modal-overlay" id="modal-mortgage">
+    <div class="modal">
+      <h3>Mortgage details</h3>
+      <label for="m-balance">Outstanding balance (£)</label>
+      <input type="number" id="m-balance" min="0" step="0.01" placeholder="e.g. 250000" />
+      <label for="m-rate">Interest rate (% per year)</label>
+      <input type="number" id="m-rate" min="0" step="0.01" placeholder="e.g. 4.5" />
+      <label for="m-term">Term remaining (years)</label>
+      <input type="number" id="m-term" min="0" step="0.5" placeholder="e.g. 25" />
+      <label for="m-monthly-dani">Dani's monthly payment (£)</label>
+      <input type="number" id="m-monthly-dani" min="0" step="0.01" placeholder="0.00" />
+      <label for="m-monthly-ken">Ken's monthly payment (£)</label>
+      <input type="number" id="m-monthly-ken" min="0" step="0.01" placeholder="0.00" />
+      <div class="modal-btns">
+        <button class="btn-cancel" onclick="closeModal('modal-mortgage')">Cancel</button>
+        <button class="btn-save" onclick="saveMortgage()">Save</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ADD EVENT MODAL -->
 <div class="modal-overlay" id="modal-event">
   <div class="modal">
@@ -3676,6 +3785,7 @@ const STORAGE_KEYS = {
   budgetEntries: 'move_budget_entries',
   budgetCategories: 'move_budget_categories',
   savings: 'move_savings_goals',
+  mortgage: 'move_mortgage',
   boxes: 'move_packing_boxes',
   boxTypes: 'move_packing_box_types',
   toPackItems: 'move_to_pack_items',
@@ -3756,6 +3866,30 @@ budgetCategories = [...new Set([...
 ])];
 let savings = migrateSavings(readStoredJson(STORAGE_KEYS.savings, DEFAULT_SAVINGS));
 
+const DEFAULT_MORTGAGE = {
+  balance: 0,        // outstanding mortgage balance (£)
+  rate: 0,           // annual interest rate (%)
+  termMonths: 0,     // remaining term in months
+  monthlyDani: 0,    // Dani's share of the monthly payment (£)
+  monthlyKen: 0,     // Ken's share of the monthly payment (£)
+  overpayMonthly: 0, // recurring monthly overpayment for the calculator (£)
+  overpayOneOff: 0   // one-off lump-sum overpayment for the calculator (£)
+};
+function migrateMortgage(input) {
+  const m = (input && typeof input === 'object') ? input : {};
+  const num = (v) => Number(v) || 0;
+  return {
+    balance: num(m.balance),
+    rate: num(m.rate),
+    termMonths: num(m.termMonths),
+    monthlyDani: num(m.monthlyDani),
+    monthlyKen: num(m.monthlyKen),
+    overpayMonthly: num(m.overpayMonthly),
+    overpayOneOff: num(m.overpayOneOff)
+  };
+}
+let mortgage = migrateMortgage(readStoredJson(STORAGE_KEYS.mortgage, DEFAULT_MORTGAGE));
+
 const syncRuntime = {
   app: null,
   auth: null,
@@ -3818,6 +3952,7 @@ function exportStatePayload() {
     budgetEntries,
     budgetCategories,
     savings,
+    mortgage,
     boxes,
     boxTypes,
     toPackItems,
@@ -3838,6 +3973,7 @@ function persistLocalState() {
   localStorage.setItem(STORAGE_KEYS.budgetEntries, JSON.stringify(budgetEntries));
   localStorage.setItem(STORAGE_KEYS.budgetCategories, JSON.stringify(budgetCategories));
   localStorage.setItem(STORAGE_KEYS.savings, JSON.stringify(savings));
+  localStorage.setItem(STORAGE_KEYS.mortgage, JSON.stringify(mortgage));
   localStorage.setItem(STORAGE_KEYS.boxes, JSON.stringify(boxes));
   localStorage.setItem(STORAGE_KEYS.boxTypes, JSON.stringify(boxTypes));
   localStorage.setItem(STORAGE_KEYS.toPackItems, JSON.stringify(toPackItems));
@@ -3885,12 +4021,12 @@ function refreshSavingsAccess() {
   const allowed = isSavingsAllowed();
   btn.classList.toggle('hidden', !allowed);
   document.getElementById('home-card-savings')?.classList.toggle('hidden', !allowed);
-  // If current tab is savings but user lost access, fall back to tasks.
-  if (allowed) {
-    // nothing
-  } else {
-    // hide panel if not allowed
+  // Mortgage tab shares the same Dani/Ken-only access as Savings.
+  document.getElementById('tab-btn-mortgage')?.classList.toggle('hidden', !allowed);
+  document.getElementById('home-card-mortgage')?.classList.toggle('hidden', !allowed);
+  if (!allowed) {
     panel.classList.add('hidden');
+    document.getElementById('tab-mortgage')?.classList.add('hidden');
   }
 }
 
@@ -3931,6 +4067,7 @@ function applyPayload(payload) {
   events = migrateEvents(payload.events || []);
   budgetEntries = migrateBudgetEntries(payload.budgetEntries || []);
   savings = migrateSavings(payload.savings || []);
+  mortgage = migrateMortgage(payload.mortgage || {});
   boxes = migrateBoxes(payload.boxes || []);
   boxTypes = [...new Set([...DEFAULT_BOX_TYPES, ...(Array.isArray(payload.boxTypes) ? payload.boxTypes : []), ...boxes.map((b) => b.type).filter(Boolean)])];
   toPackItems = Array.isArray(payload.toPackItems) ? payload.toPackItems : [];
@@ -3951,6 +4088,7 @@ function applyPayload(payload) {
   renderContacts();
   renderBudget();
   renderSavings();
+  renderMortgage();
   renderPacking();
   renderShoppingList();
   updateStats();
@@ -5597,6 +5735,175 @@ function renderSavings() {
   }).join('');
 }
 
+// ── Mortgage ──────────────────────────────────────────────────────────────
+
+function formatTermMonths(months) {
+  const m = Math.max(0, Math.round(months));
+  if (m === 0) return '0 months';
+  const y = Math.floor(m / 12);
+  const r = m % 12;
+  const parts = [];
+  if (y) parts.push(`${y} yr${y !== 1 ? 's' : ''}`);
+  if (r) parts.push(`${r} mo${r !== 1 ? 's' : ''}`);
+  return parts.join(' ');
+}
+
+function monthLabelFromNow(monthsAhead) {
+  const d = new Date(); d.setDate(1);
+  d.setMonth(d.getMonth() + Math.round(monthsAhead));
+  return d.toLocaleString('en-GB', { month: 'short', year: 'numeric' });
+}
+
+// Simulate a repayment mortgage month by month.
+// Returns { months, totalInterest, perYear:[{year,interest,principal,balance}], paidOff }.
+function simulateMortgage(balance, annualRatePct, monthlyPayment, extraMonthly, oneOff) {
+  const monthlyRate = (annualRatePct / 100) / 12;
+  let bal = Math.max(0, balance) - Math.max(0, oneOff || 0);
+  if (bal < 0) bal = 0;
+  const baseMonthly = Math.max(0, monthlyPayment) + Math.max(0, extraMonthly || 0);
+  const perYear = [];
+  let months = 0, totalInterest = 0;
+  let yrInterest = 0, yrPrincipal = 0;
+  const MAX = 1200; // 100 years guard
+
+  if (bal === 0) return { months: 0, totalInterest: 0, perYear: [], paidOff: true };
+
+  // If the payment can't even cover the first month's interest, it never pays off.
+  if (baseMonthly <= bal * monthlyRate && monthlyRate > 0) {
+    return { months: Infinity, totalInterest: Infinity, perYear: [], paidOff: false };
+  }
+
+  while (bal > 0 && months < MAX) {
+    const interest = bal * monthlyRate;
+    let principal = baseMonthly - interest;
+    if (principal >= bal) { principal = bal; }
+    bal -= principal;
+    if (bal < 0.005) bal = 0;
+    totalInterest += interest;
+    yrInterest += interest; yrPrincipal += principal;
+    months++;
+    if (months % 12 === 0 || bal === 0) {
+      perYear.push({
+        year: Math.ceil(months / 12),
+        interest: yrInterest,
+        principal: yrPrincipal,
+        balance: bal
+      });
+      yrInterest = 0; yrPrincipal = 0;
+    }
+  }
+  return { months, totalInterest, perYear, paidOff: bal === 0 };
+}
+
+function renderMortgage() {
+  const m = mortgage;
+  const combined = (Number(m.monthlyDani) || 0) + (Number(m.monthlyKen) || 0);
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+  set('mtg-balance-display', formatCurrency(m.balance));
+  set('mtg-rate-display', `${(Number(m.rate) || 0)}%`);
+  set('mtg-rate-2', `${(Number(m.rate) || 0)}%`);
+  set('mtg-term-display', m.termMonths ? formatTermMonths(m.termMonths) : '—');
+  set('mtg-term-2', m.termMonths ? formatTermMonths(m.termMonths) : '—');
+  set('mtg-monthly-dani', formatCurrency(m.monthlyDani));
+  set('mtg-monthly-ken', formatCurrency(m.monthlyKen));
+  set('mtg-monthly-combined', formatCurrency(combined));
+
+  // Sync calculator inputs with stored values
+  const opM = document.getElementById('mtg-overpay-monthly');
+  const op1 = document.getElementById('mtg-overpay-oneoff');
+  if (opM && document.activeElement !== opM) opM.value = m.overpayMonthly || '';
+  if (op1 && document.activeElement !== op1) op1.value = m.overpayOneOff || '';
+
+  const summaryEl = document.getElementById('mtg-calc-summary');
+  const scheduleEl = document.getElementById('mtg-schedule-wrap');
+  if (!summaryEl || !scheduleEl) return;
+
+  // Baseline payoff date for the "Mortgage-free" summary stat
+  const base = simulateMortgage(m.balance, m.rate, combined, 0, 0);
+  set('mtg-payoff-date', base.paidOff ? monthLabelFromNow(base.months) : '—');
+
+  if (!m.balance || !combined) {
+    summaryEl.innerHTML = `<div class="mtg-calc-empty">Add your balance, interest rate and monthly payments to see the projection.</div>`;
+    scheduleEl.innerHTML = '';
+    return;
+  }
+
+  if (!base.paidOff) {
+    summaryEl.innerHTML = `<div class="mtg-calc-empty">At ${formatCurrency(combined)}/mo your payment doesn't cover the interest on a ${m.rate}% rate — increase the monthly payment.</div>`;
+    scheduleEl.innerHTML = '';
+    return;
+  }
+
+  const withOver = simulateMortgage(m.balance, m.rate, combined, m.overpayMonthly, m.overpayOneOff);
+  const hasOverpay = (Number(m.overpayMonthly) || 0) > 0 || (Number(m.overpayOneOff) || 0) > 0;
+
+  if (hasOverpay && withOver.paidOff) {
+    const monthsSaved = base.months - withOver.months;
+    const interestSaved = base.totalInterest - withOver.totalInterest;
+    summaryEl.innerHTML = `
+      <div class="mtg-result-grid">
+        <div class="mtg-result"><span class="mtg-result-val">${monthLabelFromNow(withOver.months)}</span><span class="mtg-result-label">New mortgage-free date</span></div>
+        <div class="mtg-result mtg-result-good"><span class="mtg-result-val">${formatTermMonths(monthsSaved)}</span><span class="mtg-result-label">Sooner</span></div>
+        <div class="mtg-result mtg-result-good"><span class="mtg-result-val">${formatCurrency(Math.round(interestSaved))}</span><span class="mtg-result-label">Interest saved</span></div>
+      </div>`;
+  } else {
+    summaryEl.innerHTML = `
+      <div class="mtg-result-grid">
+        <div class="mtg-result"><span class="mtg-result-val">${monthLabelFromNow(base.months)}</span><span class="mtg-result-label">Mortgage-free</span></div>
+        <div class="mtg-result"><span class="mtg-result-val">${formatCurrency(Math.round(base.totalInterest))}</span><span class="mtg-result-label">Total interest</span></div>
+        <div class="mtg-result"><span class="mtg-result-label" style="grid-column:1/-1">Add an overpayment above to see what you'd save.</span></div>
+      </div>`;
+  }
+
+  // Amortisation schedule — with overpayments if any, else baseline
+  const schedule = (hasOverpay && withOver.paidOff) ? withOver : base;
+  const rows = schedule.perYear.map(r => `
+    <tr>
+      <td>Year ${r.year}</td>
+      <td>${formatCurrency(Math.round(r.principal))}</td>
+      <td>${formatCurrency(Math.round(r.interest))}</td>
+      <td>${formatCurrency(Math.round(r.balance))}</td>
+    </tr>`).join('');
+  scheduleEl.innerHTML = `
+    <h4 class="mtg-schedule-title">Year-by-year breakdown${hasOverpay && withOver.paidOff ? ' (with overpayments)' : ''}</h4>
+    <div class="mtg-table-scroll">
+      <table class="mtg-table">
+        <thead><tr><th>Period</th><th>Principal</th><th>Interest</th><th>Balance</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+function updateMortgageField(field, value) {
+  if (!ensureCanEdit() || !isSavingsAllowed()) return;
+  mortgage[field] = value;
+  save();
+  renderMortgage();
+}
+
+function openEditMortgage() {
+  if (!ensureCanEdit() || !isSavingsAllowed()) return;
+  document.getElementById('m-balance').value = mortgage.balance || '';
+  document.getElementById('m-rate').value = mortgage.rate || '';
+  document.getElementById('m-term').value = mortgage.termMonths ? (mortgage.termMonths / 12) : '';
+  document.getElementById('m-monthly-dani').value = mortgage.monthlyDani || '';
+  document.getElementById('m-monthly-ken').value = mortgage.monthlyKen || '';
+  document.getElementById('modal-mortgage').classList.add('open');
+}
+
+function saveMortgage() {
+  if (!ensureCanEdit() || !isSavingsAllowed()) return;
+  mortgage.balance = +document.getElementById('m-balance').value || 0;
+  mortgage.rate = +document.getElementById('m-rate').value || 0;
+  mortgage.termMonths = Math.round((+document.getElementById('m-term').value || 0) * 12);
+  mortgage.monthlyDani = +document.getElementById('m-monthly-dani').value || 0;
+  mortgage.monthlyKen = +document.getElementById('m-monthly-ken').value || 0;
+  save();
+  renderMortgage();
+  closeModal('modal-mortgage');
+}
+
 function openAddSaving() {
   if (!ensureCanEdit() || !isSavingsAllowed()) return;
   editingSavingId = null;
@@ -5826,7 +6133,7 @@ function closeTabMenu() {
 
 function showTab(t) {
   localStorage.setItem('move_active_tab', t);
-  const tabs = ['home','tasks','furniture','contacts','budget','savings','calendar','files','packing','topack','shopping'];
+  const tabs = ['home','tasks','furniture','contacts','budget','savings','mortgage','calendar','files','packing','topack','shopping'];
   tabs.forEach(x => {
     const panel = document.getElementById('tab-'+x);
     const isActive = x === t;
@@ -7053,6 +7360,7 @@ renderFurniture();
 renderContacts();
 renderBudget();
 renderSavings();
+renderMortgage();
 renderPacking();
 renderToPackTab();
 renderShoppingList();
