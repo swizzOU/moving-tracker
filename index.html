@@ -4013,6 +4013,9 @@ let shoppingList = readStoredJson(STORAGE_KEYS.shoppingList, []);
 let shoppingReactionPickerOpen = null;
 // Which pin's "add note" composer is open, as the option id (null = none).
 let shoppingNoteFormOpen = null;
+// Which shopping item cards are expanded, keyed by item id (true = open).
+// Per-device view state - deliberately not synced (see toggleShoppingItem).
+let shoppingItemCollapsed = {};
 function renameMeasurementRooms(list) {
   return (Array.isArray(list) ? list : []).map((m) => ({ ...m, room: FURN_ROOM_RENAMES[m.room] || m.room || '' }));
 }
@@ -4034,7 +4037,9 @@ function exportStatePayload() {
     customTaskCategories,
     customTaskCategoryIcons,
     deletedDefaultTaskCategories,
-    collapsedTaskCategories,
+    // collapsedTaskCategories deliberately excluded: which category is
+    // expanded/collapsed is per-device view state, not shared data - see
+    // taskCollapsed in STORAGE_KEYS, which still persists it locally.
     taskSectionOrder,
     furniture,
     contacts,
@@ -4150,9 +4155,7 @@ function applyPayload(payload) {
     ? payload.customTaskCategoryIcons
     : {};
   deletedDefaultTaskCategories = Array.isArray(payload.deletedDefaultTaskCategories) ? payload.deletedDefaultTaskCategories : [];
-  collapsedTaskCategories = payload.collapsedTaskCategories && typeof payload.collapsedTaskCategories === 'object'
-    ? payload.collapsedTaskCategories
-    : {};
+  // collapsedTaskCategories is per-device view state - deliberately not applied from remote payloads.
   taskSectionOrder = Array.isArray(payload.taskSectionOrder) ? payload.taskSectionOrder : [];
   furniture = migrateFurniture((Array.isArray(payload.furniture) && payload.furniture.length) ? payload.furniture : DEFAULT_FURNITURE);
   contacts = Array.isArray(payload.contacts) ? payload.contacts : [];
@@ -7511,7 +7514,8 @@ function renderShoppingItemCard(item) {
   const budgetLabel = (item.budgetMin || item.budgetMax)
     ? `£${item.budgetMin || 0}–£${item.budgetMax || '?'}`
     : 'No budget set';
-  const chevronClass = item.collapsed ? '' : 'open';
+  const isCollapsed = !!shoppingItemCollapsed[item.id];
+  const chevronClass = isCollapsed ? '' : 'open';
 
   return `
 <div class="shopping-item-card" id="sitem-${item.id}">
@@ -7525,7 +7529,7 @@ function renderShoppingItemCard(item) {
     <button class="shopping-item-edit" title="Edit name & budget"
       onclick="event.stopPropagation();editShoppingItem('${item.id}')">✎</button>
   </div>
-  ${item.collapsed ? '' : `
+  ${isCollapsed ? '' : `
   <div class="shopping-item-body">
     <div class="shopping-options-section">
       <h4>Options to consider</h4>
@@ -7744,7 +7748,7 @@ function saveShoppingItem() {
     shoppingList.push({
       id: shoppingId(), name,
       budgetMin, budgetMax,
-      collapsed: false, options: []
+      options: []
     });
   }
   saveShoppingList();
@@ -7753,10 +7757,7 @@ function saveShoppingItem() {
 }
 
 function toggleShoppingItem(itemId) {
-  const item = shoppingList.find((i) => i.id === itemId);
-  if (!item) return;
-  item.collapsed = !item.collapsed;
-  saveShoppingList();
+  shoppingItemCollapsed[itemId] = !shoppingItemCollapsed[itemId];
   renderShoppingList();
 }
 
