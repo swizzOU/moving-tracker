@@ -716,6 +716,7 @@
     text-align: right;
     min-width: 90px;
   }
+  .task-when.overdue { color: var(--danger); font-weight: 600; }
   .task-who {
     font-size: 0.75rem;
     background: var(--cream-dark);
@@ -2665,17 +2666,15 @@ a.pin-title:hover { text-decoration: underline; }
           </select>
         </div>
         <div class="filter-group">
-          <label for="task-filter-when" class="filter-label">When</label>
+          <label for="task-filter-when" class="filter-label">Due</label>
           <select id="task-filter-when" class="filter-select" onchange="updateTaskFilters()">
             <option value="all">All</option>
-            <option value="ASAP">ASAP</option>
-            <option value="2 weeks before">2 weeks before</option>
-            <option value="1 week before">1 week before</option>
-            <option value="Moving week">Moving week</option>
-            <option value="Day before">Day before</option>
-            <option value="Night before">Night before</option>
-            <option value="Moving day">Moving day</option>
-            <option value="After move">After move</option>
+            <option value="overdue">Overdue</option>
+            <option value="today">Today</option>
+            <option value="week">This week</option>
+            <option value="month">This month</option>
+            <option value="later">Later</option>
+            <option value="nodate">No date</option>
           </select>
         </div>
         <div class="filter-group">
@@ -3215,7 +3214,7 @@ a.pin-title:hover { text-decoration: underline; }
         <div class="event-view-value" id="task-view-who"></div>
       </div>
       <div class="event-view-item">
-        <div class="event-view-label">When</div>
+        <div class="event-view-label">Due date</div>
         <div class="event-view-value" id="task-view-when"></div>
       </div>
       <div class="event-view-item" id="task-view-notes-row">
@@ -3257,17 +3256,9 @@ a.pin-title:hover { text-decoration: underline; }
       <option>Caroline</option>
       <option>Dani/Ken</option>
     </select>
-    <label>When</label>
-    <select id="new-when">
-      <option>ASAP</option>
-      <option>2 weeks before</option>
-      <option>1 week before</option>
-      <option>Moving week</option>
-      <option>Day before</option>
-      <option>Night before</option>
-      <option>Moving day</option>
-      <option>After move</option>
-    </select>
+    <label>Due date <span style="font-weight:400;color:var(--muted);font-size:0.82rem;">(optional)</span></label>
+    <input type="date" id="new-due-date">
+    <button type="button" class="btn-sm" style="margin:4px 0;" onclick="document.getElementById('new-due-date').value=''">Clear date</button>
     <label>Status</label>
     <select id="new-status">
       <option>Not Started</option>
@@ -3728,8 +3719,13 @@ const DEFAULT_BUDGET_CATEGORIES = ['Legal','Removals','Furniture','Deposits & Fe
 const DEFAULT_BUDGET_ENTRIES = [];
 const DEFAULT_SAVINGS = [];
 const PEOPLE_OPTIONS = ['Dani','Ken','Mum','Dad','Caroline','Dani/Ken'];
-const WHEN_OPTIONS = ['ASAP','2 weeks before','1 week before','Moving week','Day before','Night before','Moving day','After move'];
+// Moving day - used only to convert this app's old relative "When" labels
+// (ASAP, 2 weeks before, etc.) into real due dates the first time an old
+// task loads. Update if the move date changes.
+const MOVE_DATE = '2026-08-20';
 
+// One-time migration helper: maps the old relative label wording to a
+// canonical label, so odd/legacy phrasing still converts sensibly.
 function normalizeWhen(value) {
   const v = String(value || '').trim().toLowerCase();
   if (v.includes('asap')) return 'ASAP';
@@ -3744,15 +3740,31 @@ function normalizeWhen(value) {
   return 'ASAP';
 }
 
+// One-time migration helper: approximates an old relative label as a real
+// due date, anchored to MOVE_DATE (or today, for ASAP).
+function whenLabelToDueDate(value) {
+  const offsetDays = {
+    'ASAP': 0, '2 weeks before': -14, '1 week before': -7, 'Moving week': -3,
+    'Day before': -1, 'Night before': -1, 'Moving day': 0, 'After move': 7
+  };
+  const label = normalizeWhen(value);
+  const anchor = label === 'ASAP' ? new Date() : new Date(`${MOVE_DATE}T00:00:00`);
+  anchor.setDate(anchor.getDate() + (offsetDays[label] || 0));
+  return toLocalDateStr(anchor);
+}
+
 function migrateTasks(inputTasks) {
   if (!Array.isArray(inputTasks)) return [];
-  return inputTasks.map((task, index) => ({
-    ...task,
-    id: typeof task.id === 'number' ? task.id : Date.now() + index,
-    when: normalizeWhen(task.when),
-    who: PEOPLE_OPTIONS.includes(task.who) ? task.who : 'Dani/Ken',
-    priority: !!task.priority
-  }));
+  return inputTasks.map((task, index) => {
+    const { when, ...rest } = task;
+    return {
+      ...rest,
+      id: typeof task.id === 'number' ? task.id : Date.now() + index,
+      dueDate: /^\d{4}-\d{2}-\d{2}$/.test(task.dueDate) ? task.dueDate : (when ? whenLabelToDueDate(when) : ''),
+      who: PEOPLE_OPTIONS.includes(task.who) ? task.who : 'Dani/Ken',
+      priority: !!task.priority
+    };
+  });
 }
 
 function migrateBoxes(input) {
@@ -6317,12 +6329,40 @@ function togglePriority(id) {
   renderTasks();
 }
 
+// Which due-date bucket a task falls into, relative to today - used for
+// both the "Due" filter and the overdue highlight on each task row.
+function taskDueBucket(dueDate) {
+  if (!dueDate) return 'nodate';
+  const today = todayLocalDateStr();
+  if (dueDate < today) return 'overdue';
+  if (dueDate === today) return 'today';
+  const diffDays = Math.round((new Date(`${dueDate}T00:00:00`) - new Date(`${today}T00:00:00`)) / 86400000);
+  if (diffDays <= 7) return 'week';
+  if (diffDays <= 31) return 'month';
+  return 'later';
+}
+
+// Compact "Today" / "Tomorrow" / "Thursday" / "20 Aug" style label for a
+// task row, plus "No date" when none is set.
+function formatTaskDueLabel(dueDate) {
+  if (!dueDate) return 'No date';
+  const today = todayLocalDateStr();
+  const diffDays = Math.round((new Date(`${dueDate}T00:00:00`) - new Date(`${today}T00:00:00`)) / 86400000);
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Tomorrow';
+  if (diffDays === -1) return 'Yesterday';
+  const d = new Date(`${dueDate}T00:00:00`);
+  if (diffDays < 0) return `Overdue - ${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`;
+  if (diffDays <= 6) return d.toLocaleDateString('en-GB', { weekday: 'long' });
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
 function renderTasks() {
   const container = document.getElementById('tasks-container');
   const filtered = tasks.filter(t => {
     const statusMatch = currentStatusFilter === 'all' || t.status === currentStatusFilter;
     const whoMatch = currentWhoFilter === 'all' || t.who === currentWhoFilter;
-    const whenMatch = currentWhenFilter === 'all' || t.when === currentWhenFilter;
+    const whenMatch = currentWhenFilter === 'all' || taskDueBucket(t.dueDate) === currentWhenFilter;
     const starMatch = !showStarredOnly || t.priority;
     return statusMatch && whoMatch && whenMatch && starMatch;
   });
@@ -6332,15 +6372,12 @@ function renderTasks() {
 
   categories.forEach(cat => {
     const catTasks = filtered.filter(t => t.cat === cat);
-    const whenRank = new Map(WHEN_OPTIONS.map((label, index) => [label, index]));
     const orderedCatTasks = [...catTasks].sort((a, b) => {
       if (a.done !== b.done) {
         return Number(a.done) - Number(b.done);
       }
       if (!a.done && !b.done) {
-        const rankA = whenRank.get(normalizeWhen(a.when));
-        const rankB = whenRank.get(normalizeWhen(b.when));
-        return (rankA ?? Number.MAX_SAFE_INTEGER) - (rankB ?? Number.MAX_SAFE_INTEGER);
+        return (a.dueDate || '9999-99-99').localeCompare(b.dueDate || '9999-99-99');
       }
       return 0;
     });
@@ -6388,6 +6425,8 @@ function renderTasks() {
     }
 
     orderedCatTasks.forEach(t => {
+      const dueLabel = formatTaskDueLabel(t.dueDate);
+      const isOverdue = !t.done && taskDueBucket(t.dueDate) === 'overdue';
       const card = document.createElement('div');
       card.className = 'task-card' + (t.done ? ' done-card' : '') + (t.priority ? ' priority-card' : '');
       card.innerHTML = `
@@ -6398,9 +6437,9 @@ function renderTasks() {
         <div>
           <div class="task-title" onclick="openViewTask(${t.id})" title="View task">${t.task}</div>
           ${t.notes ? `<div class="task-notes">${t.notes}</div>` : ''}
-          <div class="task-mobile-meta">${t.who} | ${t.when}</div>
+          <div class="task-mobile-meta">${t.who} | ${dueLabel}</div>
         </div>
-        <div class="task-when">${t.when}</div>
+        <div class="task-when${isOverdue ? ' overdue' : ''}">${escapeHtml(dueLabel)}</div>
         <div class="task-who">${t.who}</div>
         <div class="status-pill status-${t.status.replace(' ','\ ')}" onclick="cycleStatus(${t.id})" style="cursor:pointer" title="Click to cycle status">${t.status}</div>
       `;
@@ -6667,7 +6706,7 @@ function openAddTask() {
   document.getElementById('new-task').value = '';
   document.getElementById('new-notes').value = '';
   document.getElementById('new-who').value = 'Dani';
-  document.getElementById('new-when').value = 'ASAP';
+  document.getElementById('new-due-date').value = '';
   document.getElementById('new-status').value = 'Not Started';
   document.getElementById('modal-task').classList.add('open');
 }
@@ -6759,7 +6798,7 @@ function openEditTask(id) {
   document.getElementById('new-task').value = t.task;
   document.getElementById('new-notes').value = t.notes || '';
   document.getElementById('new-who').value = t.who;
-  document.getElementById('new-when').value = normalizeWhen(t.when);
+  document.getElementById('new-due-date').value = t.dueDate || '';
   document.getElementById('new-status').value = t.status;
   document.getElementById('modal-task').classList.add('open');
 }
@@ -6773,7 +6812,7 @@ function openViewTask(id) {
   document.getElementById('task-view-category').textContent = t.cat || '-';
   document.getElementById('task-view-status').textContent = t.status || '-';
   document.getElementById('task-view-who').textContent = t.who || '-';
-  document.getElementById('task-view-when').textContent = normalizeWhen(t.when);
+  document.getElementById('task-view-when').textContent = t.dueDate ? formatDisplayDate(t.dueDate) : 'No date set';
 
   const notesRow = document.getElementById('task-view-notes-row');
   const notesText = (t.notes || '').trim();
@@ -6887,7 +6926,7 @@ function saveTask() {
     task: document.getElementById('new-task').value,
     notes: document.getElementById('new-notes').value,
     who: document.getElementById('new-who').value,
-    when: normalizeWhen(document.getElementById('new-when').value),
+    dueDate: document.getElementById('new-due-date').value || '',
     status: document.getElementById('new-status').value,
     done: document.getElementById('new-status').value === 'Done',
     priority: editingTaskId !== null ? !!tasks.find(task => task.id === editingTaskId)?.priority : false
