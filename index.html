@@ -2421,6 +2421,63 @@ a.pin-title:hover { text-decoration: underline; }
   border: 1px solid var(--border); border-radius: 7px; padding: 4px 8px;
   font-size: 0.76rem; font-family: 'DM Sans', sans-serif; background: var(--white); color: var(--text);
 }
+/* ── Measurements Tab ──────────────────────────────────────── */
+#measurements-container {
+  padding: var(--space-md) var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.measurement-card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.measurement-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 18px; background: var(--cream-dark);
+  cursor: pointer; user-select: none;
+}
+.measurement-name { font-family: 'Lora', serif; font-size: 1.05rem; font-weight: 600; color: var(--sage-dark); flex: 1; }
+.measurement-dims { font-size: 0.8rem; color: var(--muted); background: var(--white); border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+.measurement-chevron { color: var(--muted); font-size: 0.9rem; transition: transform 0.2s; }
+.measurement-chevron.open { transform: rotate(90deg); }
+.measurement-edit {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 1px solid var(--border); background: var(--white);
+  color: var(--muted); cursor: pointer; font-size: 0.8rem; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.measurement-edit:hover { border-color: var(--sage); color: var(--sage-dark); }
+.measurement-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+.measurement-desc { font-size: 0.9rem; color: var(--text); }
+.measurement-notes { font-size: 0.85rem; color: var(--muted); white-space: pre-wrap; }
+.measurement-photos-section h4 {
+  font-size: 0.82rem; color: var(--muted); text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 10px;
+}
+.measurement-photos-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px;
+}
+.measurement-photo { position: relative; border-radius: 10px; overflow: hidden; background: var(--cream-dark); aspect-ratio: 1/1; }
+.measurement-photo img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: pointer; }
+.measurement-photo-del {
+  position: absolute; top: 5px; right: 5px; width: 24px; height: 24px; border-radius: 50%;
+  border: none; cursor: pointer; font-size: 0.75rem; line-height: 1; color: var(--text);
+  background: rgba(255,255,255,0.9); box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+}
+.measurement-photo-del:hover { background: var(--danger); color: #fff; }
+.measurement-photo-add {
+  display: flex; align-items: center; justify-content: center; aspect-ratio: 1/1;
+  border: 1.5px dashed var(--border); border-radius: 10px; color: var(--muted);
+  font-size: 1.6rem; cursor: pointer; background: var(--cream); transition: all 0.15s;
+}
+.measurement-photo-add:hover { border-color: var(--sage); color: var(--sage-dark); }
+.measurement-photo-status { font-size: 0.78rem; color: var(--muted); min-height: 1.1em; }
+.measurement-item-actions { display: flex; gap: 8px; justify-content: flex-end; padding: 0 18px 14px; }
+@media (max-width: 700px) {
+  #measurements-container { padding: var(--space-md); }
+  .measurement-header { flex-wrap: wrap; }
+  .measurement-photos-grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
+}
+
 @media (max-width: 700px) {
   .shopping-item-meta { grid-template-columns: 1fr 1fr; }
   .shopping-toolbar { flex-direction: column; align-items: flex-start; }
@@ -2519,6 +2576,7 @@ a.pin-title:hover { text-decoration: underline; }
     <button class="tab" id="tab-btn-savings" onclick="showTab('savings')">💰 Savings</button>
     <button class="tab" id="tab-btn-mortgage" onclick="showTab('mortgage')">🏦 Mortgage</button>
     <button class="tab" onclick="showTab('shopping')">🛒 Shopping List</button>
+    <button class="tab" onclick="showTab('measurements')">📏 Measurements</button>
   </div>
 </nav>
 
@@ -2544,6 +2602,7 @@ a.pin-title:hover { text-decoration: underline; }
       <button class="home-card" id="home-card-savings" onclick="showTab('savings')"><span class="home-card-icon">💰</span><span class="home-card-label">Savings</span></button>
       <button class="home-card" id="home-card-mortgage" onclick="showTab('mortgage')"><span class="home-card-icon">🏦</span><span class="home-card-label">Mortgage</span></button>
       <button class="home-card" onclick="showTab('shopping')"><span class="home-card-icon">🛒</span><span class="home-card-label">Shopping List</span></button>
+      <button class="home-card" onclick="showTab('measurements')"><span class="home-card-icon">📏</span><span class="home-card-label">Measurements</span></button>
     </div>
 
     <h3 class="home-section-heading">The house</h3>
@@ -3073,6 +3132,14 @@ a.pin-title:hover { text-decoration: underline; }
       <button class="add-btn" onclick="addShoppingItem()">+ Add item type</button>
     </div>
     <div id="shopping-list-container"></div>
+  </div>
+
+  <!-- MEASUREMENTS TAB -->
+  <div id="tab-measurements" class="hidden">
+    <div class="shopping-toolbar">
+      <button class="add-btn" onclick="openAddMeasurement()">+ Add measurement</button>
+    </div>
+    <div id="measurements-container"></div>
   </div>
 
 </div>
@@ -3789,7 +3856,8 @@ const STORAGE_KEYS = {
   boxes: 'move_packing_boxes',
   boxTypes: 'move_packing_box_types',
   toPackItems: 'move_to_pack_items',
-  shoppingList: 'move_shopping_list'
+  shoppingList: 'move_shopping_list',
+  measurements: 'move_measurements'
 };
 
 
@@ -3929,6 +3997,9 @@ let shoppingList = readStoredJson(STORAGE_KEYS.shoppingList, []);
 let shoppingReactionPickerOpen = null;
 // Which pin's "add note" composer is open, as the option id (null = none).
 let shoppingNoteFormOpen = null;
+let measurements = readStoredJson(STORAGE_KEYS.measurements, []);
+// Which measurement cards are expanded, keyed by id (true = open).
+let measurementsOpen = {};
 const DEFAULT_BOX_TYPES = ['Cardboard box', 'Clothes bag', 'Suitcase', 'Bin bag', 'Crate', 'Other'];
 let boxTypes = [...new Set([...DEFAULT_BOX_TYPES, ...readStoredJson(STORAGE_KEYS.boxTypes, []), ...boxes.map((b) => b.type).filter(Boolean)])];
 let editingBoxId = null;
@@ -3956,7 +4027,8 @@ function exportStatePayload() {
     boxes,
     boxTypes,
     toPackItems,
-    shoppingList
+    shoppingList,
+    measurements
   };
 }
 
@@ -3978,6 +4050,7 @@ function persistLocalState() {
   localStorage.setItem(STORAGE_KEYS.boxTypes, JSON.stringify(boxTypes));
   localStorage.setItem(STORAGE_KEYS.toPackItems, JSON.stringify(toPackItems));
   localStorage.setItem(STORAGE_KEYS.shoppingList, JSON.stringify(shoppingList));
+  localStorage.setItem(STORAGE_KEYS.measurements, JSON.stringify(measurements));
 }
 
 function refreshAuthControls() {
@@ -4072,6 +4145,7 @@ function applyPayload(payload) {
   boxTypes = [...new Set([...DEFAULT_BOX_TYPES, ...(Array.isArray(payload.boxTypes) ? payload.boxTypes : []), ...boxes.map((b) => b.type).filter(Boolean)])];
   toPackItems = Array.isArray(payload.toPackItems) ? payload.toPackItems : [];
   if ('shoppingList' in payload) shoppingList = Array.isArray(payload.shoppingList) ? payload.shoppingList : [];
+  if ('measurements' in payload) measurements = Array.isArray(payload.measurements) ? payload.measurements : [];
   budgetCategories = Array.isArray(payload.budgetCategories) ? payload.budgetCategories : [];
   budgetCategories = [...new Set([...
     DEFAULT_BUDGET_CATEGORIES,
@@ -4091,6 +4165,7 @@ function applyPayload(payload) {
   renderMortgage();
   renderPacking();
   renderShoppingList();
+  renderMeasurements();
   updateStats();
   if (calendar) {
     renderCalendar();
@@ -6133,7 +6208,7 @@ function closeTabMenu() {
 
 function showTab(t) {
   localStorage.setItem('move_active_tab', t);
-  const tabs = ['home','tasks','furniture','contacts','budget','savings','mortgage','calendar','files','packing','topack','shopping'];
+  const tabs = ['home','tasks','furniture','contacts','budget','savings','mortgage','calendar','files','packing','topack','shopping','measurements'];
   tabs.forEach(x => {
     const panel = document.getElementById('tab-'+x);
     const isActive = x === t;
@@ -7364,6 +7439,7 @@ renderMortgage();
 renderPacking();
 renderToPackTab();
 renderShoppingList();
+renderMeasurements();
 updateStats();
 showTab(localStorage.getItem('move_active_tab') || 'home');
 save();
@@ -7832,6 +7908,177 @@ function togglePinFavourite(itemId, optId) {
   renderShoppingList();
 }
 
+// ── Measurements Tab ─────────────────────────────────────────────────────────
+
+function saveMeasurements() {
+  save();
+}
+
+function formatMeasurementDims(m) {
+  const parts = [m.width, m.height, m.depth].filter((v) => v || v === 0);
+  if (!parts.length) return '';
+  return parts.map((v) => (+v || 0).toString().replace(/\.0+$/, '')).join(' × ') + ' cm';
+}
+
+function renderMeasurements() {
+  const container = document.getElementById('measurements-container');
+  if (!container) return;
+  if (!measurements.length) {
+    container.innerHTML = '<div style="text-align:center;padding:48px 0;color:var(--muted);font-size:0.95rem;">No measurements yet — click <strong>+ Add measurement</strong> to start recording them.</div>';
+    applyActionLockToInteractiveElements();
+    return;
+  }
+  container.innerHTML = measurements.map((m) => renderMeasurementCard(m)).join('');
+  applyActionLockToInteractiveElements();
+}
+
+function renderMeasurementCard(m) {
+  const isOpen = measurementsOpen[m.id] === true;
+  const dims = formatMeasurementDims(m);
+  const photos = Array.isArray(m.photos) ? m.photos : [];
+  const photosHtml = photos.map((p, i) => `
+    <div class="measurement-photo">
+      <img src="${safeSrc(p.url)}" alt="" onclick="window.open('${safeSrc(p.url)}','_blank')">
+      <button class="measurement-photo-del" title="Delete photo" onclick="event.stopPropagation();deleteMeasurementPhoto('${m.id}',${i})">✕</button>
+    </div>`).join('');
+  return `
+<div class="measurement-card" id="measurement-${m.id}">
+  <div class="measurement-header" onclick="toggleMeasurement('${m.id}')">
+    <span class="measurement-chevron ${isOpen ? 'open' : ''}">▶</span>
+    <span class="measurement-name">${escapeHtml(m.title || 'Untitled')}</span>
+    ${dims ? `<span class="measurement-dims">${escapeHtml(dims)}</span>` : ''}
+    <button class="measurement-edit" title="Edit" onclick="event.stopPropagation();openEditMeasurement('${m.id}')">✎</button>
+  </div>
+  <div class="measurement-body" style="display:${isOpen ? 'flex' : 'none'};">
+    ${m.description ? `<div class="measurement-desc">${escapeHtml(m.description)}</div>` : ''}
+    ${m.notes ? `<div class="measurement-notes">${escapeHtml(m.notes)}</div>` : ''}
+    <div class="measurement-photos-section">
+      <h4>Photos</h4>
+      <div class="measurement-photos-grid">
+        ${photosHtml}
+        <label class="measurement-photo-add" title="Add photo">
+          +<input type="file" accept="image/*" capture="environment" multiple style="display:none" onchange="uploadMeasurementPhotos('${m.id}',this)">
+        </label>
+      </div>
+      <div class="measurement-photo-status" id="measurement-photo-status-${m.id}"></div>
+    </div>
+  </div>
+  <div class="measurement-item-actions" style="display:${isOpen ? 'flex' : 'none'};">
+    <button class="btn-sm-danger" onclick="deleteMeasurement('${m.id}')">Delete</button>
+  </div>
+</div>`;
+}
+
+function toggleMeasurement(id) {
+  measurementsOpen[id] = !measurementsOpen[id];
+  renderMeasurements();
+}
+
+function openAddMeasurement() {
+  if (!ensureCanEdit()) return;
+  document.getElementById('measurement-id').value = '';
+  document.getElementById('measurement-title').value = '';
+  document.getElementById('measurement-description').value = '';
+  document.getElementById('measurement-width').value = '';
+  document.getElementById('measurement-height').value = '';
+  document.getElementById('measurement-depth').value = '';
+  document.getElementById('measurement-notes').value = '';
+  document.getElementById('measurement-modal-title').textContent = 'Add measurement';
+  document.getElementById('modal-measurement').classList.add('open');
+}
+
+function openEditMeasurement(id) {
+  if (!ensureCanEdit()) return;
+  const m = measurements.find((x) => x.id === id);
+  if (!m) return;
+  document.getElementById('measurement-id').value = m.id;
+  document.getElementById('measurement-title').value = m.title || '';
+  document.getElementById('measurement-description').value = m.description || '';
+  document.getElementById('measurement-width').value = m.width || '';
+  document.getElementById('measurement-height').value = m.height || '';
+  document.getElementById('measurement-depth').value = m.depth || '';
+  document.getElementById('measurement-notes').value = m.notes || '';
+  document.getElementById('measurement-modal-title').textContent = 'Edit measurement';
+  document.getElementById('modal-measurement').classList.add('open');
+}
+
+function saveMeasurement() {
+  if (!ensureCanEdit()) return;
+  const id = document.getElementById('measurement-id').value;
+  const fields = {
+    title: document.getElementById('measurement-title').value.trim(),
+    description: document.getElementById('measurement-description').value.trim(),
+    width: +document.getElementById('measurement-width').value || 0,
+    height: +document.getElementById('measurement-height').value || 0,
+    depth: +document.getElementById('measurement-depth').value || 0,
+    notes: document.getElementById('measurement-notes').value.trim(),
+  };
+  if (id) {
+    const m = measurements.find((x) => x.id === id);
+    if (m) Object.assign(m, fields);
+  } else {
+    measurements.push({ id: shoppingId(), ...fields, photos: [] });
+  }
+  saveMeasurements();
+  renderMeasurements();
+  closeModal('modal-measurement');
+}
+
+// Only delete Storage objects we created: must sit directly under measurement-images/ with no traversal.
+function deleteMeasurementImageByPath(path) {
+  if (!path) return;
+  if (!/^measurement-images\/[^/]+$/.test(path)) return;
+  const storage = getStorage();
+  if (storage) storage.ref(path).delete().catch(() => {});
+}
+
+function deleteMeasurement(id) {
+  if (!ensureCanEdit()) return;
+  const m = measurements.find((x) => x.id === id);
+  if (!m) return;
+  if (!confirm(`Delete "${m.title || 'this measurement'}"?`)) return;
+  measurements = measurements.filter((x) => x.id !== id);
+  delete measurementsOpen[id];
+  saveMeasurements();
+  renderMeasurements();
+  (m.photos || []).forEach((p) => deleteMeasurementImageByPath(p.storagePath));
+}
+
+async function uploadMeasurementPhotos(id, fileInput) {
+  if (!ensureCanEdit()) return;
+  const files = Array.from(fileInput.files || []);
+  if (!files.length) return;
+  if (!syncRuntime.currentUser) { alert('Please sign in to upload photos.'); return; }
+  const m = measurements.find((x) => x.id === id);
+  if (!m) return;
+  const status = document.getElementById(`measurement-photo-status-${id}`);
+  if (status) status.textContent = `Uploading ${files.length} photo${files.length !== 1 ? 's' : ''}…`;
+  m.photos = Array.isArray(m.photos) ? m.photos : [];
+  for (const file of files) {
+    try {
+      const path = `measurement-images/${shoppingId()}-${encodeURIComponent(file.name)}`;
+      const ref = getStorage().ref(path);
+      await ref.put(file);
+      const url = await ref.getDownloadURL();
+      m.photos.push({ storagePath: path, url });
+    } catch (err) {
+      if (status) status.textContent = `Upload failed: ${err.message}`;
+    }
+  }
+  saveMeasurements();
+  renderMeasurements();
+}
+
+function deleteMeasurementPhoto(id, index) {
+  if (!ensureCanEdit()) return;
+  const m = measurements.find((x) => x.id === id);
+  if (!m || !Array.isArray(m.photos) || !m.photos[index]) return;
+  const [removed] = m.photos.splice(index, 1);
+  saveMeasurements();
+  renderMeasurements();
+  deleteMeasurementImageByPath(removed?.storagePath);
+}
+
 
 
 
@@ -7869,6 +8116,38 @@ function togglePinFavourite(itemId, optId) {
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal('modal-shopping-pin')">Cancel</button>
       <button class="btn-save" onclick="savePin()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- MEASUREMENT MODAL -->
+<div class="modal-overlay" id="modal-measurement">
+  <div class="modal">
+    <h3 id="measurement-modal-title">Add measurement</h3>
+    <input type="hidden" id="measurement-id">
+    <label for="measurement-title">Title</label>
+    <input type="text" id="measurement-title" placeholder="e.g. Living room alcove" maxlength="120">
+    <label for="measurement-description">Description</label>
+    <input type="text" id="measurement-description" placeholder="e.g. Left-hand alcove next to fireplace" maxlength="200">
+    <div class="shopping-item-meta" style="grid-template-columns:1fr 1fr 1fr;">
+      <div class="shopping-meta-field">
+        <label for="measurement-width">Width (cm)</label>
+        <input type="number" id="measurement-width" min="0" step="0.1" inputmode="decimal">
+      </div>
+      <div class="shopping-meta-field">
+        <label for="measurement-height">Height (cm)</label>
+        <input type="number" id="measurement-height" min="0" step="0.1" inputmode="decimal">
+      </div>
+      <div class="shopping-meta-field">
+        <label for="measurement-depth">Depth (cm)</label>
+        <input type="number" id="measurement-depth" min="0" step="0.1" inputmode="decimal">
+      </div>
+    </div>
+    <label for="measurement-notes">Notes</label>
+    <textarea id="measurement-notes" rows="3" placeholder="Any other details worth remembering"></textarea>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-measurement')">Cancel</button>
+      <button class="btn-save" onclick="saveMeasurement()">Save</button>
     </div>
   </div>
 </div>
