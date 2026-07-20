@@ -7273,21 +7273,32 @@ function formatEndDate(endDate, startDate) {
   return end.getTime() > start.getTime() ? end.toISOString().split('T')[0] : null;
 }
 
+// FullCalendar's Date objects represent all-day dates at local midnight, not
+// UTC midnight - toISOString() converts to UTC and silently shifts the date
+// by a day whenever the local timezone offset is positive (e.g. British
+// Summer Time), so date components must be read out in local time instead.
+function toLocalDateStr(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 function toInclusiveEndDate(fcEvent) {
   if (!fcEvent.end) return null;
-  const startDate = fcEvent.start.toISOString().split('T')[0];
+  const startDate = toLocalDateStr(fcEvent.start);
   const endDate = new Date(fcEvent.end.getTime());
   if (fcEvent.allDay) {
     // FullCalendar stores all-day end dates as exclusive.
     endDate.setDate(endDate.getDate() - 1);
   }
-  const endDateStr = endDate.toISOString().split('T')[0];
+  const endDateStr = toLocalDateStr(endDate);
   return endDateStr > startDate ? endDateStr : null;
 }
 
 function syncEventDatesFromCalendar(storedEvent, fcEvent) {
   if (!storedEvent || !fcEvent.start) return;
-  storedEvent.date = fcEvent.start.toISOString().split('T')[0];
+  storedEvent.date = toLocalDateStr(fcEvent.start);
   storedEvent.endDate = toInclusiveEndDate(fcEvent);
 }
 
@@ -7348,6 +7359,8 @@ function buildEventContent(arg) {
 function renderCalendar() {
   const calendarEl = document.getElementById('calendar-container');
 
+  const previousDate = calendar ? calendar.getDate() : null;
+  const previousView = calendar ? calendar.view.type : null;
   if (calendar) {
     calendar.destroy();
   }
@@ -7373,7 +7386,8 @@ function renderCalendar() {
   });
 
   calendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: 'dayGridMonth',
+    initialView: previousView || 'dayGridMonth',
+    initialDate: previousDate || undefined,
     contentHeight: 'auto',
     fixedWeekCount: false,
     eventDisplay: 'block',
