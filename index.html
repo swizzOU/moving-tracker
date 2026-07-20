@@ -6992,9 +6992,17 @@ function saveContact() {
   ['c-role','c-name','c-phone','c-email','c-notes'].forEach(id => document.getElementById(id).value = '');
 }
 
-// Close modals on overlay click
+// Close modals on overlay click - but only when the mousedown that started
+// this click also began on the overlay itself. Otherwise, selecting text
+// inside the modal and dragging past its edge (mouseup lands on the
+// backdrop) would count as a click on the overlay and close the modal.
 document.querySelectorAll('.modal-overlay').forEach(el => {
-  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+  let mouseDownOnOverlay = false;
+  el.addEventListener('mousedown', e => { mouseDownOnOverlay = (e.target === el); });
+  el.addEventListener('click', e => {
+    if (e.target === el && mouseDownOnOverlay) el.classList.remove('open');
+    mouseDownOnOverlay = false;
+  });
 });
 
 let editingEventId = null;
