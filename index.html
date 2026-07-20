@@ -3805,14 +3805,14 @@ function migrateContribution(c, index) {
     id: typeof c.id === 'number' ? c.id : Date.now() + index,
     who: (c.who === 'Dani' || c.who === 'Ken') ? c.who : 'Dani',
     amount: Math.max(0, Number(c.amount) || 0),
-    date: /^\d{4}-\d{2}-\d{2}$/.test(c.date) ? c.date : new Date().toISOString().slice(0, 10),
+    date: /^\d{4}-\d{2}-\d{2}$/.test(c.date) ? c.date : todayLocalDateStr(),
     note: String(c.note || '').trim()
   };
 }
 
 function migrateSavings(input) {
   if (!Array.isArray(input)) return [];
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalDateStr();
   return input.map((s, i) => {
     const id = typeof s.id === 'number' ? s.id : Date.now() + i;
     const title = String(s.title || '').trim();
@@ -5146,7 +5146,7 @@ function exportBudgetCsv() {
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
-  const datePart = new Date().toISOString().slice(0, 10);
+  const datePart = todayLocalDateStr();
   link.href = url;
   link.download = `move-budget-${datePart}.csv`;
   document.body.appendChild(link);
@@ -5612,7 +5612,7 @@ function exportPackingCsv() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `packing-list-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.download = `packing-list-${todayLocalDateStr()}.csv`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -6079,7 +6079,7 @@ function openAddContribution(goalId) {
   document.getElementById('contrib-goal-name').textContent = g.title;
   document.getElementById('contrib-who').value = getSavingsIdentity() || '';
   document.getElementById('contrib-amount').value = '';
-  document.getElementById('contrib-date').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('contrib-date').value = todayLocalDateStr();
   document.getElementById('contrib-note').value = '';
   document.getElementById('modal-contribution').classList.add('open');
 }
@@ -7282,6 +7282,13 @@ function toLocalDateStr(date) {
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
+}
+
+// Today's date in local time - new Date().toISOString() would convert to
+// UTC, which returns yesterday's date for the first hour after local
+// midnight whenever the local timezone is ahead of UTC (e.g. BST).
+function todayLocalDateStr() {
+  return toLocalDateStr(new Date());
 }
 
 function toInclusiveEndDate(fcEvent) {
