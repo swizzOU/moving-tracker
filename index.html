@@ -3908,6 +3908,14 @@ Object.assign(ICONS, BASE_ICONS, customTaskCategoryIcons);
 let deletedDefaultTaskCategories = readStoredJson(STORAGE_KEYS.taskDeletedDefaults, []);
 let collapsedTaskCategories = readStoredJson(STORAGE_KEYS.taskCollapsed, {});
 let taskSectionOrder = readStoredJson(STORAGE_KEYS.taskSectionOrder, []);
+// The seller's odd room names from the old listing, mapped to how the
+// house is actually laid out for Dani and Ken.
+const FURN_ROOM_RENAMES = {
+  'Salon': 'Living Room',
+  'Games Room': 'Pool Room',
+  'Dressing Room': 'Spare Room',
+  'Guest Room': 'Office',
+};
 function migrateFurniture(items) {
   return items.map(f => {
     let status = f.status || '';
@@ -3919,7 +3927,7 @@ function migrateFurniture(items) {
     }
     return {
       name: f.name || '',
-      room: f.room || '',
+      room: FURN_ROOM_RENAMES[f.room] || f.room || '',
       price: typeof f.price === 'number' ? f.price : (parseFloat(String(f.price).replace(/[^0-9.]/g,'')) || 0),
       notes: f.notes || '',
       excluded: !!f.excluded,
@@ -4004,7 +4012,10 @@ let shoppingList = readStoredJson(STORAGE_KEYS.shoppingList, []);
 let shoppingReactionPickerOpen = null;
 // Which pin's "add note" composer is open, as the option id (null = none).
 let shoppingNoteFormOpen = null;
-let measurements = readStoredJson(STORAGE_KEYS.measurements, []);
+function renameMeasurementRooms(list) {
+  return (Array.isArray(list) ? list : []).map((m) => ({ ...m, room: FURN_ROOM_RENAMES[m.room] || m.room || '' }));
+}
+let measurements = renameMeasurementRooms(readStoredJson(STORAGE_KEYS.measurements, []));
 // Which measurement cards are expanded, keyed by id (true = open).
 let measurementsOpen = {};
 const DEFAULT_BOX_TYPES = ['Cardboard box', 'Clothes bag', 'Suitcase', 'Bin bag', 'Crate', 'Other'];
@@ -4152,7 +4163,7 @@ function applyPayload(payload) {
   boxTypes = [...new Set([...DEFAULT_BOX_TYPES, ...(Array.isArray(payload.boxTypes) ? payload.boxTypes : []), ...boxes.map((b) => b.type).filter(Boolean)])];
   toPackItems = Array.isArray(payload.toPackItems) ? payload.toPackItems : [];
   if ('shoppingList' in payload) shoppingList = Array.isArray(payload.shoppingList) ? payload.shoppingList : [];
-  if ('measurements' in payload) measurements = Array.isArray(payload.measurements) ? payload.measurements : [];
+  if ('measurements' in payload) measurements = renameMeasurementRooms(payload.measurements);
   budgetCategories = Array.isArray(payload.budgetCategories) ? payload.budgetCategories : [];
   budgetCategories = [...new Set([...
     DEFAULT_BUDGET_CATEGORIES,
