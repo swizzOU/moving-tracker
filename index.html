@@ -2471,11 +2471,12 @@ a.pin-title:hover { text-decoration: underline; }
 }
 .measurement-photo-del:hover { background: var(--danger); color: #fff; }
 .measurement-photo-add {
-  display: flex; align-items: center; justify-content: center; aspect-ratio: 1/1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; aspect-ratio: 1/1;
   border: 1.5px dashed var(--border); border-radius: 10px; color: var(--muted);
-  font-size: 1.6rem; cursor: pointer; background: var(--cream); transition: all 0.15s;
+  font-size: 1.5rem; cursor: pointer; background: var(--cream); transition: all 0.15s;
 }
 .measurement-photo-add:hover { border-color: var(--sage); color: var(--sage-dark); }
+.measurement-photo-add span { font-size: 0.68rem; font-weight: 500; }
 .measurement-photo-status { font-size: 0.78rem; color: var(--muted); min-height: 1.1em; }
 .measurement-item-actions { display: flex; gap: 8px; justify-content: flex-end; padding: 0 18px 14px; }
 @media (max-width: 700px) {
@@ -7978,8 +7979,11 @@ function renderMeasurementCard(m) {
       <h4>Photos</h4>
       <div class="measurement-photos-grid">
         ${photosHtml}
-        <label class="measurement-photo-add" title="Add photo">
-          +<input type="file" accept="image/*" capture="environment" multiple style="display:none" onchange="uploadMeasurementPhotos('${m.id}',this)">
+        <label class="measurement-photo-add" title="Take photo">
+          📷<span>Take</span><input type="file" accept="image/*" capture="environment" style="display:none" onchange="uploadMeasurementPhotos('${m.id}',this)">
+        </label>
+        <label class="measurement-photo-add" title="Upload photo">
+          🖼️<span>Upload</span><input type="file" accept="image/*" multiple style="display:none" onchange="uploadMeasurementPhotos('${m.id}',this)">
         </label>
       </div>
       <div class="measurement-photo-status" id="measurement-photo-status-${m.id}"></div>
