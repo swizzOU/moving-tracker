@@ -3222,6 +3222,11 @@ a.pin-title:hover { text-decoration: underline; }
         <div class="event-view-value" id="task-view-notes"></div>
       </div>
     </div>
+    <div class="measurement-photos-section" style="margin-top:14px;">
+      <h4>Photos</h4>
+      <div class="measurement-photos-grid" id="task-view-photos-grid"></div>
+      <div class="measurement-photo-status" id="task-view-photo-status"></div>
+    </div>
     <div class="modal-btns">
       <button class="btn-delete secondary" onclick="deleteTaskFromView()">Delete</button>
       <button class="btn-cancel" onclick="closeModal('modal-task-view')">Close</button>
@@ -3762,7 +3767,8 @@ function migrateTasks(inputTasks) {
       id: typeof task.id === 'number' ? task.id : Date.now() + index,
       dueDate: /^\d{4}-\d{2}-\d{2}$/.test(task.dueDate) ? task.dueDate : (when ? whenLabelToDueDate(when) : ''),
       who: PEOPLE_OPTIONS.includes(task.who) ? task.who : 'Dani/Ken',
-      priority: !!task.priority
+      priority: !!task.priority,
+      photos: Array.isArray(task.photos) ? task.photos : []
     };
   });
 }
@@ -6435,7 +6441,7 @@ function renderTasks() {
         </div>
         <button class="task-priority-btn ${t.priority ? 'active' : ''}" onclick="togglePriority(${t.id})" title="Toggle priority">★</button>
         <div>
-          <div class="task-title" onclick="openViewTask(${t.id})" title="View task">${t.task}</div>
+          <div class="task-title" onclick="openViewTask(${t.id})" title="View task">${t.task}${(t.photos||[]).length ? ' 📷' : ''}</div>
           ${t.notes ? `<div class="task-notes">${t.notes}</div>` : ''}
           <div class="task-mobile-meta">${t.who} | ${dueLabel}</div>
         </div>
@@ -6819,7 +6825,72 @@ function openViewTask(id) {
   notesRow.style.display = notesText ? '' : 'none';
   document.getElementById('task-view-notes').textContent = notesText;
 
+  renderTaskViewPhotos(t);
   document.getElementById('modal-task-view').classList.add('open');
+}
+
+function renderTaskViewPhotos(t) {
+  const grid = document.getElementById('task-view-photos-grid');
+  if (!grid) return;
+  const photos = Array.isArray(t.photos) ? t.photos : [];
+  const photosHtml = photos.map((p, i) => `
+    <div class="measurement-photo">
+      <img src="${safeSrc(p.url)}" alt="" onclick="window.open('${safeSrc(p.url)}','_blank')">
+      <button class="measurement-photo-del" title="Delete photo" onclick="event.stopPropagation();deleteTaskPhoto(${t.id},${i})">✕</button>
+    </div>`).join('');
+  grid.innerHTML = `
+    ${photosHtml}
+    <label class="measurement-photo-add" title="Take photo">
+      📷<span>Take</span><input type="file" accept="image/*" capture="environment" style="display:none" onchange="uploadTaskPhotos(${t.id},this)">
+    </label>
+    <label class="measurement-photo-add" title="Upload photo">
+      🖼️<span>Upload</span><input type="file" accept="image/*" multiple style="display:none" onchange="uploadTaskPhotos(${t.id},this)">
+    </label>
+  `;
+}
+
+// Only delete Storage objects we created: must sit directly under task-images/ with no traversal.
+function deleteTaskImageByPath(path) {
+  if (!path) return;
+  if (!/^task-images\/[^/]+$/.test(path)) return;
+  const storage = getStorage();
+  if (storage) storage.ref(path).delete().catch(() => {});
+}
+
+async function uploadTaskPhotos(taskId, fileInput) {
+  if (!ensureCanEdit()) return;
+  const files = Array.from(fileInput.files || []);
+  if (!files.length) return;
+  if (!syncRuntime.currentUser) { alert('Please sign in to upload photos.'); return; }
+  const t = tasks.find(task => task.id === taskId);
+  if (!t) return;
+  const status = document.getElementById('task-view-photo-status');
+  if (status) status.textContent = `Uploading ${files.length} photo${files.length !== 1 ? 's' : ''}…`;
+  t.photos = Array.isArray(t.photos) ? t.photos : [];
+  for (const file of files) {
+    try {
+      const path = `task-images/${shoppingId()}-${encodeURIComponent(file.name)}`;
+      const ref = getStorage().ref(path);
+      await ref.put(file);
+      const url = await ref.getDownloadURL();
+      t.photos.push({ storagePath: path, url });
+    } catch (err) {
+      if (status) status.textContent = `Upload failed: ${err.message}`;
+    }
+  }
+  save();
+  renderTaskViewPhotos(t);
+  if (status && !status.textContent.startsWith('Upload failed')) status.textContent = '';
+}
+
+function deleteTaskPhoto(taskId, index) {
+  if (!ensureCanEdit()) return;
+  const t = tasks.find(task => task.id === taskId);
+  if (!t || !Array.isArray(t.photos) || !t.photos[index]) return;
+  const [removed] = t.photos.splice(index, 1);
+  save();
+  renderTaskViewPhotos(t);
+  deleteTaskImageByPath(removed?.storagePath);
 }
 
 function openEditTaskFromView() {
@@ -6839,6 +6910,7 @@ function deleteTaskFromView() {
 function deleteTask(id) {
   if (!ensureCanEdit()) return;
   if (!confirm('Delete this task?')) return;
+  const removed = tasks.find(task => task.id === id);
   tasks = tasks.filter(task => task.id !== id);
   if (editingTaskId === id) {
     editingTaskId = null;
@@ -6851,6 +6923,7 @@ function deleteTask(id) {
   save();
   renderTasks();
   updateStats();
+  (removed?.photos || []).forEach((p) => deleteTaskImageByPath(p.storagePath));
 }
 
 function openAddFurniture() {
@@ -6929,7 +7002,8 @@ function saveTask() {
     dueDate: document.getElementById('new-due-date').value || '',
     status: document.getElementById('new-status').value,
     done: document.getElementById('new-status').value === 'Done',
-    priority: editingTaskId !== null ? !!tasks.find(task => task.id === editingTaskId)?.priority : false
+    priority: editingTaskId !== null ? !!tasks.find(task => task.id === editingTaskId)?.priority : false,
+    photos: editingTaskId !== null ? (tasks.find(task => task.id === editingTaskId)?.photos || []) : []
   };
   if (!t.task.trim()) return;
   if (editingTaskId !== null) {
