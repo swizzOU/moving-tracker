@@ -894,11 +894,11 @@
     font-family: inherit;
     max-width: 140px;
   }
-  .furn-status-select.status-good { border-color: #7aaa7a; color: #2d6a2d; background: #f0f7f0; }
-  .furn-status-select.status-present { border-color: #7aaa7a; color: #2d6a2d; background: #f0f7f0; }
-  .furn-status-select.status-poor { border-color: #d4882a; color: #7a4200; background: #fdf4e7; }
-  .furn-status-select.status-damaged { border-color: #c0392b; color: #7a1a10; background: #fdf0ef; }
-  .furn-status-select.status-missing { border-color: #c0392b; color: #7a1a10; background: #fdf0ef; }
+  .furn-status-select.present-yes { border-color: #7aaa7a; color: #2d6a2d; background: #f0f7f0; }
+  .furn-status-select.present-no { border-color: #c0392b; color: #7a1a10; background: #fdf0ef; }
+  .furn-status-select.condition-good { border-color: #7aaa7a; color: #2d6a2d; background: #f0f7f0; }
+  .furn-status-select.condition-poor { border-color: #d4882a; color: #7a4200; background: #fdf4e7; }
+  .furn-status-select.condition-damaged { border-color: #c0392b; color: #7a1a10; background: #fdf0ef; }
   .furn-item-edit {
     font-size: 0.78rem;
     padding: 5px 11px;
@@ -932,8 +932,9 @@
     .furn-item-controls {
       justify-content: space-between;
       gap: 8px;
+      flex-wrap: wrap;
     }
-    .furn-status-select { max-width: none; flex: 1; }
+    .furn-status-select { max-width: none; flex: 1 1 auto; min-width: 120px; }
     .furn-item-price { min-width: auto; }
   }
   .furn-confirm { font-size: 0.72rem; padding: 3px 10px; border-radius: 10px; }
@@ -3935,6 +3936,17 @@ const FURN_ROOM_RENAMES = {
   'Dressing Room': 'Spare Room',
   'Guest Room': 'Office',
 };
+// Present and condition used to be one combined "status" dropdown, which
+// made it impossible to mark something present now and assess its
+// condition later. Old status values map to the split fields once here.
+const FURN_LEGACY_STATUS_MAP = {
+  '': { present: '', condition: '' },
+  present: { present: 'yes', condition: '' },
+  good: { present: 'yes', condition: 'good' },
+  poor: { present: 'yes', condition: 'poor' },
+  damaged: { present: 'yes', condition: 'damaged' },
+  missing: { present: 'no', condition: '' },
+};
 function migrateFurniture(items) {
   return items.map(f => {
     let status = f.status || '';
@@ -3944,13 +3956,18 @@ function migrateFurniture(items) {
       else if (f.inspect.present && !f.inspect.goodCondition) status = 'poor';
       else if (f.inspect.present === false && (f.inspect.asDescribed || f.inspect.goodCondition)) status = '';
     }
+    const hasSplitFields = f.present !== undefined || f.condition !== undefined;
+    const { present, condition } = hasSplitFields
+      ? { present: f.present || '', condition: f.condition || '' }
+      : (FURN_LEGACY_STATUS_MAP[status] || { present: '', condition: '' });
     return {
       name: f.name || '',
       room: FURN_ROOM_RENAMES[f.room] || f.room || '',
       price: typeof f.price === 'number' ? f.price : (parseFloat(String(f.price).replace(/[^0-9.]/g,'')) || 0),
       notes: f.notes || '',
       excluded: !!f.excluded,
-      status,
+      present,
+      condition,
       inspectNotes: f.inspectNotes || '',
     };
   });
@@ -6565,15 +6582,20 @@ const FURN_ROOM_ORDER = [
   'Kitchen','Conservatory','Pool Room','Living Room','Utility Room','Shower Room',
   'Bathroom','Main Bedroom','Spare Room','Office','Craft Room'
 ];
-const FURN_STATUS_OPTIONS = [
+const FURN_PRESENT_OPTIONS = [
   {value:'',label:'Not checked'},
-  {value:'present',label:'Present ✓'},
-  {value:'good',label:'Good condition ✓'},
+  {value:'yes',label:'Present ✓'},
+  {value:'no',label:'Not present'},
+];
+const FURN_CONDITION_OPTIONS = [
+  {value:'',label:'Not assessed'},
+  {value:'good',label:'Good condition'},
   {value:'poor',label:'Poor condition'},
   {value:'damaged',label:'Damaged'},
-  {value:'missing',label:'Not present'},
 ];
-const FURN_ISSUE_STATUSES = new Set(['poor','damaged','missing']);
+function furnHasIssue(f) {
+  return f.present === 'no' || f.condition === 'poor' || f.condition === 'damaged';
+}
 
 let furnRoomCollapsed = {};
 
@@ -6583,8 +6605,8 @@ function renderFurniture() {
   const included = furniture.filter(f => !f.excluded);
   const excluded = furniture.filter(f => f.excluded);
   const total = included.reduce((s, f) => s + (f.price || 0), 0);
-  const inspected = included.filter(f => f.status && f.status !== '').length;
-  const issues = included.filter(f => FURN_ISSUE_STATUSES.has(f.status)).length;
+  const inspected = included.filter(f => f.present || f.condition).length;
+  const issues = included.filter(furnHasIssue).length;
 
   const totalEl = document.getElementById('furn-total-display');
   const subEl = document.getElementById('furn-inspect-sub');
@@ -6615,16 +6637,20 @@ function renderFurniture() {
   container.innerHTML = orderedRooms.map(room => {
     const items = rooms[room];
     const roomTotal = items.filter(f => !f.excluded).reduce((s, f) => s + (f.price || 0), 0);
-    const roomInspected = items.filter(f => !f.excluded && f.status).length;
+    const roomInspected = items.filter(f => !f.excluded && (f.present || f.condition)).length;
     const roomTotal2 = items.filter(f => !f.excluded).length;
     const isOpen = furnRoomCollapsed[room] !== true;
 
     const itemsHtml = items.map(f => {
       const i = furniture.indexOf(f);
       const priceText = f.price ? '£' + f.price.toLocaleString() : 'Included';
-      const statusClass = f.status ? 'status-' + f.status : '';
-      const optionsHtml = FURN_STATUS_OPTIONS.map(o =>
-        `<option value="${o.value}"${f.status === o.value ? ' selected' : ''}>${o.label}</option>`
+      const presentClass = f.present ? 'present-' + f.present : '';
+      const conditionClass = f.condition ? 'condition-' + f.condition : '';
+      const presentOptionsHtml = FURN_PRESENT_OPTIONS.map(o =>
+        `<option value="${o.value}"${f.present === o.value ? ' selected' : ''}>${o.label}</option>`
+      ).join('');
+      const conditionOptionsHtml = FURN_CONDITION_OPTIONS.map(o =>
+        `<option value="${o.value}"${f.condition === o.value ? ' selected' : ''}>${o.label}</option>`
       ).join('');
       return `
       <div class="furn-item${f.excluded ? ' excluded' : ''}">
@@ -6634,7 +6660,8 @@ function renderFurniture() {
         </div>
         <div class="furn-item-controls">
           <div class="furn-item-price">${priceText}</div>
-          ${f.excluded ? '' : `<select class="furn-status-select ${statusClass}" onchange="furnSetStatus(${i}, this.value)">${optionsHtml}</select>`}
+          ${f.excluded ? '' : `<select class="furn-status-select ${presentClass}" onchange="furnSetPresent(${i}, this.value)">${presentOptionsHtml}</select>`}
+          ${f.excluded ? '' : `<select class="furn-status-select ${conditionClass}" onchange="furnSetCondition(${i}, this.value)">${conditionOptionsHtml}</select>`}
           <button class="furn-item-edit" onclick="openEditFurniture(${i})">Edit</button>
         </div>
       </div>`;
@@ -6663,10 +6690,18 @@ function furnToggleRoom(room) {
   renderFurniture();
 }
 
-function furnSetStatus(index, value) {
+function furnSetPresent(index, value) {
   if (!ensureCanEdit()) return;
   if (!furniture[index]) return;
-  furniture[index].status = value;
+  furniture[index].present = value;
+  save();
+  renderFurniture();
+}
+
+function furnSetCondition(index, value) {
+  if (!ensureCanEdit()) return;
+  if (!furniture[index]) return;
+  furniture[index].condition = value;
   save();
   renderFurniture();
 }
@@ -7029,7 +7064,8 @@ function saveFurniture() {
     notes: document.getElementById('f-notes').value,
     price: parseFloat(document.getElementById('f-price').value) || 0,
     excluded: document.getElementById('f-excluded').checked,
-    status: existing ? existing.status : '',
+    present: existing ? existing.present : '',
+    condition: existing ? existing.condition : '',
     inspectNotes: document.getElementById('f-inspect-notes').value,
   };
   if (!f.name.trim()) return;
