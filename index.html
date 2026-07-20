@@ -2428,6 +2428,12 @@ a.pin-title:hover { text-decoration: underline; }
   flex-direction: column;
   gap: 20px;
 }
+.measurement-room-section { display: flex; flex-direction: column; gap: 12px; }
+.measurement-room-header {
+  font-family: 'Lora', serif; font-size: 0.95rem; font-weight: 700; color: var(--sage-dark);
+  text-transform: uppercase; letter-spacing: 0.6px;
+  padding-bottom: 6px; border-bottom: 2px solid var(--sage);
+}
 .measurement-card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
 .measurement-header {
   display: flex; align-items: center; gap: 10px;
@@ -7923,12 +7929,28 @@ function formatMeasurementDims(m) {
 function renderMeasurements() {
   const container = document.getElementById('measurements-container');
   if (!container) return;
+  const datalist = document.getElementById('measurement-room-options');
+  if (datalist) datalist.innerHTML = FURN_ROOM_ORDER.map((r) => `<option value="${escapeHtml(r)}">`).join('');
   if (!measurements.length) {
     container.innerHTML = '<div style="text-align:center;padding:48px 0;color:var(--muted);font-size:0.95rem;">No measurements yet — click <strong>+ Add measurement</strong> to start recording them.</div>';
     applyActionLockToInteractiveElements();
     return;
   }
-  container.innerHTML = measurements.map((m) => renderMeasurementCard(m)).join('');
+
+  const rooms = {};
+  measurements.forEach((m) => {
+    const r = (m.room || '').trim() || 'Other';
+    if (!rooms[r]) rooms[r] = [];
+    rooms[r].push(m);
+  });
+  const roomOrder = [...FURN_ROOM_ORDER, ...Object.keys(rooms).filter((r) => r !== 'Other' && !FURN_ROOM_ORDER.includes(r)).sort(), 'Other'];
+  const orderedRooms = roomOrder.filter((r) => rooms[r]);
+
+  container.innerHTML = orderedRooms.map((room) => `
+    <div class="measurement-room-section">
+      <div class="measurement-room-header">${escapeHtml(room)}</div>
+      ${rooms[room].map((m) => renderMeasurementCard(m)).join('')}
+    </div>`).join('');
   applyActionLockToInteractiveElements();
 }
 
@@ -7978,6 +8000,7 @@ function openAddMeasurement() {
   if (!ensureCanEdit()) return;
   document.getElementById('measurement-id').value = '';
   document.getElementById('measurement-title').value = '';
+  document.getElementById('measurement-room').value = '';
   document.getElementById('measurement-description').value = '';
   document.getElementById('measurement-width').value = '';
   document.getElementById('measurement-height').value = '';
@@ -7993,6 +8016,7 @@ function openEditMeasurement(id) {
   if (!m) return;
   document.getElementById('measurement-id').value = m.id;
   document.getElementById('measurement-title').value = m.title || '';
+  document.getElementById('measurement-room').value = m.room || '';
   document.getElementById('measurement-description').value = m.description || '';
   document.getElementById('measurement-width').value = m.width || '';
   document.getElementById('measurement-height').value = m.height || '';
@@ -8007,6 +8031,7 @@ function saveMeasurement() {
   const id = document.getElementById('measurement-id').value;
   const fields = {
     title: document.getElementById('measurement-title').value.trim(),
+    room: document.getElementById('measurement-room').value.trim(),
     description: document.getElementById('measurement-description').value.trim(),
     width: +document.getElementById('measurement-width').value || 0,
     height: +document.getElementById('measurement-height').value || 0,
@@ -8127,6 +8152,9 @@ function deleteMeasurementPhoto(id, index) {
     <input type="hidden" id="measurement-id">
     <label for="measurement-title">Title</label>
     <input type="text" id="measurement-title" placeholder="e.g. Living room alcove" maxlength="120">
+    <label for="measurement-room">Room</label>
+    <input type="text" id="measurement-room" list="measurement-room-options" placeholder="e.g. Living Room, Kitchen..." maxlength="60">
+    <datalist id="measurement-room-options"></datalist>
     <label for="measurement-description">Description</label>
     <input type="text" id="measurement-description" placeholder="e.g. Left-hand alcove next to fireplace" maxlength="200">
     <div class="shopping-item-meta" style="grid-template-columns:1fr 1fr 1fr;">
